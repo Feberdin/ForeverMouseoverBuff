@@ -142,3 +142,6 @@ Originaler Projektcode: [MIT](LICENSE). Das Ritterlogo kennzeichnet Feberdin als
 Absender; die [Designvorlage](BRANDING.md) erklärt den Einsatz in weiteren eigenen
 Addons. Eigenständiges Projekt ohne offizielle Verbindung zu Blizzard oder
 CurseForge; Spielnamen und Marken verbleiben bei ihren jeweiligen Inhabern.
+
+Quellcode: [Feberdin/ForeverMouseoverBuff](https://github.com/Feberdin/ForeverMouseoverBuff).
+Fehlerberichte: [GitHub Issues](https://github.com/Feberdin/ForeverMouseoverBuff/issues).

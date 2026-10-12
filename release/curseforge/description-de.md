@@ -127,3 +127,5 @@ Wiederherstellungsversuch; setze sie nicht nur zum Verbergen des Fehlers zurück
 
 Ein eigenständiges **MIT-Projekt**, ohne Verbindung zu Blizzard oder CurseForge.
 WoW-Namen und Marken gehören ihren jeweiligen Rechteinhabern.
+
+Quellcode und Fehlerberichte: [GitHub](https://github.com/Feberdin/ForeverMouseoverBuff) · [Issues](https://github.com/Feberdin/ForeverMouseoverBuff/issues).

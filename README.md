@@ -174,9 +174,9 @@ WIM source fixtures are intentionally excluded. Their three local contract suite
 (native action, WIM integration, chat integration) therefore are **not reproduced
 by public CI**; full in-game acceptance remains a separate release check.
 
-The reviewed source snapshot is intended for a future repository named
-`Feberdin/ForeverMouseoverBuff`; this does not claim that a remote already exists.
-No credentials or publishing jobs are configured. See
+Source and issue tracking: [Feberdin/ForeverMouseoverBuff](https://github.com/Feberdin/ForeverMouseoverBuff)
+and [report an issue](https://github.com/Feberdin/ForeverMouseoverBuff/issues).
+No credentials or automatic publishing jobs are configured. See
 [submission preparation](curseforge/submission.md), [contributing](CONTRIBUTING.md)
 and [security notes](SECURITY.md).
 

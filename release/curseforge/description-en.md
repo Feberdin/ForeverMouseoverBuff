@@ -116,3 +116,5 @@ attempting recovery; do not reset them just to hide an error.
 
 An independent **MIT-licensed** project. Not affiliated with Blizzard or
 CurseForge. WoW names and trademarks belong to their respective owners.
+
+Source and issues: [GitHub](https://github.com/Feberdin/ForeverMouseoverBuff) · [Issues](https://github.com/Feberdin/ForeverMouseoverBuff/issues).
