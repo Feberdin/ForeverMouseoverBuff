@@ -841,8 +841,8 @@ test("outgoing_chat_display_defaults_to_hidden_without_disabling_whispers", func
     local ns, state = setup()
     eq(ns.db.showOutgoingWhispers, false)
     eq(ns.db.whisper, true); eq(ns.db.receiveWhispers, true)
-    assert(ns.outgoingButton.text:find("aus", 1, true))
-    assert(ns:Diagnostics():find("Eigene Grüße im Chat: aus", 1, true))
+    assert(ns.outgoingButton.text:find("Eigene Grüße verbergen: an", 1, true))
+    assert(ns:Diagnostics():find("Eigene Grüße in Chat/WIM: aus", 1, true))
     eq(#state.actions, 0)
 end)
 

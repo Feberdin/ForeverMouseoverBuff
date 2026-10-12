@@ -57,6 +57,7 @@ PORTABLE_TESTS = (
     "test_greeting_catalog.lua",
     "test_greetings.lua",
     "test_recipient.lua",
+    "test_chat_display.lua",
     "test_whisper.lua",
     "test_seal_reminder.lua",
     "test_diagnostics.lua",

@@ -52,15 +52,19 @@ Use `/fmb auto` for automatic selection outside combat, or choose `/fmb might`,
 | --- | --- | --- |
 | Stop sending automatic greetings | `/fmb whisper off` | Your outgoing greeting messages |
 | Decline automatic FMB greetings | `/fmb receive off` | Greetings addressed to you |
-| Hide your own greetings in normal chat | `/fmb outgoing off` | Your local chat display only |
+| Hide your own greetings in chat and WIM | `/fmb outgoing off` | Your local display, popups and WIM sounds |
 
-Replace `off` with `on` to restore that setting. All three are independent.
-Your own greetings are hidden from ordinary chat by default.
+The **Greetings & Chat** page has separate **Send automatic greetings** and
+**Hide my greetings** switches. Both default to **ON**: recipients receive your
+greetings while your own copies stay quiet in ordinary chat and WIM. Switch
+sending off to stop automatic messages without disabling buffs. Existing explicit
+preferences remain saved; `outgoing on` shows your own copies again.
 
-Normal personal whispers stay unaffected. WIM is optional. Its own conversation
-settings still determine whether outgoing greetings open a window or enter its
-history. The receiver switch recognizes compatible, marked FMB greetings, rather
-than every addon or older unmarked message.
+Hidden automatic echoes neither open WIM windows nor trigger its sounds or
+history. Normal personal whispers remain unaffected. WIM is optional. The filter
+matches only recently sent automatic messages and their exact recipient; the
+receiver switch recognizes compatible, marked FMB greetings, rather than every
+addon or older unmarked message.
 
 ## 🔔 Sounds you control
 

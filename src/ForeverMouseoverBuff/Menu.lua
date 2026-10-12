@@ -63,12 +63,16 @@ end
 
 local function buildMessages(page)
     heading(page, "Ein Gruß, der zu dir passt.", "Versand, Empfang und Anzeige lassen sich unabhängig voneinander einstellen.")
-    toggle(page, "Segensgrüße senden", "Ein wechselnder Gruß nach einem bestätigten Segen.", 78, "whisper", "whisper")
+    toggle(page, "Automatische Grüße senden", "Nach bestätigtem Buff. AUS: keine automatischen Nachrichten versenden.", 78, "whisper", "whisper")
     ns.receiveButton = toggle(page, "Segensgrüße empfangen", "Für alle Klassen: automatische FMB-Grüße erlauben.", 156, "receiveWhispers", "receive")
-    ns.outgoingButton = toggle(page, "Eigene Grüße im Chat zeigen", "Nur die Anzeige im normalen Chat; der Versand bleibt gleich.", 234, "showOutgoingWhispers", "outgoing")
+    -- Preserve the saved positive display preference, but present quiet mode as
+    -- an enabled default. Sending and receiving remain separate decisions.
+    ns.outgoingButton = ns.Theme.Toggle(page, "Eigene Grüße verbergen",
+        "Keine eigenen FMB-Grüße im Chat oder WIM; keine Popups oder WIM-Töne.", 0, 234, 588,
+        function() ns:Command(ns.db.showOutgoingWhispers and "outgoing off" or "outgoing on") end)
     card(page, 322, 111)
     text(page, "Dein Chat bleibt deine Entscheidung", 16, 337, 550, 24, 15, ns.Theme.colors.gold)
-    text(page, "WIM zeigt eigene Grüße nach seinen eigenen Einstellungen.\nEmpfänger mit FMB können automatische Grüße ausschalten –\nauch wenn ihre Klasse selbst keine Segen verteilt.", 16, 368, 550, 55, 12, ns.Theme.colors.muted)
+    text(page, "Standard: Senden AN, eigene Grüße verbergen AN.\nPersönliche Whisper bleiben sichtbar. Empfänger mit FMB können\nautomatische Grüße selbst ausschalten – für jede Klasse.", 16, 368, 550, 55, 12, ns.Theme.colors.muted)
 end
 
 local function buildSounds(page)
@@ -204,6 +208,7 @@ end
 function Menu.Refresh()
     if not ns.panel or not ns.panel:IsShown() then return end
     for key, button in pairs(Menu.controls) do button:SetValue(ns.db[key] == true) end
+    ns.outgoingButton:SetValue(ns.db.showOutgoingWhispers ~= true)
     for mode, button in pairs(Menu.modeButtons) do button:SetSelected(ns.db.mode == mode) end
     Menu.binding:SetText(ns:BindingLabel())
     local decision = ns.decision

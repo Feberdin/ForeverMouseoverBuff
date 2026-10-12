@@ -3,7 +3,7 @@
 ## Notes-deDE: Mouseover-Segen: Auto außerhalb des Kampfes, Könige im Kampf. Hinweiston und persönliche Grüße mit Empfänger-Auswahl. /fmb help
 ## Notes: Mouseover blessings: automatic OOC, fixed Kings in combat. Feedback and personal greetings with recipient opt-out. /fmb help
 ## Author: Feberdin
-## Version: 0.7.5
+## Version: 0.7.6
 ## SavedVariablesPerCharacter: ForeverMouseoverBuffDB, ForeverMouseoverBuffRankingExport
 ## Category-deDE: Zauber
 ## Category-enUS: Spells
