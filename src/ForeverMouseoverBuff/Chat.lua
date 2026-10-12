@@ -1,9 +1,10 @@
--- Purpose: color our label, honor recipient opt-out and hide our own Blizzard echoes.
+-- Purpose: color our label, honor recipient opt-out and silence our own auto echoes.
 -- Input: public whisper events, native frame identity and live display preferences.
--- Output: display filters; WIM keeps its native outgoing popup/history preferences.
+-- Output: optional suppression in Blizzard chat and WIM before popup/history/sound.
 -- Invariants: no sending, casting, name persistence, or network color escapes;
--- only our exact prefix followed by a quoted greeting qualifies for filtering.
--- Debug: /fmb debug on; tests/test_chat.lua. Diagnostics contain fixed codes only.
+-- only a recent exact outgoing echo from our sender qualifies for own suppression;
+-- manual messages retain native preferences. No recipient identity is persisted.
+-- Debug: /fmb debug on; tests/test_chat_display.lua. Logs contain fixed codes only.
 local _, ns = ...
 local Chat = {}
 ns.Chat = Chat
@@ -37,6 +38,30 @@ local function receivingDisabled()
     return field(ns.db, "receiveWhispers") == false
 end
 
+-- A missing saved switch uses the silent default, but an unreadable or corrupt
+-- value is not permission to hide chat. This distinction matters during lockdown.
+local function outgoingHidden()
+    local db = ns.db
+    if not public(db) or type(db) ~= "table" or type(canaccesstable) ~= "function" then return false end
+    local ok, accessible = pcall(canaccesstable, db)
+    if not ok or not public(accessible) or accessible ~= true then return false end
+    local show = rawget(db, "showOutgoingWhispers")
+    return public(show) and (show == nil or show == false)
+end
+
+-- The sender records the exact message + recipient before calling SendChatMessage.
+-- Example: the matching immediate echo is hidden; the same text to another player
+-- or after the 15-second echo window is left to the original chat/WIM behavior.
+local function automaticEcho(event, message, receiver)
+    if not public(event) or event ~= events[2] or not public(message)
+        or not public(receiver) or not outgoingHidden() then return false end
+    local matches = field(ns.Whisper, "IsAutomaticEcho")
+    if type(matches) ~= "function" then return false end
+    local ok, automatic = pcall(matches, event, message, receiver)
+    if not ok then report("CHAT_ECHO_MATCH_FAILED"); return false end
+    return public(automatic) and automatic == true
+end
+
 -- WIM calls these same filters with its own chat display object, other addons
 -- may pass nil. Only a known Blizzard frame identity qualifies for suppression;
 -- a frame name or the absence of _isWIM is not proof. The native registry includes
@@ -54,13 +79,7 @@ local function blizzardFrame(frame)
     return false
 end
 local function hideOutgoing(frame, event, message, receiver)
-    if event ~= events[2] or field(ns.db, "showOutgoingWhispers") == true
-        or not blizzardFrame(frame) then return false end
-    local matches = field(ns.Whisper, "IsAutomaticEcho")
-    if type(matches) ~= "function" then return false end
-    local ok, automatic = pcall(matches, event, message, receiver)
-    if not ok then report("CHAT_ECHO_MATCH_FAILED"); return false end
-    return public(automatic) and automatic == true
+    return blizzardFrame(frame) and automaticEcho(event, message, receiver)
 end
 
 -- Identification is deliberately narrow, but is not sender authentication:
@@ -100,9 +119,9 @@ local function filter(frame, event, message, ...)
 end
 
 -- WIM normally uses the same event filters. The additional ignore/block wrapper
--- enforces recipient opt-out before native WIM popup/history/sound dispatch even
--- if its own filter runs first. All other arguments and returns are delegated.
--- Own outgoing echoes are handled only above, never by bypassing WIM decisions.
+-- enforces recipient opt-out and our silent outgoing preference before native
+-- popup/history/sound dispatch, even if WIM's filter runs first. All other
+-- arguments and returns, including nil holes, are delegated without changes.
 local function configureWIM()
     local original = field(WIM, "IgnoreOrBlockEvent")
     if type(original) ~= "function" then return end
@@ -111,9 +130,12 @@ local function configureWIM()
     -- filter remains the primary guard even if a foreign addon replaces its hook.
     if WIM == configuredWIM then return end
     local wrapper = function(event, ...)
-        local message = ...
+        local message, receiver = ...
         if public(event) and event == events[1] and receivingDisabled()
             and greetingText(event, message) then return true, true end
+        if greetingText(event, message) and automaticEcho(event, message, receiver) then
+            return true, true
+        end
         return original(event, ...)
     end
     WIM.IgnoreOrBlockEvent = wrapper

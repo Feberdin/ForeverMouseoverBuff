@@ -10,7 +10,7 @@ Wähle einen gelernten Paladinsegen für den befreundeten Spieler unter deiner
 Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
 um seine automatischen Grüße abzulehnen.
 
-**0.7.5 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.7.6 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Oberfläche und Grüße sind überwiegend deutsch. Das native Sanctum-Menü ist
 automatisiert und im nachgebildeten Layout geprüft; der Ingame-Test steht noch aus. Gespeicherte 0.7.2-Diagnosen
@@ -68,15 +68,21 @@ schließt wieder ohne Hauptmenü, wenn es vorher nicht geöffnet war.
 | --- | --- | --- |
 | Keine eigenen Grüße versenden | `/fmb whisper off` | Deine ausgehenden automatischen Grüße |
 | Keine FMB-Grüße empfangen | `/fmb receive off` | Automatische Grüße an dich |
-| Eigene Grüße im normalen Chat verbergen | `/fmb outgoing off` | Nur deine lokale Chatanzeige |
+| Eigene Grüße in Chat und WIM verbergen | `/fmb outgoing off` | Deine Anzeige, Popups und WIM-Töne |
 
-Mit `on` statt `off` schaltest du die jeweilige Funktion wieder ein. Alle drei
-Einstellungen sind unabhängig. Die eigene Chatkopie ist standardmäßig verborgen.
+Unter **Grüße & Chat** gibt es getrennte Schalter für **Automatische Grüße
+senden** und **Eigene Grüße verbergen**. Beide stehen standardmäßig auf **AN**:
+Der Empfänger bekommt deinen Gruß, deine eigene Kopie bleibt in Chat und WIM
+verborgen. Schalte den Versand aus, um keine automatischen Nachrichten mehr zu
+senden; Buffen funktioniert weiter. Bereits bewusst gesetzte Einstellungen
+bleiben erhalten. `/fmb outgoing on` zeigt eigene Kopien wieder an.
 
-Normale persönliche Whisper bleiben erhalten. WIM ist optional. Seine eigenen
-Gesprächseinstellungen bestimmen weiterhin, ob ein ausgehender Gruß ein Fenster
-öffnet oder im Verlauf erscheint. Erkannt werden kompatible, markierte FMB-Grüße. Ältere unmarkierte
-Nachrichten und andere Addons werden nicht pauschal gefiltert.
+Verborgene automatische Grüße öffnen kein WIM-Fenster, lösen dort keinen Ton aus
+und landen nicht im WIM-Verlauf. Persönliche Whisper bleiben unverändert. WIM ist
+optional. Gefiltert werden ausschließlich kürzlich gesendete automatische Grüße
+an den exakt passenden Empfänger. Der Empfangsschalter erkennt kompatible,
+markierte FMB-Grüße; andere Addons oder ältere unmarkierte Nachrichten werden
+nicht pauschal gefiltert.
 
 ## 🔔 Töne nach deinem Geschmack
 

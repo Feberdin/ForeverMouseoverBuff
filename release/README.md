@@ -10,7 +10,7 @@ Choose a learned Paladin blessing for the friendly player under your mouse.
 Other classes can install Forever Mouseover Buff simply to decline its automatic
 greetings.
 
-**0.7.5 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.7.6 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 The interface and greetings are primarily German. The native Sanctum menu has
 automated behavior and offline layout coverage; its in-game acceptance is still pending. Saved 0.7.2 diagnostics show
@@ -64,15 +64,19 @@ Only one FMB window is visible at a time.
 | --- | --- | --- |
 | Stop sending automatic greetings | `/fmb whisper off` | Your outgoing greeting messages |
 | Decline automatic FMB greetings | `/fmb receive off` | Greetings addressed to you |
-| Hide your own greetings in normal chat | `/fmb outgoing off` | Your local chat display only |
+| Hide your own greetings in chat and WIM | `/fmb outgoing off` | Your local display, popups and WIM sounds |
 
-Replace `off` with `on` to restore that setting. All three are independent.
-Your own greetings are hidden from ordinary chat by default.
+The **Greetings & Chat** page has separate **Send automatic greetings** and
+**Hide my greetings** switches. Both default to **ON**: recipients receive your
+greetings while your own copies stay quiet in ordinary chat and WIM. Switch
+sending off to stop automatic messages without disabling buffs. Existing explicit
+preferences remain saved; `outgoing on` shows your own copies again.
 
-Normal personal whispers stay unaffected. WIM is optional. Its own conversation
-settings still determine whether outgoing greetings open a window or enter its
-history. The receiver switch recognizes compatible, marked FMB greetings, rather
-than every addon or older unmarked message.
+Hidden automatic echoes neither open WIM windows nor trigger its sounds or
+history. Normal personal whispers remain unaffected. WIM is optional. The filter
+matches only recently sent automatic messages and their exact recipient; the
+receiver switch recognizes compatible, marked FMB greetings, rather than every
+addon or older unmarked message.
 
 ## 🔔 Sounds you control
 
@@ -199,7 +203,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.7.5 --output dist/review-0.7.5
+python3 scripts/prepare-release.py --version 0.7.6 --output dist/review-0.7.6
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party

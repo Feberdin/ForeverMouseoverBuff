@@ -4,7 +4,7 @@
 -- Invariants: no hover/timer casts, key replacement, self fallback or dynamic combat selection.
 -- Debug: /fmb diag; /fmb debug on; /fmb status. Structured local logs flush on reload/logout.
 local _, ns = ...
-ns.VERSION = "0.7.5"
+ns.VERSION = "0.7.6"
 local binding = "CLICK ForeverMouseoverBuffButton:LeftButton"
 local modes = {auto = "Auto", might = "Macht", wisdom = "Weisheit", kings = "Könige"}
 local elapsed = 0
@@ -428,7 +428,7 @@ function ns:Help()
     say("Gesperrte Buff-Taste: Erklärung im Bild und Chat, Hinweiston höchstens alle 2 Sekunden. /fmb sound on | off schaltet den Ton; /fmb soundtest prüft ihn.")
     say('Bestätigter Segen: zwölf wechselnde Grüße passend zu deiner Klasse und deinem Volk, mit Empfängername und passender Volksanrede. Bei unbekannter Klasse bleibt der Text neutral. /fmb whisper on | off schaltet ihn. Bei unklaren oder geschützten Empfängerdaten wird nichts gesendet.')
     say("Empfänger aller Klassen: /fmb receive off blendet automatische Addongrüße aus und lehnt neue Anfragen anderer FMB-Installationen ab. /fmb receive on erlaubt sie wieder. Eigene gesendete Grüße bleiben separat mit /fmb whisper on | off schaltbar. Der Addonname erscheint mit installiertem Addon goldfarben.")
-    say("Eigene automatische Grüße im normalen Chat sind standardmäßig verborgen. /fmb outgoing on | off zeigt oder verbirgt sie; Versand und Empfangsschalter bleiben unabhängig. WIM zeigt sie nach seinen eigenen Einstellungen.")
+    say("Eigene automatische Grüße sind standardmäßig in Chat und WIM verborgen, ohne WIM-Popups oder WIM-Töne. /fmb outgoing on | off zeigt oder verbirgt sie; Versand und Empfang bleiben unabhängig. Persönliche Whisper bleiben sichtbar.")
     say("/fmb stats zeigt lokale, unbestätigte Buff-Zähler. /fmb ranking on | off stellt neue Ereignisse für einen freiwilligen Upload bereit; Standard aus. /fmb ranking help erklärt Dateiexport und Upload. Keine Empfänger werden exportiert.")
     say("/fmb diag zeigt das lokale Diagnoseprotokoll mit den letzten Ereignissen. Es enthält nur feste Codes und öffentliche Versions-/Schalterwerte. Erst /reload oder ausloggen schreibt es für eine Dateiauswertung auf die Festplatte.")
     say("/fmb feedback: Fehler, Wünsche oder Features mit Vorschau für GitHub vorbereiten. Technische Angaben sind freiwillig. Link markieren, mit Cmd/Strg+C kopieren und im Browser prüfen und absenden.")
@@ -445,7 +445,7 @@ function ns:Diagnostics()
         .. "\nHinweiston: " .. (self.db.sound and "an" or "aus") .. " | Test: /fmb soundtest"
         .. " | Erfolgswhisper: " .. (self.db.whisper and "an" or "aus")
         .. " | Empfangene Grüße: " .. (self.db.receiveWhispers and "an" or "aus")
-        .. " | Eigene Grüße im Chat: " .. (self.db.showOutgoingWhispers and "an" or "aus")
+        .. " | Eigene Grüße in Chat/WIM: " .. (self.db.showOutgoingWhispers and "an" or "aus")
         .. " | Ranking-Export: " .. (self.db.rankingEnabled and "an (unbestätigt)" or "aus")
         .. " | Siegelton: " .. (self.db.sealSound and "an" or "aus")
         .. "\nKampf: " .. (self.combatSpell and "Könige vorbereitet" or "Könige nicht vorbereitet")
@@ -486,15 +486,15 @@ function ns:Command(command)
         say("Hinweiston " .. (self.db.sound and "an" or "aus") .. ".")
     elseif command == "whisper on" or command == "whisper off" then
         self.db.whisper = command == "whisper on"
-        say("Erfolgswhisper " .. (self.db.whisper and "an" or "aus") .. ".")
+        say("Automatische Grüße senden: " .. (self.db.whisper and "AN" or "AUS") .. ". Buffen und eigene Anzeige bleiben unverändert.")
     elseif command == "receive on" or command == "receive off" then
         self.db.receiveWhispers = command == "receive on"
         -- Existing callbacks read this setting live; do not add another WIM wrapper.
         say("Empfangene Addon-Segensgrüße " .. (self.db.receiveWhispers and "an" or "aus") .. ". Eigene gesendete Grüße bleiben unverändert.")
     elseif command == "outgoing on" or command == "outgoing off" then
         self.db.showOutgoingWhispers = command == "outgoing on"
-        say("Eigene Grüße im Chat " .. (self.db.showOutgoingWhispers and "an" or "aus")
-            .. ". Versand und WIM-Einstellungen bleiben unverändert.")
+        say("Eigene Grüße verbergen: " .. (self.db.showOutgoingWhispers and "AUS" or "AN")
+            .. ". Gilt für Chat und WIM; Versand und persönliche Whisper bleiben unverändert.")
     elseif command == "seal on" or command == "seal off" then
         self.db.sealSound = command == "seal on"
         if self.SealReminder then self.SealReminder.Check() end

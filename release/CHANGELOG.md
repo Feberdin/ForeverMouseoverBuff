@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.6 Beta — Quiet outgoing greetings
+
+- Keep **Send automatic greetings** and **Hide my greetings** independently
+  switchable in Greetings & Chat; both default to ON. Turning sending off stops
+  automatic messages without disabling buffs or changing recipient preferences.
+- Extend hidden outgoing greetings to WIM: no popup, sound or history entry for
+  the exact recent automatic echo. Personal whispers keep WIM's normal behavior.
+- Preserve existing saved display preferences and all incoming opt-out controls.
+- Add portable outgoing-display regression tests and verify the integration
+  against locally pinned native WIM handlers. No new message content is logged.
+
 ## 0.7.5 Beta — Feedback window navigation
 
 - Fix main-menu text and buttons drawing through the feedback dialog: only one
