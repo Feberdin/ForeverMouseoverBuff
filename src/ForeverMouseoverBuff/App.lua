@@ -4,7 +4,7 @@
 -- Invariants: no hover/timer casts, key replacement, self fallback or dynamic combat selection.
 -- Debug: /fmb diag; /fmb debug on; /fmb status. Structured local logs flush on reload/logout.
 local _, ns = ...
-ns.VERSION = "0.7.3"
+ns.VERSION = "0.7.4"
 local binding = "CLICK ForeverMouseoverBuffButton:LeftButton"
 local modes = {auto = "Auto", might = "Macht", wisdom = "Weisheit", kings = "Könige"}
 local elapsed = 0
@@ -262,17 +262,7 @@ function ns:Refresh()
     -- and its reason on every poll would fill the bounded history in seconds.
     if self.DiagnosticLog then self.DiagnosticLog.SetFallback(self.decision.fallbackReason) end
     self:RefreshDiagnosticStatus()
-    if self.receiveButton then self.receiveButton:SetText("Empfangene Grüße: " .. (self.db.receiveWhispers and "an" or "aus")) end
-    if self.outgoingButton then self.outgoingButton:SetText("Eigene Grüße im Chat: " .. (self.db.showOutgoingWhispers and "an" or "aus")) end
-    if self.rankingButton then self.rankingButton:SetText("Ranking-Export: " .. (self.db.rankingEnabled and "an" or "aus")) end
-    if self.statusText then
-        self.statusText:SetText(self.decision.text)
-        if self.decision.ready then self.statusText:SetTextColor(0.4, 1, 0.55)
-        else self.statusText:SetTextColor(1, 0.85, 0.45) end
-        self.modeText:SetText("Modus: " .. modes[self.db.mode] .. "  |  " .. (self.db.enabled and "Aktiv" or "Aus")
-            .. "  |  Ton " .. (self.db.sound and "an" or "aus"))
-        self.keyText:SetText("Buff-Taste: " .. self:BindingLabel())
-    end
+    if self.Menu then self.Menu.Refresh() end
 end
 
 local function clearAction(button)
@@ -418,59 +408,14 @@ function ns:CreateActionButton()
     return true
 end
 
-local function label(parent, text, x, y, width, height)
-    local f = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    f:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    f:SetWidth(width); f:SetHeight(height)
-    f:SetJustifyH("LEFT"); f:SetJustifyV("TOP"); f:SetText(text)
-    return f
-end
-local function control(parent, text, x, y, width, action)
-    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-    b:SetSize(width, 25); b:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    b:SetText(text); b:SetScript("OnClick", action)
-    return b
-end
-
+-- Presentation is isolated from casting and saved preferences. Commands return to
+-- the selected Sanctum page, so changing a switch never loses the user's place.
 function ns:ShowPanel()
-    if not self.panel then
-        local panel = CreateFrame("Frame", "ForeverMouseoverBuffPanel", UIParent, "BasicFrameTemplateWithInset")
-        self.panel = panel
-        panel:SetSize(460, 472); panel:SetPoint("RIGHT", UIParent, "RIGHT", -35, 0)
-        panel:SetMovable(true); panel:EnableMouse(true); panel:RegisterForDrag("LeftButton")
-        panel:SetClampedToScreen(true)
-        panel:SetScript("OnDragStart", function(self) if not ns.API.Locked() then self:StartMoving() end end)
-        panel:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
-        if panel.TitleText then panel.TitleText:SetText("Forever Mouseover Buff")
-        else label(panel, "Forever Mouseover Buff", 14, -5, 400, 18) end
-        if type(UISpecialFrames) == "table" then UISpecialFrames[#UISpecialFrames + 1] = "ForeverMouseoverBuffPanel" end
-        label(panel, "Paladine: Spieler mit der Buff-Taste segnen. Alle Klassen können empfangene Segensgrüße unten ausschalten.", 16, -36, 428, 42)
-        self.keyText = label(panel, "", 16, -80, 428, 34)
-        self.modeText = label(panel, "", 16, -114, 428, 20)
-        self.statusText = label(panel, "", 16, -139, 428, 54)
-        for index, mode in ipairs({"auto", "might", "wisdom", "kings"}) do
-            local choice = mode
-            control(panel, modes[choice], 16 + (index - 1) * 108, -199, 102, function() ns:Command(choice) end)
-        end
-        control(panel, "An / Aus", 16, -239, 110, function() ns:Command(ns.db.enabled and "off" or "on") end)
-        control(panel, "Hilfe", 134, -239, 110, function() ns:Help() end)
-        control(panel, "Diagnose", 252, -239, 110, function() say(ns:Diagnostics()) end)
-        self.receiveButton = control(panel, "", 16, -280, 230,
-            function() ns:Command(ns.db.receiveWhispers and "receive off" or "receive on") end)
-        control(panel, "Buff-Statistik", 260, -280, 165, function() ns:Command("stats") end)
-        -- Sending, receiving and displaying our own chat echoes are independent.
-        -- Keep the upload help beside its opt-in; this panel never uploads data.
-        self.outgoingButton = control(panel, "", 16, -314, 280,
-            function() ns:Command(ns.db.showOutgoingWhispers and "outgoing off" or "outgoing on") end)
-        self.rankingButton = control(panel, "", 16, -350, 230,
-            function() ns:Command(ns.db.rankingEnabled and "ranking off" or "ranking on") end)
-        self.uploadHelpButton = control(panel, "Upload-Hilfe", 260, -350, 165,
-            function() ns:Command("ranking help") end)
-        label(panel, "Eigene Grüße bleiben in WIM nach dessen Einstellungen sichtbar.", 16, -388, 428, 30)
-        self.feedbackButton = control(panel, "Feedback & Hilfe auf GitHub", 16, -430, 409,
-            function() ns:Command("feedback") end)
+    if not self.Menu then
+        say("Menüdateien fehlen. Vollständiges Addonpaket installieren und /reload ausführen.")
+        return
     end
-    self.panel:Show()
+    self.Menu.Show()
     self:Refresh()
 end
 

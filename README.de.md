@@ -10,10 +10,10 @@ Wähle einen gelernten Paladinsegen für den befreundeten Spieler unter deiner
 Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
 um seine automatischen Grüße abzulehnen.
 
-**0.7.3 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.7.4 Beta · WoW Forever 1.60.1 · Interface 16001**
 
-Oberfläche und Grüße sind überwiegend deutsch. Das neue Feedback-Menü ist lokal
-automatisiert geprüft; sein Ingame-Test steht noch aus. Gespeicherte 0.7.2-Diagnosen
+Oberfläche und Grüße sind überwiegend deutsch. Das native Sanctum-Menü ist
+automatisiert und im nachgebildeten Layout geprüft; der Ingame-Test steht noch aus. Gespeicherte 0.7.2-Diagnosen
 zeigen zwei zusätzlich bestätigte Zaubervorgänge, keinen Anstieg der Fehlerzähler
 und kein ERROR unter den letzten 64 Ereignissen. Das ist ein begrenzter
 Praxisnachweis; die umfassendere Ingame-Abnahme läuft weiter.
@@ -102,6 +102,15 @@ lokalen Testablauf. Die Ereignisdatei bleibt lesbar. Empfänger und Chattexte
 werden nicht exportiert. Das Addon baut keine Webverbindung auf, und es gibt
 **keinen bereitgestellten öffentlichen Rankingdienst**. Companion und lokaler
 Dienst sind zum Buffen nicht erforderlich.
+
+## ✨ Sanctum-Menü im Spiel
+
+`/fmb` öffnet das neue dunkle Menü mit deinem Feberdin-Ritter und Addon-Logo.
+Links wechselst du zwischen Buffs und Tastenhilfe, Grüßen, Tönen, Statistik,
+Diagnose und Hilfe. Türkise Schalter zeigen den aktuellen Zustand; Gold markiert
+den gewählten Bereich und Segensmodus. Änderungen werden direkt übernommen.
+Das Fenster passt sich kleineren Bildschirmen an und lässt sich mit Escape
+schließen. Statistik und Diagnose zeigen echte lokale Werte, keine Beispieldaten.
 
 ## 💬 Fehler, Wünsche und Features melden
 

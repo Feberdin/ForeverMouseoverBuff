@@ -44,11 +44,18 @@ local function setup(saved, modules)
         function frame:Enable() self.disabled = false end
         function frame:Disable() self.disabled = true end
         function frame:CreateFontString() return newFrame() end
-        function frame:GetWidth() return 460 end
-        function frame:GetHeight() return 280 end
-        for _, method in ipairs({"SetSize", "SetPoint", "SetAlpha", "EnableMouse", "SetFrameStrata",
+        function frame:SetSize(width, height) self.width, self.height = width, height end
+        function frame:SetWidth(width) self.width = width end
+        function frame:SetHeight(height) self.height = height end
+        function frame:GetWidth() return self.width or 1920 end
+        function frame:GetHeight() return self.height or 1080 end
+        function frame:CreateTexture() return newFrame() end
+        function frame:IsEnabled() return not self.disabled end
+        function frame:IsVisible() return self.shown end
+        for _, method in ipairs({"SetPoint", "SetAlpha", "EnableMouse", "SetFrameStrata",
             "SetMovable", "SetClampedToScreen", "RegisterForDrag", "StartMoving", "StopMovingOrSizing",
-            "SetFontObject", "SetJustifyH", "SetJustifyV", "SetWidth", "SetHeight", "SetTextColor",
+            "SetFontObject", "SetJustifyH", "SetJustifyV", "SetTextColor",
+            "SetScale", "SetFont", "SetTexture", "SetColorTexture", "SetWordWrap",
             "SetAutoFocus", "SetMultiLine", "SetMaxLetters", "SetTextInsets"}) do
             frame[method] = function() end
         end
@@ -129,6 +136,8 @@ local function setup(saved, modules)
     if not ns.IssueFeedback then
         assert(loadfile("src/ForeverMouseoverBuff/Feedback.lua"))("ForeverMouseoverBuff", ns)
     end
+    assert(loadfile("src/ForeverMouseoverBuff/Theme.lua"))("ForeverMouseoverBuff", ns)
+    assert(loadfile("src/ForeverMouseoverBuff/Menu.lua"))("ForeverMouseoverBuff", ns)
     local feedbackPath = "src/ForeverMouseoverBuff/FeedbackUI.lua"
     local feedbackFile = io.open(feedbackPath, "rb")
     if feedbackFile then

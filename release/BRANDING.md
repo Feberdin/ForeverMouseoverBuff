@@ -8,6 +8,8 @@ knight connects the family. Do not redraw, recolor, stretch or remove the wordma
 
 | Asset | Size | Placement |
 | --- | --- | --- |
+| `src/ForeverMouseoverBuff/Media/ProjectIcon.tga` | 128 × 128, RGBA | Native addon header |
+| `src/ForeverMouseoverBuff/Media/FeberdinKnight.tga` | 256 × 256, RGBA | Native author logo; aspect ratio retained |
 | `release/assets/feberdin-knight.png` | 4903 × 4258, transparent | Unchanged master for all own addons |
 | `release/assets/project-icon.png` | 400 × 400 | CurseForge project avatar, symbol plus knight |
 | `release/assets/brand-banner.png` | 1600 × 600 | README and description header |
@@ -65,3 +67,7 @@ small-size rendering after every edit. No AI redraw of the knight was used.
 References: [GitHub images](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax),
 [GitHub social preview](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview),
 [CurseForge moderation](https://support.curseforge.com/support/solutions/articles/9000197279-moderation-policies).
+
+The native Sanctum menu uses small uncompressed 32-bit TGA conversions of the
+existing originals. These runtime textures are included in the addon ZIP;
+marketing PNG/SVG files remain source-only. No knight artwork was redrawn.

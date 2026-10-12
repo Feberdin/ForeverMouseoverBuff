@@ -10,10 +10,10 @@ Choose a learned Paladin blessing for the friendly player under your mouse.
 Other classes can install Forever Mouseover Buff simply to decline its automatic
 greetings.
 
-**0.7.3 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.7.4 Beta · WoW Forever 1.60.1 · Interface 16001**
 
-The interface and greetings are primarily German. The new feedback dialog has
-automated local coverage; its in-game acceptance is still pending. Saved 0.7.2 diagnostics show
+The interface and greetings are primarily German. The native Sanctum menu has
+automated behavior and offline layout coverage; its in-game acceptance is still pending. Saved 0.7.2 diagnostics show
 two additional confirmed casts, no increase in failures and no ERROR among the
 64 most recent events. This is limited live evidence; broader in-game acceptance
 is ongoing.
@@ -111,6 +111,15 @@ The addon does not calculate whether another player's talents make a buff strong
 Missing or protected target data can prevent selection. During your own combat,
 the key uses fixed learned Kings without this automatic selection.
 
+## ✨ Sanctum in-game menu
+
+`/fmb` opens the native dark teal menu with the original Feberdin knight and
+addon icon. The sidebar separates buffs and key binding help, greetings, sounds,
+local statistics, diagnostics and feedback. Mint switches show the current
+settings; gold marks the selected page and blessing mode. Settings apply at once.
+The window fits smaller screens and closes with Escape. Statistics and diagnosis
+show real local values. No sample values are included in the addon.
+
 ## 💬 Report bugs, wishes and features
 
 Open **Feedback & Hilfe auf GitHub** in the menu or enter `/fmb feedback`.
@@ -186,7 +195,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.7.3 --output dist/review-0.7.3
+python3 scripts/prepare-release.py --version 0.7.4 --output dist/review-0.7.4
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party

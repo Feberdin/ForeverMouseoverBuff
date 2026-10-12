@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.4 — 2026-10-12 — Beta
+
+- Replace the old Blizzard-style settings panel with the native Sanctum menu:
+  dark teal surfaces, gold selection states, mint switches and original logos.
+- Separate buffs/key help, greetings, sounds, local statistics, diagnostics and
+  feedback into six pages, preserving the selected page when settings change.
+- Display real local counters and recent diagnosis only on their visible pages.
+- Match the GitHub feedback dialog to the theme, keeping optional data sharing
+  and deliberate copy/review behavior.
+- Ship two compact runtime TGA logos and fit windows to the available UI size.
+
+Existing preferences and casting behavior are preserved. Automated contracts and
+an offline replay of real Lua geometry are checked; native font metrics and
+interaction still require an in-game check after reload. The separately scheduled
+low-level rank investigation is not part of this interface update.
+
 ## 0.7.3 — 2026-10-12 — Beta
 
 - Add an in-game **Feedback & Hilfe** dialog and `/fmb feedback` with bug,

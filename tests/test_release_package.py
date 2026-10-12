@@ -146,6 +146,32 @@ class ReleaseTests(unittest.TestCase):
             self.assertIn("companion/" + name, result["source_files"])
             self.assertFalse(any(name in path for path in result["addon_files"]))
 
+    def test_sanctum_menu_ships_with_native_theme_and_required_runtime_logos(self):
+        result = self.prepare()
+        with zipfile.ZipFile(self.output / "ForeverMouseoverBuff-0.7.0.zip") as addon:
+            for name in (
+                "Theme.lua",
+                "Menu.lua",
+                "Media/ProjectIcon.tga",
+                "Media/FeberdinKnight.tga",
+            ):
+                self.assertIn("ForeverMouseoverBuff/" + name, addon.namelist())
+                self.assertEqual(
+                    addon.read("ForeverMouseoverBuff/" + name),
+                    (self.root / "src/ForeverMouseoverBuff" / name).read_bytes(),
+                )
+                self.assertIn(
+                    "src/ForeverMouseoverBuff/" + name, result["source_files"]
+                )
+            for name in (
+                "ForeverMouseoverBuff.toc",
+                "ForeverMouseoverBuff_Camelot.toc",
+            ):
+                toc = addon.read("ForeverMouseoverBuff/" + name).decode().splitlines()
+                self.assertLess(toc.index("Theme.lua"), toc.index("Menu.lua"))
+                self.assertLess(toc.index("Theme.lua"), toc.index("FeedbackUI.lua"))
+                self.assertLess(toc.index("Menu.lua"), toc.index("App.lua"))
+
     def test_feedback_modules_and_forms_ship_at_the_correct_boundaries(self):
         result = self.prepare()
         with zipfile.ZipFile(self.output / "ForeverMouseoverBuff-0.7.0.zip") as archive:
