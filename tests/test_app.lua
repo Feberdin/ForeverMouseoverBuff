@@ -38,12 +38,18 @@ local function setup(saved, modules)
         function frame:Show() self.shown = true end
         function frame:Hide() self.shown = false end
         function frame:IsShown() return self.shown end
+        function frame:SetFocus() self.focused = true end
+        function frame:ClearFocus() self.focused = false end
+        function frame:HighlightText() self.highlighted = true end
+        function frame:Enable() self.disabled = false end
+        function frame:Disable() self.disabled = true end
         function frame:CreateFontString() return newFrame() end
         function frame:GetWidth() return 460 end
         function frame:GetHeight() return 280 end
         for _, method in ipairs({"SetSize", "SetPoint", "SetAlpha", "EnableMouse", "SetFrameStrata",
             "SetMovable", "SetClampedToScreen", "RegisterForDrag", "StartMoving", "StopMovingOrSizing",
-            "SetFontObject", "SetJustifyH", "SetJustifyV", "SetWidth", "SetHeight", "SetTextColor"}) do
+            "SetFontObject", "SetJustifyH", "SetJustifyV", "SetWidth", "SetHeight", "SetTextColor",
+            "SetAutoFocus", "SetMultiLine", "SetMaxLetters", "SetTextInsets"}) do
             frame[method] = function() end
         end
         if name then state.frames[name] = frame end
@@ -120,6 +126,15 @@ local function setup(saved, modules)
         diagnosticFile:close()
         assert(loadfile(diagnosticPath))("ForeverMouseoverBuff", ns)
     end
+    if not ns.IssueFeedback then
+        assert(loadfile("src/ForeverMouseoverBuff/Feedback.lua"))("ForeverMouseoverBuff", ns)
+    end
+    local feedbackPath = "src/ForeverMouseoverBuff/FeedbackUI.lua"
+    local feedbackFile = io.open(feedbackPath, "rb")
+    if feedbackFile then
+        feedbackFile:close()
+        assert(loadfile(feedbackPath))("ForeverMouseoverBuff", ns)
+    end
     assert(loadfile("src/ForeverMouseoverBuff/App.lua"))("ForeverMouseoverBuff", ns)
     ns:Initialize()
     return ns, state
@@ -131,6 +146,98 @@ local function click(state, between)
     button.scripts.OnClick(button, "LeftButton", false)
     if button.scripts.PostClick then button.scripts.PostClick(button, "LeftButton", false) end
 end
+
+-- GitHub is a deliberate external boundary. Synthetic builders let these
+-- contracts observe exactly when diagnostics and URLs reach the copy dialog.
+local function feedbackSetup()
+    local builds = {}
+    local ns, state = setup(nil, {IssueFeedback = {Build = function(kind, snapshot, include)
+        builds[#builds + 1] = {kind = kind, snapshot = snapshot, include = include}
+        return {url = "https://github.com/Feberdin/ForeverMouseoverBuff/issues/new?template=" .. kind
+            .. (include and "&environment=synthetic" or ""),
+            preview = include and "Synthetic technical preview" or "No technical data", kind = kind}
+    end}})
+    return ns, state, builds
+end
+test("issue_feedback_command_opens_without_technical_data_or_game_actions", function()
+    local ns, state, builds = feedbackSetup()
+    local mode, enabled, writes = ns.db.mode, ns.db.enabled, state.attributeWrites
+    ns:Command("feedback")
+    assert(ns.feedbackPanel and ns.feedbackPanel:IsShown(), "Feedback command must open the report dialog")
+    eq(builds[#builds].kind, "bug"); eq(builds[#builds].include, false)
+    eq(builds[#builds].snapshot, nil, "No diagnostic read before opt-in")
+    eq(ns.feedbackURL:GetText():find("environment", 1, true), nil)
+    eq(ns.feedbackURL.focused, false, "Opening must not steal keyboard focus")
+    eq(ns.db.mode, mode); eq(ns.db.enabled, enabled); eq(state.attributeWrites, writes)
+    eq(#state.actions, 0); eq(#state.sounds, 0)
+end)
+test("issue_feedback_opt_in_preview_selection_and_reopen_are_consistent", function()
+    local ns, state, builds = feedbackSetup()
+    ns:Command("feedback wish")
+    assert(ns.feedbackPanel, "Feedback command must create the report dialog")
+    eq(builds[#builds].kind, "wish")
+    ns.feedbackTechnicalButton.scripts.OnClick()
+    eq(builds[#builds].include, true)
+    eq(builds[#builds].snapshot.version, ns.VERSION)
+    eq(ns.feedbackPreview:GetText(), "Synthetic technical preview")
+    assert(ns.feedbackURL:GetText():find("environment=synthetic", 1, true))
+    ns.feedbackKindButtons.feature.scripts.OnClick()
+    eq(builds[#builds].kind, "feature"); eq(builds[#builds].include, true)
+    ns.feedbackSelectButton.scripts.OnClick()
+    eq(ns.feedbackURL.focused, true); eq(ns.feedbackURL.highlighted, true)
+    ns.feedbackURL.scripts.OnEnterPressed(ns.feedbackURL)
+    eq(ns.feedbackURL.focused, false)
+    ns.feedbackTechnicalButton.scripts.OnClick()
+    eq(builds[#builds].snapshot, nil)
+    eq(ns.feedbackURL:GetText():find("environment", 1, true), nil)
+    ns.feedbackTechnicalButton.scripts.OnClick()
+    ns.feedbackURL.scripts.OnEscapePressed(ns.feedbackURL)
+    eq(ns.feedbackPanel:IsShown(), false); eq(ns.feedbackURL.focused, false)
+    ns:Command("feedback")
+    eq(builds[#builds].include, false, "Each newly opened report needs its own opt-in")
+    eq(#state.actions, 0)
+end)
+test("issue_feedback_missing_builder_shows_recovery_and_disables_link", function()
+    local ns = setup()
+    ns.IssueFeedback = nil
+    ns:Command("feedback")
+    assert(ns.feedbackPanel, "Feedback command must create an actionable fallback dialog")
+    eq(ns.feedbackURL:GetText(), "")
+    eq(ns.feedbackSelectButton.disabled, true)
+    assert(ns.feedbackPreview:GetText():find("Addonpaket", 1, true), "Recovery must explain how to repair installation")
+end)
+test("issue_feedback_real_builder_excludes_private_context_and_reuses_one_dialog", function()
+    local ns, state = setup({playerName = "PRIVATE_PLAYER", whisperText = "PRIVATE_CHAT"})
+    ns.db.mode = "wisdom"
+    ns:Command("feedback feature")
+    local panel = ns.feedbackPanel
+    local specialCount = #UISpecialFrames
+    eq(ns.feedbackURL:GetText(), "https://github.com/Feberdin/ForeverMouseoverBuff/issues/new?template=03-feature.yml")
+    ns.decision = {text = "PRIVATE_DECISION"}
+    ns.feedbackTechnicalButton.scripts.OnClick()
+    assert(ns.feedbackURL:GetText():find("environment=", 1, true))
+    assert(ns.feedbackPreview:GetText():find("Addon: " .. ns.VERSION, 1, true))
+    assert(ns.feedbackPreview:GetText():find("Modus: wisdom", 1, true))
+    eq(ns.feedbackURL:GetText():find("PRIVATE", 1, true), nil)
+    eq(ns.feedbackPreview:GetText():find("PRIVATE", 1, true), nil)
+    ns:Command("feedback bug")
+    eq(ns.feedbackPanel, panel); eq(#UISpecialFrames, specialCount)
+    eq(ns.feedbackURL:GetText():find("environment=", 1, true), nil)
+    eq(#state.actions, 0); eq(#state.sounds, 0)
+end)
+test("issue_feedback_main_menu_exposes_button_and_copy_text_cannot_drift", function()
+    local ns = feedbackSetup()
+    ns:ShowPanel()
+    assert(ns.feedbackButton, "Main menu must expose feedback without remembering a slash command")
+    ns.feedbackButton.scripts.OnClick()
+    local original = ns.feedbackURL:GetText()
+    ns.feedbackURL:SetText("edited.example")
+    ns.feedbackURL.scripts.OnTextChanged(ns.feedbackURL, true)
+    eq(ns.feedbackURL:GetText(), original, "Copy field must stay consistent with preview")
+    ns.feedbackURL:SetFocus()
+    ns.feedbackPanel.scripts.OnHide()
+    eq(ns.feedbackURL.focused, false)
+end)
 
 test("creates_native_ooc_button_without_replacing_onclick", function()
     local ns = setup()

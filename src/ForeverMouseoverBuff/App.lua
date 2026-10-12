@@ -4,7 +4,7 @@
 -- Invariants: no hover/timer casts, key replacement, self fallback or dynamic combat selection.
 -- Debug: /fmb diag; /fmb debug on; /fmb status. Structured local logs flush on reload/logout.
 local _, ns = ...
-ns.VERSION = "0.7.2"
+ns.VERSION = "0.7.3"
 local binding = "CLICK ForeverMouseoverBuffButton:LeftButton"
 local modes = {auto = "Auto", might = "Macht", wisdom = "Weisheit", kings = "Könige"}
 local elapsed = 0
@@ -436,7 +436,7 @@ function ns:ShowPanel()
     if not self.panel then
         local panel = CreateFrame("Frame", "ForeverMouseoverBuffPanel", UIParent, "BasicFrameTemplateWithInset")
         self.panel = panel
-        panel:SetSize(460, 430); panel:SetPoint("RIGHT", UIParent, "RIGHT", -35, 0)
+        panel:SetSize(460, 472); panel:SetPoint("RIGHT", UIParent, "RIGHT", -35, 0)
         panel:SetMovable(true); panel:EnableMouse(true); panel:RegisterForDrag("LeftButton")
         panel:SetClampedToScreen(true)
         panel:SetScript("OnDragStart", function(self) if not ns.API.Locked() then self:StartMoving() end end)
@@ -467,6 +467,8 @@ function ns:ShowPanel()
         self.uploadHelpButton = control(panel, "Upload-Hilfe", 260, -350, 165,
             function() ns:Command("ranking help") end)
         label(panel, "Eigene Grüße bleiben in WIM nach dessen Einstellungen sichtbar.", 16, -388, 428, 30)
+        self.feedbackButton = control(panel, "Feedback & Hilfe auf GitHub", 16, -430, 409,
+            function() ns:Command("feedback") end)
     end
     self.panel:Show()
     self:Refresh()
@@ -484,6 +486,7 @@ function ns:Help()
     say("Eigene automatische Grüße im normalen Chat sind standardmäßig verborgen. /fmb outgoing on | off zeigt oder verbirgt sie; Versand und Empfangsschalter bleiben unabhängig. WIM zeigt sie nach seinen eigenen Einstellungen.")
     say("/fmb stats zeigt lokale, unbestätigte Buff-Zähler. /fmb ranking on | off stellt neue Ereignisse für einen freiwilligen Upload bereit; Standard aus. /fmb ranking help erklärt Dateiexport und Upload. Keine Empfänger werden exportiert.")
     say("/fmb diag zeigt das lokale Diagnoseprotokoll mit den letzten Ereignissen. Es enthält nur feste Codes und öffentliche Versions-/Schalterwerte. Erst /reload oder ausloggen schreibt es für eine Dateiauswertung auf die Festplatte.")
+    say("/fmb feedback: Fehler, Wünsche oder Features mit Vorschau für GitHub vorbereiten. Technische Angaben sind freiwillig. Link markieren, mit Cmd/Strg+C kopieren und im Browser prüfen und absenden.")
     say("Siegel-Ablauf: ein kurzer Ton nach beobachtetem natürlichem Ende. /fmb seal on | off schaltet ihn unabhängig vom Buff-Hinweiston.")
 end
 
@@ -583,6 +586,10 @@ function ns:Command(command)
             say("Macht: " .. summary.families.might .. " | Weisheit: " .. summary.families.wisdom
                 .. " | Könige: " .. summary.families.kings .. ". Erfasst werden erfolgreiche FMB-Klicks ab diesem Update.")
         else say("Statistik fehlt. Vollständiges Addonpaket installieren und neu laden.") end
+        return
+    elseif command == "feedback" or command == "feedback bug" or command == "feedback wish" or command == "feedback feature" then
+        if type(self.ShowFeedbackPanel) == "function" then self:ShowFeedbackPanel(command:match("^feedback (%a+)$"))
+        else say("Feedback-Menü fehlt. Vollständiges Addonpaket installieren und /reload ausführen.") end
         return
     elseif command == "diag" then say(self:DiagnosticReport()); return
     elseif command == "help" then self:Help(); return

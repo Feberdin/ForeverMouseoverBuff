@@ -1,0 +1,71 @@
+# Purpose: collect new FMB capabilities with concrete use cases and value.
+# Input: problem, proposed feature and optional technical fields. Output: public issue.
+# Invariant: environment/diagnostics IDs match Feedback.lua; no private data required.
+# Debug: run tests/test_issue_templates.py and preview GitHub's new-issue form.
+name: "🚀 Neue Funktion"
+description: "Dir fehlt eine ganze Funktion? Beschreibe deine Idee und ihren Nutzen."
+title: "[Feature] "
+labels: ["enhancement", "feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        <img src="https://raw.githubusercontent.com/Feberdin/ForeverMouseoverBuff/main/release/assets/project-icon.png" width="80" alt="Forever Mouseover Buff mit Feberdin-Ritter" />
+
+        ## Mehr Möglichkeiten für die Community
+        Beschreibe eine neue Fähigkeit des Addons und die Spielsituation, in der sie helfen würde. Für kleine Änderungen an vorhandenen Funktionen nutze bitte „Wunsch & Verbesserung“.
+
+        **Öffentlicher Bericht:** Zum Absenden brauchst du ein GitHub-Konto. Prüfe den Text vor dem Absenden. Bitte keine Spielernamen, Whisper, vollständigen SavedVariables oder Zugangsdaten einfügen. Technische Angaben sind freiwillig und können entfernt werden.
+
+        [Vorhandene Ideen ansehen](https://github.com/Feberdin/ForeverMouseoverBuff/issues?q=is%3Aissue%20label%3Afeature) · [Aktuelle Möglichkeiten](https://github.com/Feberdin/ForeverMouseoverBuff/blob/main/README.de.md)
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Welches Problem soll die neue Funktion lösen?"
+      description: "Beschreibe die Spielsituation, ohne Namen anderer Personen oder Charaktere zu nennen."
+      placeholder: "Beispiel: Ich möchte verschiedene Buff-Einstellungen für Solo-Spiel und Gruppen vorbereiten."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "Wie stellst du dir die Funktion vor?"
+      placeholder: "Beispiel: Zwei benannte Profile, zwischen denen ich außerhalb des Kampfes umschalten kann."
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: "Wem hilft das – und woran erkennt man, dass es funktioniert?"
+      placeholder: "Beispiel: Wer oft zwischen Solo und Gruppe wechselt, kann sein Profil mit einem Klick laden; Taste und Rückmeldungen passen danach zur Auswahl."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Welche Alternative nutzt du bisher? (optional)"
+      placeholder: "Beispiel: Ich ändere die Einstellungen einzeln. Eine teilweise Lösung wäre bereits hilfreich."
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Technische Umgebung (optional)"
+      description: "Die Feedback-Funktion kann Addon- und Client-Version vorbereiten. Bitte prüfen; du darfst dieses Feld leer lassen."
+      placeholder: "Addon-Version, WoW-Client-Version, Interface-Version, Sprache"
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: "Diagnosecodes (optional)"
+      description: "Für Ideen meist nicht nötig. Wenn relevant: nur den begrenzten technischen Auszug aus der Feedback-Funktion verwenden."
+      placeholder: "Optionaler technischer Kontext; keine vollständigen Dateien oder Chat-Inhalte."
+      render: text
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        🚀 **Eine gute Idee beginnt mit einem klaren Nutzen.** Der WoW-Client setzt Grenzen, insbesondere bei geschützten Aktionen im Kampf. Wir prüfen Vorschläge innerhalb dieser Möglichkeiten. Mit „Submit new issue“ wird deine Meldung öffentlich.

@@ -146,6 +146,24 @@ class ReleaseTests(unittest.TestCase):
             self.assertIn("companion/" + name, result["source_files"])
             self.assertFalse(any(name in path for path in result["addon_files"]))
 
+    def test_feedback_modules_and_forms_ship_at_the_correct_boundaries(self):
+        result = self.prepare()
+        with zipfile.ZipFile(self.output / "ForeverMouseoverBuff-0.7.0.zip") as archive:
+            for name in ("Feedback.lua", "FeedbackUI.lua"):
+                self.assertIn("ForeverMouseoverBuff/" + name, archive.namelist())
+            toc = (
+                archive.read("ForeverMouseoverBuff/ForeverMouseoverBuff.toc")
+                .decode()
+                .splitlines()
+            )
+            self.assertLess(toc.index("Diagnostics.lua"), toc.index("Feedback.lua"))
+            self.assertLess(toc.index("Feedback.lua"), toc.index("FeedbackUI.lua"))
+            self.assertLess(toc.index("FeedbackUI.lua"), toc.index("App.lua"))
+        for name in ("01-bug.yml", "02-wish.yml", "03-feature.yml", "config.yml"):
+            self.assertIn(".github/ISSUE_TEMPLATE/" + name, result["source_files"])
+            self.assertNotIn("ForeverMouseoverBuff/" + name, result["addon_files"])
+        self.assertIn("docs/feedback.md", result["source_files"])
+
     def test_missing_required_source_fails_before_writing(self):
         (self.root / "src/ForeverMouseoverBuff/Core.lua").unlink()
         self.assert_rejected("SOURCE_MISSING")

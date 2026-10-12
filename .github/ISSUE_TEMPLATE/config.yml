@@ -1,0 +1,15 @@
+# Purpose: guide reports toward useful forms and existing help.
+# Input: GitHub's issue chooser. Output: three forms plus documentation links.
+# Invariant: no support contact data, credentials or private endpoints.
+# Debug: run tests/test_issue_templates.py and open /issues/new/choose on GitHub.
+blank_issues_enabled: false
+contact_links:
+  - name: "📖 Anleitung & häufige Fragen"
+    url: "https://github.com/Feberdin/ForeverMouseoverBuff/blob/main/README.de.md"
+    about: "Einrichtung, Buff-Taste, Chat, Töne und bekannte Grenzen verständlich erklärt."
+  - name: "💬 So meldest du Feedback aus dem Addon"
+    url: "https://github.com/Feberdin/ForeverMouseoverBuff/blob/main/docs/feedback.md"
+    about: "Link vorbereiten, technische Angaben prüfen und den Bericht selbst absenden."
+  - name: "🛡️ Sicherheit & sensible Informationen"
+    url: "https://github.com/Feberdin/ForeverMouseoverBuff/blob/main/SECURITY.md"
+    about: "Bitte Sicherheitsprobleme oder vertrauliche Daten nicht in öffentlichen Issues veröffentlichen."

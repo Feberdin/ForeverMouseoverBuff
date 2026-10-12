@@ -10,8 +10,10 @@ Choose a learned Paladin blessing for the friendly player under your mouse.
 Other classes can install Forever Mouseover Buff simply to decline its automatic
 greetings.
 
-**0.7.2 Beta · WoW Forever 1.60.1 · Interface 16001**  
-The interface and greetings are primarily German. Saved 0.7.2 diagnostics show
+**0.7.3 Beta · WoW Forever 1.60.1 · Interface 16001**
+
+The interface and greetings are primarily German. The new feedback dialog has
+automated local coverage; its in-game acceptance is still pending. Saved 0.7.2 diagnostics show
 two additional confirmed casts, no increase in failures and no ERROR among the
 64 most recent events. This is limited live evidence; broader in-game acceptance
 is ongoing.
@@ -109,6 +111,18 @@ The addon does not calculate whether another player's talents make a buff strong
 Missing or protected target data can prevent selection. During your own combat,
 the key uses fixed learned Kings without this automatic selection.
 
+## 💬 Report bugs, wishes and features
+
+Open **Feedback & Hilfe auf GitHub** in the menu or enter `/fmb feedback`.
+Choose a bug report, an improvement or a new feature. Technical details default
+to off; opting in previews versions, public settings and up to five known
+codes. Player names, whispers, counters and full logs are excluded.
+
+Select **Link markieren**, copy with Cmd/Ctrl+C and open the link in your browser.
+Opening it shares its included details with GitHub; review and publish your issue
+there. The addon performs no upload and needs no token.
+[Step-by-step guide and templates (German)](docs/feedback.md).
+
 ## 🧭 Local diagnostics
 
 `/fmb diag` shows the current diagnostic status and latest five events. FMB keeps
@@ -157,9 +171,13 @@ Read the [diagnostic protocol and reader commands](DIAGNOSTICS.md) for local tro
 ## Develop and test
 
 Requirements: Lua 5.1, Python 3.10+, `xmllint`; optional Node.js, Ruff and ShellCheck
-for developer checks. There are no addon or Python runtime dependencies.
+for developer checks. The YAML form tests use PyYAML 6.0.3 in a local virtual
+environment. There are no addon or Python runtime dependencies.
 
 ```sh
+python3 -m venv .ci-tools
+.ci-tools/bin/python -m pip install PyYAML==6.0.3
+.ci-tools/bin/python -m unittest discover -s tests -p test_issue_templates.py -v
 LUA_BIN=lua5.1 sh scripts/check-portable.sh
 python3 -m unittest discover -s tests -p test_release_package.py -v
 python3 -m unittest discover -s companion/tests -v
@@ -168,7 +186,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.7.2 --output dist/review-0.7.2
+python3 scripts/prepare-release.py --version 0.7.3 --output dist/review-0.7.3
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party

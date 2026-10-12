@@ -10,8 +10,10 @@ Wähle einen gelernten Paladinsegen für den befreundeten Spieler unter deiner
 Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
 um seine automatischen Grüße abzulehnen.
 
-**0.7.2 Beta · WoW Forever 1.60.1 · Interface 16001**  
-Oberfläche und Grüße sind überwiegend deutsch. Gespeicherte 0.7.2-Diagnosen
+**0.7.3 Beta · WoW Forever 1.60.1 · Interface 16001**
+
+Oberfläche und Grüße sind überwiegend deutsch. Das neue Feedback-Menü ist lokal
+automatisiert geprüft; sein Ingame-Test steht noch aus. Gespeicherte 0.7.2-Diagnosen
 zeigen zwei zusätzlich bestätigte Zaubervorgänge, keinen Anstieg der Fehlerzähler
 und kein ERROR unter den letzten 64 Ereignissen. Das ist ein begrenzter
 Praxisnachweis; die umfassendere Ingame-Abnahme läuft weiter.
@@ -100,6 +102,18 @@ lokalen Testablauf. Die Ereignisdatei bleibt lesbar. Empfänger und Chattexte
 werden nicht exportiert. Das Addon baut keine Webverbindung auf, und es gibt
 **keinen bereitgestellten öffentlichen Rankingdienst**. Companion und lokaler
 Dienst sind zum Buffen nicht erforderlich.
+
+## 💬 Fehler, Wünsche und Features melden
+
+Öffne **Feedback & Hilfe auf GitHub** im Menü oder gib `/fmb feedback` ein.
+Wähle Fehler, Wunsch oder Feature. Technische Angaben sind standardmäßig aus;
+bei Aktivierung siehst du Version, öffentliche Schalter und höchstens fünf
+bekannte Diagnosecodes in der Vorschau. Namen, Whisper und Zähler bleiben draußen.
+
+Klicke **Link markieren**, kopiere mit Cmd/Strg+C und öffne den Link im Browser.
+GitHub erhält die enthaltenen Angaben bereits beim Öffnen; du ergänzt und
+veröffentlichst das Issue erst dort. Das Addon überträgt nichts und benötigt
+keinen Token. [Schritt-für-Schritt-Hilfe und Vorlagen](docs/feedback.md).
 
 ## 🧭 Lokales Diagnoseprotokoll
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.3 — 2026-10-12 — Beta
+
+- Add an in-game **Feedback & Hilfe** dialog and `/fmb feedback` with bug,
+  improvement and feature categories, a selectable GitHub URL and exact preview.
+- Keep technical details off for each newly opened report. Optional details are
+  limited to checked public versions, settings and five known diagnostic codes.
+  No names, whispers, counters, arbitrary errors or full logs are included.
+- Add German GitHub forms with the Feberdin knight, focused questions and labels.
+- Reports remain manual: opening the copied URL sends its fields to GitHub;
+  the player reviews and submits in their browser. No token or addon HTTP call.
+
+Automated Lua, UI-boundary and packaging checks cover this change. Native UI
+layout and clipboard behavior still require an in-game check after reload.
+The Sanctum design mockup is separate; this update adds the reporting dialog
+and its menu entry. Casting and existing preferences are unchanged.
+
 ## 0.7.2 — 2026-10-12 — Beta
 
 - Add a bounded local diagnostic ledger with fixed codes, severity, module,

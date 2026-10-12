@@ -19,7 +19,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes lua5.1 libxml2-utils shellcheck python3-venv
           python3 -m venv .ci-tools
-          .ci-tools/bin/python -m pip install ruff==0.16.1
+          .ci-tools/bin/python -m pip install ruff==0.16.1 PyYAML==6.0.3
       - name: Addon portable suites
         env:
           LUA_BIN: lua5.1
@@ -29,6 +29,7 @@ jobs:
           LUA_BIN: lua5.1
         run: |
           python3 -m unittest discover -s tests -p test_release_package.py -v
+          .ci-tools/bin/python -m unittest discover -s tests -p test_issue_templates.py -v
           python3 -m unittest discover -s companion/tests -v
           PYTHONPATH=service python3 -m unittest discover -s service/tests -v
           python3 -m unittest discover -s tests -p test_ranking_end_to_end.py -v
@@ -41,8 +42,8 @@ jobs:
           node --check service/static/upload.js
       - name: Static checks
         run: |
-          .ci-tools/bin/ruff check scripts/prepare-release.py tests/test_release_package.py tests/test_diagnostics_end_to_end.py service companion
-          .ci-tools/bin/ruff format --check scripts/prepare-release.py tests/test_release_package.py tests/test_diagnostics_end_to_end.py service companion
+          .ci-tools/bin/ruff check scripts/prepare-release.py tests/test_release_package.py tests/test_diagnostics_end_to_end.py tests/test_issue_templates.py service companion
+          .ci-tools/bin/ruff format --check scripts/prepare-release.py tests/test_release_package.py tests/test_diagnostics_end_to_end.py tests/test_issue_templates.py service companion
           shellcheck scripts/check-portable.sh
           sh -n scripts/check-portable.sh
           python3 -m json.tool service/openapi.json > /dev/null
@@ -50,4 +51,4 @@ jobs:
       - name: Prepare reviewed packages without publishing
         run: |
           mkdir -p dist
-          python3 scripts/prepare-release.py --version 0.7.2 --output dist/ci-0.7.2
+          python3 scripts/prepare-release.py --version 0.7.3 --output dist/ci-0.7.3

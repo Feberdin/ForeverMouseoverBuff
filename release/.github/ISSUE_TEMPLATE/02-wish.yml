@@ -1,0 +1,64 @@
+# Purpose: collect improvements to existing FMB workflows in a clear public form.
+# Input: current workflow, desired change and optional technical fields. Output: issue.
+# Invariant: environment/diagnostics IDs match Feedback.lua; no private data required.
+# Debug: run tests/test_issue_templates.py and preview GitHub's new-issue form.
+name: "✨ Wunsch & Verbesserung"
+description: "Eine bestehende Funktion bequemer, klarer oder schöner machen."
+title: "[Wunsch] "
+labels: ["enhancement", "wish"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        <img src="https://raw.githubusercontent.com/Feberdin/ForeverMouseoverBuff/main/release/assets/project-icon.png" width="80" alt="Forever Mouseover Buff mit Feberdin-Ritter" />
+
+        ## Dein Buff-Alltag, ein Stück besser
+        Hier ist Platz für Verbesserungen an vorhandenen Funktionen: weniger Klicks, klarere Texte, angenehmere Töne oder ein übersichtlicheres Menü.
+
+        **Öffentlicher Bericht:** Zum Absenden brauchst du ein GitHub-Konto. Prüfe den Text vor dem Absenden. Bitte keine Spielernamen, Whisper, vollständigen SavedVariables oder Zugangsdaten einfügen. Technische Angaben sind freiwillig und können entfernt werden.
+
+        [Vorhandene Wünsche ansehen](https://github.com/Feberdin/ForeverMouseoverBuff/issues?q=is%3Aissue%20label%3Awish) · [Hilfe zum Addon](https://github.com/Feberdin/ForeverMouseoverBuff/blob/main/README.de.md)
+  - type: textarea
+    id: workflow
+    attributes:
+      label: "Was machst du heute – und was ist dabei umständlich?"
+      placeholder: "Beispiel: Ich wechsle regelmäßig zwischen zwei Rückmeldetönen und muss dafür mehrere Einstellungen öffnen."
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: "Was möchtest du verbessern?"
+      description: "Ein konkretes Beispiel reicht. Du musst keine technische Lösung kennen."
+      placeholder: "Beispiel: Eine Tonvorschau direkt neben der Auswahl würde mir helfen."
+    validations:
+      required: true
+  - type: textarea
+    id: benefit
+    attributes:
+      label: "Woran würdest du merken, dass es besser geworden ist?"
+      placeholder: "Beispiel: Ich kann den passenden Ton auswählen, ohne dafür erst einen Buff auszulösen."
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Technische Umgebung (optional)"
+      description: "Die Feedback-Funktion kann Addon- und Client-Version vorbereiten. Bitte prüfen; du darfst dieses Feld leer lassen."
+      placeholder: "Addon-Version, WoW-Client-Version, Interface-Version, Sprache"
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: "Diagnosecodes (optional)"
+      description: "Für Wünsche meist nicht nötig. Wenn relevant: nur den begrenzten technischen Auszug aus der Feedback-Funktion verwenden."
+      placeholder: "Optionaler technischer Kontext; keine vollständigen Dateien oder Chat-Inhalte."
+      render: text
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        ✨ **Danke für deine Idee.** Ein Wunsch ist ein Vorschlag; Zeitpunkt und Umsetzung hängen von Nutzen, Aufwand und den Möglichkeiten des WoW-Clients ab. Mit „Submit new issue“ wird deine Meldung öffentlich.

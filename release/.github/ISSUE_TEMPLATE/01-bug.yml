@@ -1,0 +1,83 @@
+# Purpose: guide reproducible, public FMB bug reports without requesting private logs.
+# Input: user descriptions and optional addon-prefilled technical fields. Output: issue.
+# Invariant: environment/diagnostics IDs match Feedback.lua; neither field is required.
+# Debug: run tests/test_issue_templates.py and preview GitHub's new-issue form.
+name: "🐞 Fehlerbericht"
+description: "Etwas funktioniert nicht? Hilf uns, den Fehler gezielt nachzustellen."
+title: "[Fehler] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        <img src="https://raw.githubusercontent.com/Feberdin/ForeverMouseoverBuff/main/release/assets/project-icon.png" width="80" alt="Forever Mouseover Buff mit Feberdin-Ritter" />
+
+        ## Gemeinsam besser buffen
+        Beschreibe einen Fehler pro Meldung. Eine kurze, nachvollziehbare Beschreibung hilft mehr als ein vollständiges Protokoll.
+
+        **Öffentlicher Bericht:** Zum Absenden brauchst du ein GitHub-Konto. Prüfe den Text vor dem Absenden. Bitte keine Spielernamen, Whisper, vollständigen SavedVariables oder Zugangsdaten einfügen. Technische Angaben sind freiwillig und können entfernt werden.
+
+        Schon gemeldet? [Vorhandene Issues durchsuchen](https://github.com/Feberdin/ForeverMouseoverBuff/issues). Bei Sicherheitsproblemen bitte den [Sicherheitshinweisen](https://github.com/Feberdin/ForeverMouseoverBuff/blob/main/SECURITY.md) folgen.
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Welcher Bereich ist betroffen?"
+      options:
+        - "Buff-Auswahl oder Maustaste"
+        - "Verhalten im Kampf"
+        - "Grüße, Chat oder WIM"
+        - "Töne oder Siegel-Erinnerung"
+        - "Statistik oder lokales Ranking"
+        - "Menü, Diagnose oder Feedback"
+        - "Anderer Bereich / unklar"
+    validations:
+      required: false
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Was passiert tatsächlich?"
+      description: "Beschreibe das sichtbare Verhalten. Eine Fehlermeldung nur als kurzen, bereinigten Auszug ergänzen."
+      placeholder: "Beispiel: Nach dem Tastendruck erscheint keine Rückmeldung, obwohl das Ziel erreichbar ist."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Was sollte stattdessen passieren?"
+      placeholder: "Beispiel: Ich erwarte einen Hinweis, warum kein passender Segen gewirkt werden kann."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Wie lässt sich der Fehler nachstellen?"
+      description: "Nenne Einstellungen, Schritte und ob du selbst im Kampf warst. Wenn es nur einmal passiert ist, schreib das dazu."
+      placeholder: |
+        1. Automatische Auswahl aktivieren.
+        2. Außerhalb des Kampfes mit der Maus über ein freundliches Ziel fahren.
+        3. Die eingerichtete Buff-Taste drücken.
+        4. Beobachten: …
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Technische Umgebung (optional)"
+      description: "Die Feedback-Funktion kann Addon- und Client-Version vorbereiten. Bitte prüfen; du darfst dieses Feld leer lassen."
+      placeholder: "Addon-Version, WoW-Client-Version, Interface-Version, Sprache"
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: "Diagnosecodes (optional)"
+      description: "Nur den begrenzten technischen Auszug aus der Feedback-Funktion einfügen. Keine vollständigen Dateien, Chat-Inhalte oder privaten Angaben."
+      placeholder: "Falls hilfreich: vorbereitete Diagnosecodes aus dem Addon."
+      render: text
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        🛡️ **Vor dem Absenden:** Stimmen Beschreibung und Titel? Entferne private Angaben auch aus angehängten Bildern. Mit „Submit new issue“ wird deine Meldung öffentlich.
