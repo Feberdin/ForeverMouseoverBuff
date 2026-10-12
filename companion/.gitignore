@@ -1,0 +1,11 @@
+# Runtime credentials belong outside the source tree; never commit accidental copies.
+participant*.json
+.participant-*
+.env
+.env.*
+*.token
+*.sqlite*
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.venv/

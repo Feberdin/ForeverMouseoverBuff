@@ -1,0 +1,21 @@
+{
+  "name": "Forever Mouseover Buff",
+  "summary": "Mouseover Paladin blessings, personal greetings and recipient controls for every class.",
+  "game": "World of Warcraft",
+  "flavor": "Forever",
+  "gameVersion": "1.60.1",
+  "interface": 16001,
+  "version": "0.7.2",
+  "license": "MIT License",
+  "suggestedMainCategory": "Buffs & Debuffs",
+  "suggestedAdditionalCategories": [
+    "Paladin",
+    "Chat & Communication"
+  ],
+  "proposedRepository": "Feberdin/ForeverMouseoverBuff",
+  "projectId": null,
+  "publicRepositoryUrl": null,
+  "rankingEndpoint": null,
+  "releaseType": "beta",
+  "publicationStatus": "prepared locally; not submitted"
+}

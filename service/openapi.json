@@ -1,0 +1,965 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FMB Community-Ranking",
+    "version": "0.2.0",
+    "description": "Lokaler Prototyp. Alle Spieleridentitäten und Ereignisse sind self_reported, keine Spielserver-Bestätigung. Keine Empfängerdaten oder Summenimporte. JSON maximal32768Bytes, keine Extrafelder."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:18449"
+    }
+  ],
+  "paths": {
+    "/v1/participants": {
+      "post": {
+        "summary": "Freiwillige Anmeldung einer selbst angegebenen Identität",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Enrollment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Erfolg",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Participant"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events": {
+      "post": {
+        "summary": "Einzelne Ereignisbehauptungen idempotent annehmen",
+        "security": [
+          {
+            "participantToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Upload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Erfolg",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/participant": {
+      "delete": {
+        "summary": "Eigenen Teilnehmerzugang und alle Ereignisse löschen",
+        "security": [
+          {
+            "participantToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Erfolg",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Eigenen Teilnehmerzugang vor einem bewussten Browser-Upload zuordnen",
+        "security": [
+          {
+            "participantToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Eigenes Profil ohne Zugangstoken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnParticipant"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/leaderboard": {
+      "get": {
+        "summary": "Unverifizierte Community-Zahlen, Quarantäne ausgeschlossen",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "players",
+                "classes",
+                "buffs"
+              ],
+              "default": "players"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "class",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "PALADIN"
+              ]
+            }
+          },
+          {
+            "name": "buff",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "might",
+                "wisdom",
+                "kings"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Erfolg",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Leaderboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Fester Fehlercode; vollständiger Batch wird bei 400/409 zurückgerollt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Dienststatus ohne Datenbank- oder Teilnehmerdaten",
+        "responses": {
+          "200": {
+            "description": "Erfolg",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "participantToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Zufälliger Anmeldungstoken, kein Beweis des Charakterbesitzes."
+      }
+    },
+    "schemas": {
+      "Enrollment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "displayName",
+          "realm",
+          "casterClass",
+          "consent"
+        ],
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 64
+          },
+          "realm": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 64
+          },
+          "casterClass": {
+            "type": "string",
+            "enum": [
+              "PALADIN"
+            ]
+          },
+          "consent": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "example": {
+          "displayName": "Testpaladin",
+          "realm": "Testrealm",
+          "casterClass": "PALADIN",
+          "consent": true
+        }
+      },
+      "Participant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "participantId",
+          "token",
+          "trust"
+        ],
+        "properties": {
+          "participantId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "writeOnly": false,
+            "description": "Nur einmalige Antwort; niemals in Logs oder Git speichern."
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "spellId",
+          "eventTime"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{8,96}$"
+          },
+          "spellId": {
+            "type": "integer",
+            "enum": [
+              19740,
+              19834,
+              19835,
+              19836,
+              19837,
+              19838,
+              25291,
+              27140,
+              48931,
+              48932,
+              19742,
+              19850,
+              19852,
+              19853,
+              19854,
+              25290,
+              27142,
+              48935,
+              48936,
+              20217
+            ]
+          },
+          "eventTime": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Unixsekunden; neue Ereignisse maximal sieben Tage alt/fünf Minuten voraus."
+          }
+        }
+      },
+      "Upload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "events"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          }
+        },
+        "example": {
+          "events": [
+            {
+              "id": "synthetic-event-1",
+              "spellId": 19740,
+              "eventTime": 1791756000
+            }
+          ]
+        }
+      },
+      "UploadResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accepted",
+          "duplicates",
+          "quarantined",
+          "trust"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duplicates": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quarantined": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          }
+        }
+      },
+      "Deleted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "deleted",
+          "trust"
+        ],
+        "properties": {
+          "deleted": {
+            "const": true
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error",
+          "message",
+          "trust"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "pattern": "^[A-Z_]+$"
+          },
+          "message": {
+            "type": "string"
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ok",
+          "version",
+          "trust"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "version": {
+            "type": "string"
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          }
+        }
+      },
+      "PlayerRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "count",
+          "trust",
+          "participantId",
+          "displayName",
+          "realm",
+          "casterClass"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          },
+          "participantId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "realm": {
+            "type": "string"
+          },
+          "casterClass": {
+            "const": "PALADIN"
+          }
+        }
+      },
+      "ClassRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "count",
+          "trust",
+          "casterClass"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          },
+          "casterClass": {
+            "const": "PALADIN"
+          }
+        }
+      },
+      "BuffRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "count",
+          "trust",
+          "buff",
+          "label",
+          "spellIds"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          },
+          "buff": {
+            "enum": [
+              "might",
+              "wisdom",
+              "kings"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "spellIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "Leaderboard": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "group",
+          "rows",
+          "total",
+          "trust",
+          "scope",
+          "generatedAt"
+        ],
+        "properties": {
+          "group": {
+            "enum": [
+              "players",
+              "classes",
+              "buffs"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/PlayerRow"
+                },
+                {
+                  "$ref": "#/components/schemas/ClassRow"
+                },
+                {
+                  "$ref": "#/components/schemas/BuffRow"
+                }
+              ]
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trust": {
+            "type": "string",
+            "enum": [
+              "self_reported"
+            ]
+          },
+          "scope": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "OwnParticipant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "participantId",
+          "displayName",
+          "realm",
+          "casterClass",
+          "trust"
+        ],
+        "properties": {
+          "participantId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "realm": {
+            "type": "string"
+          },
+          "casterClass": {
+            "const": "PALADIN"
+          },
+          "trust": {
+            "const": "self_reported"
+          }
+        }
+      }
+    }
+  }
+}

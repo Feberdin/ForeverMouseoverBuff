@@ -1,0 +1,21 @@
+# Runtime data and private diagnostics must never enter version control.
+.env
+.env.*
+!.env.example
+.DS_Store
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.pytest_cache/
+*.log
+*.sqlite*
+*.db
+*.db-*
+backups/
+dist/
+.local-ranking/
+WTF/
+SavedVariables/
+participant.json
+ranking-upload.json
+.ci-tools/

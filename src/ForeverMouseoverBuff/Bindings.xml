@@ -1,0 +1,6 @@
+<!-- Purpose: expose one opt-in native CLICK binding. No default keys or scripts.
+     Input: user's WoW key-binding choice; output: native button activation.
+     Invariant: no automated key assignment. Debug: /fmb status shows the key. -->
+<Bindings>
+    <Binding name="CLICK ForeverMouseoverBuffButton:LeftButton" header="FOREVERMOUSEOVERBUFF" category="Forever Mouseover Buff" />
+</Bindings>

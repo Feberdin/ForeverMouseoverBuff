@@ -1,0 +1,26 @@
+## Interface: 16001
+## Title: Forever Mouseover Buff
+## Notes-deDE: Mouseover-Segen: Auto außerhalb des Kampfes, Könige im Kampf. Hinweiston und persönliche Grüße mit Empfänger-Auswahl. /fmb help
+## Notes: Mouseover blessings: automatic OOC, fixed Kings in combat. Feedback and personal greetings with recipient opt-out. /fmb help
+## Author: Feberdin
+## Version: 0.7.2
+## SavedVariablesPerCharacter: ForeverMouseoverBuffDB, ForeverMouseoverBuffRankingExport
+## Category-deDE: Zauber
+## Category-enUS: Spells
+## IconTexture: Interface\Icons\Spell_Holy_FistOfJustice
+# Purpose: selection, API boundary, greeting catalog, recipient preferences, chat display, confirmed whispers, lifecycle/UI. Debug: /fmb status.
+Core.lua
+API.lua
+Hash.lua
+CounterCodec.lua
+Stats.lua
+SpellLink.lua
+GreetingCatalog.lua
+Greetings.lua
+Recipient.lua
+Chat.lua
+RankingExport.lua
+Whisper.lua
+SealReminder.lua
+Diagnostics.lua
+App.lua

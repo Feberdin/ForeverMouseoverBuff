@@ -1,0 +1,224 @@
+<!doctype html>
+<!-- Purpose: German local community-ranking dashboard. Input: same-origin API.
+     Output: accessible aggregate tables. Never treat names as HTML. Debug: status line. -->
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FMB · Community-Ranking</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script defer src="/app.js"></script>
+    <script defer src="/upload-core.js"></script>
+    <script defer src="/upload.js"></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Forever Mouseover Buff</p>
+      <h1>Das Licht wird geteilt.</h1>
+      <p class="warning">
+        <strong>Community-Ranking · nicht serverbestätigt</strong><br />Diese
+        Zahlen stammen aus freiwilligen Client-Meldungen.
+        Plausibilitätsprüfungen erschweren Manipulation, beweisen aber keine
+        echten Zauber.
+      </p>
+      <p>
+        Gezählt werden derzeit nur durch FMB lokal bestätigte Paladinsegen:
+        Macht, Weisheit und Könige. Andere Klassen und Zauber außerhalb von FMB
+        sind noch nicht erfasst. Zauberränge derselben Segensart werden
+        zusammengezählt.
+      </p>
+      <div class="filters">
+        <label
+          >Rangliste<select id="group">
+            <option value="players">Charaktere</option>
+            <option value="classes">Klassen</option>
+            <option value="buffs">Segen</option>
+          </select></label
+        ><label
+          >Segensart<select id="buff">
+            <option value="">Alle Segen</option>
+            <option value="might">Segen der Macht</option>
+            <option value="wisdom">Segen der Weisheit</option>
+            <option value="kings">Segen der Könige</option>
+          </select></label
+        ><button id="refresh" type="button">Aktualisieren</button>
+      </div>
+      <p id="status" role="status" aria-live="polite">
+        Rangliste wird geladen …
+      </p>
+      <div class="table-scroll">
+        <table>
+          <caption id="caption">
+            Community-Rangliste
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Rang</th>
+              <th scope="col">Name</th>
+              <th scope="col">Segen verteilt</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <section class="upload" aria-labelledby="upload-title">
+        <h2 id="upload-title">Eigene Buffs freiwillig übertragen</h2>
+        <p>
+          Die Dateiauswahl sendet noch nichts. Dieser lokale Testdienst nimmt
+          nur einzelne <strong>selbst gemeldete</strong> FMB-Ereignisse
+          entgegen. Er bestätigt weder den Besitz des Charakters noch echte
+          Zauber.
+        </p>
+        <h3>1. Kleine Ranking-Datei auswählen</h3>
+        <details>
+          <summary>So erstellst Du die passende JSON-Datei</summary>
+          <ol>
+            <li>
+              Im Spiel <code>/fmb ranking on</code> aktivieren. Nach einigen
+              Buffs an einer sicheren Stelle selbst
+              <code>/reload</code> ausführen oder ausloggen.
+            </li>
+            <li>
+              Im Projektordner den Companion ausführen. Er liest die WoW-Datei
+              ausschließlich lokal und schreibt nur Ranking-Ereignisse in eine
+              neue JSON-Datei:
+            </li>
+          </ol>
+          <pre><code>python3 companion/companion.py export \
+  --saved-variables '/PFAD/ZUM/CHARAKTER/SavedVariables/ForeverMouseoverBuff.lua' \
+  --output '/PFAD/ZUR/NEUEN/ranking.json'</code></pre>
+          <p>
+            Wähle hier nur die erzeugte <code>ranking.json</code>. Die ganze
+            WoW-Datei wird nie hochgeladen oder ausgeführt. Keine Anmeldung ist
+            zum Erstellen der Datei nötig.
+          </p>
+        </details>
+        <label
+          >Ranking-JSON
+          <input id="ranking-file" type="file" accept=".json,application/json"
+        /></label>
+        <p
+          id="upload-preview"
+          class="preview"
+          role="status"
+          aria-live="polite"
+        ></p>
+        <p>
+          <strong>Übermittelt werden:</strong> Ereignis-ID, bekannte Zauber-ID
+          und Zauberzeit. Dazu gehört der selbst angegebene Charaktername, Realm
+          und die Klasse des Zugangs. Keine Buff-Empfänger, Chattexte,
+          Ausrüstung oder Orte. Der Name, Realm und die berechneten Zahlen sind
+          auf dieser Seite sichtbar. Meldungen älter als sieben Tage werden
+          ausgelassen.
+        </p>
+        <h3>2. Zugang laden oder freiwillig anmelden</h3>
+        <label
+          >Vorhandene Zugangssicherung oder Companion-Konfiguration
+          <input id="access-file" type="file" accept=".json,application/json"
+        /></label>
+        <p class="small">
+          Diese private Datei wird nur lokal gelesen. Zur Prüfung sendet die
+          Seite ausschließlich ihren Zugangstoken an genau diesen Dienst. Er
+          bleibt nur im Arbeitsspeicher dieser Seitensitzung.
+        </p>
+        <details>
+          <summary>Ich möchte eine neue Teilnahme anlegen</summary>
+          <div class="filters">
+            <label
+              >Charaktername<input
+                id="enroll-name"
+                type="text"
+                maxlength="64"
+                autocomplete="off"
+                placeholder="Charaktername" /></label
+            ><label
+              >Realm<input
+                id="enroll-realm"
+                type="text"
+                maxlength="64"
+                autocomplete="off"
+                placeholder="Realm"
+            /></label>
+          </div>
+          <label class="check"
+            ><input id="enroll-consent" type="checkbox" /> Ich möchte freiwillig
+            teilnehmen. Name, Realm und meine gemeldeten Zahlen dürfen auf
+            dieser lokalen Seite angezeigt werden. Das ist keine
+            Serververifizierung.</label
+          >
+          <button id="enroll-send" type="button" disabled>
+            Teilnahme anlegen
+          </button>
+          <p class="small">
+            Hierbei werden nur Name, Realm, Klasse und Zustimmung gesendet, noch
+            keine Buff-Ereignisse. Bereits angemeldete Namen benötigen ihren
+            vorhandenen Zugang.
+          </p>
+        </details>
+        <p id="access-status" role="status"></p>
+        <div class="actions">
+          <button id="access-backup" type="button" disabled>
+            Zugang sichern</button
+          ><button id="access-forget" type="button" disabled>
+            Zugang aus Sitzung entfernen
+          </button>
+        </div>
+        <p class="small">
+          Ein neuer Zugang muss über „Zugang sichern“ bewusst als private Datei
+          heruntergeladen werden, damit spätere Uploads und das Löschen möglich
+          bleiben. Keine automatische Browserspeicherung. Verlorene Zugänge
+          können nicht aus der Namensangabe wiederhergestellt werden.
+        </p>
+        <h3>3. Vorschau prüfen und übertragen</h3>
+        <label class="check"
+          ><input id="upload-consent" type="checkbox" /> Ich habe Vorschau und
+          aktiven Zugang geprüft und möchte diese einzelnen Ereignisse
+          freiwillig übertragen. Die Zahlen bleiben selbst gemeldet und können
+          manipuliert sein.</label
+        >
+        <button id="upload-send" type="button" disabled>
+          Jetzt Ranking-Ereignisse übertragen
+        </button>
+        <p id="upload-status" role="status" aria-live="polite">
+          Noch keine Datei übertragen.
+        </p>
+        <details>
+          <summary>Teilnahme und hochgeladene Daten löschen</summary>
+          <p>
+            Nur mit dem geladenen Zugang. Die Löschung entfernt den Teilnehmer
+            und seine Ereignisse aus dieser Datenbank; lokale Sicherungsdateien
+            musst Du selbst entfernen. Ein ausgeschalteter Addon-Export allein
+            löscht keine früheren Uploads.
+          </p>
+          <label class="check"
+            ><input id="delete-consent" type="checkbox" /> Ich möchte die
+            Teilnahme des oben angezeigten Charakters und alle seine
+            hochgeladenen Ereignisse löschen.</label
+          ><button id="access-delete" type="button" disabled>
+            Teilnahme und Daten löschen
+          </button>
+        </details>
+      </section>
+      <details>
+        <summary>Was sagen diese Zahlen aus?</summary>
+        <p>
+          Ein Punkt entspricht einer angenommenen Ereignismeldung. Ungewöhnlich
+          viele Meldungen landen in Quarantäne und zählen nicht mit. Gleich hohe
+          Zahlen teilen sich denselben Rang. Charaktername und Realm sind selbst
+          angegeben; dieses Ranking bestätigt weder Identität noch
+          Spielleistung.
+        </p>
+        <p>
+          Die Teilnahme ist freiwillig. Anmeldung und Übertragung erfolgen erst
+          nach Deiner Zustimmung. Mit geladenem Teilnehmerzugang kannst Du oben
+          die Teilnahme samt Ereignissen löschen. Danach werden alte Zugänge
+          abgewiesen.
+        </p>
+      </details>
+      <footer>
+        Keine externen Schriften, Tracker oder Ressourcen · Aktualisierung nur
+        beim Öffnen oder auf Klick
+      </footer>
+    </main>
+  </body>
+</html>
