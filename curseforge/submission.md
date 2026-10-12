@@ -1,7 +1,16 @@
-# CurseForge submission preparation
+# CurseForge submission record and update guide
 
-Checked against official CurseForge pages on **2026-10-12**. This folder prepares
-a reviewable submission; no project, remote or public ranking is created by it.
+Recorded on **2026-10-12**. The GitHub repository and v0.7.2 release are public.
+CurseForge project **1741880** (`forever-mouseover-buff`) and file **9150370**
+(`ForeverMouseoverBuff-0.7.2.zip`, Beta, Forever 1.60.1) have been submitted.
+**CurseForge moderation is still pending**; submission is not approval.
+The GitHub source link is saved in the project. Ranking stays local.
+
+- [GitHub source](https://github.com/Feberdin/ForeverMouseoverBuff)
+- [GitHub v0.7.2](https://github.com/Feberdin/ForeverMouseoverBuff/releases/tag/v0.7.2)
+- [CurseForge project](https://www.curseforge.com/wow/addons/forever-mouseover-buff)
+
+The following notes document the inputs and repeatable steps for later updates.
 
 ## Is GitHub required?
 
@@ -29,8 +38,8 @@ and [Project Submission Guide and Tips](https://support.curseforge.com/support/s
 - Installable package: `ForeverMouseoverBuff-0.7.2.zip`, containing one addon
   directory with its runtime files and license. It excludes the web prototype,
   companion, tests, user data and native game/WIM files.
-- Source: reviewed own-code snapshot with portable CI; proposed repository name
-  `Feberdin/ForeverMouseoverBuff`. Verify name availability and ownership first.
+- Source: reviewed own-code snapshot with portable CI in
+  [Feberdin/ForeverMouseoverBuff](https://github.com/Feberdin/ForeverMouseoverBuff).
 
 ## Metadata to select in the author portal
 
@@ -43,7 +52,7 @@ Suggested categories: Buffs & Debuffs; Paladin; Chat & Communication. Confirm
 which exact labels are offered in the portal. Do not mark another game flavor as
 supported solely to satisfy an uploader.
 
-Start with **Beta** while in-game acceptance is pending. CurseForge support pages
+Keep **Beta** while broader in-game acceptance is ongoing. CurseForge support pages
 have differed on when a first beta appears in the app: check the current portal
 and moderation result rather than relabeling untested work as a stable release.
 
@@ -51,7 +60,7 @@ and moderation result rather than relabeling untested work as a stable release.
 
 1. Complete source review and applicable publication / privacy review. Record
    which native/in-game checks have actually run; keep the 0.7.2 release marked
-   Beta while its in-game acceptance is pending. Resolve publication blockers
+   Beta while its broader in-game acceptance is ongoing. Resolve publication blockers
    before a public listing.
 2. Sign into the intended CurseForge author account, choose a distinct project
    name and paste the reviewed English metadata and description.
@@ -64,12 +73,16 @@ and moderation result rather than relabeling untested work as a stable release.
 7. Record the actual project ID/URL. Add source/issues links only after a real
    repository exists. Never substitute another project's ID.
 
-A GitHub-first route can initialize the reviewed source directory locally and
-later push it to the confirmed Feberdin repository. After every push inspect the
-CI run for that exact commit; do not assume local checks establish remote CI.
-No `git remote`, token, CurseForge project ID or automatic publishing action is
-configured in these templates. Keys, if a later upload tool needs one, must only
-come from `CURSEFORGE_API_KEY`, never from committed files or chat.
+After every GitHub push, inspect the CI run for that exact commit; local checks
+do not establish remote CI. The v0.7.2 release commit is
+`6d97ec832b947aea5516758a14968dba9fc8f97d`; its
+[CI run 38304352908](https://github.com/Feberdin/ForeverMouseoverBuff/actions/runs/38304352908)
+completed successfully. Subsequent documentation changes require their own CI
+check after a push and do not change that historical result.
+
+No credential or automatic publishing action is stored in these templates. Keys,
+if a later upload tool needs one, must only come from `CURSEFORGE_API_KEY`, never
+from committed files or chat.
 
 ## Boundaries to keep visible
 

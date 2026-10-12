@@ -7,8 +7,10 @@ Other classes can install Forever Mouseover Buff simply to decline its automatic
 greetings.
 
 **0.7.2 Beta · WoW Forever 1.60.1 · Interface 16001**  
-The interface and greetings are primarily German. In-game acceptance of this
-release is still pending; automated checks do not replace a running-client test.
+The interface and greetings are primarily German. Saved 0.7.2 diagnostics show
+two additional confirmed casts, no increase in failures and no ERROR among the
+64 most recent events. This is limited live evidence; broader in-game acceptance
+is ongoing.
 
 ## 🛡️ What it does
 

@@ -11,9 +11,10 @@ Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
 um seine automatischen Grüße abzulehnen.
 
 **0.7.2 Beta · WoW Forever 1.60.1 · Interface 16001**  
-Oberfläche und Grüße sind überwiegend deutsch. Die Abnahme dieser Version im
-laufenden Spiel steht noch aus; automatisierte Prüfungen ersetzen diesen Test
-nicht.
+Oberfläche und Grüße sind überwiegend deutsch. Gespeicherte 0.7.2-Diagnosen
+zeigen zwei zusätzlich bestätigte Zaubervorgänge, keinen Anstieg der Fehlerzähler
+und kein ERROR unter den letzten 64 Ereignissen. Das ist ein begrenzter
+Praxisnachweis; die umfassendere Ingame-Abnahme läuft weiter.
 
 ## 🛡️ Was das Addon kann
 
