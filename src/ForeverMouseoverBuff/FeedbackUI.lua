@@ -38,6 +38,31 @@ function ns:UpdateFeedbackReport()
     if report then self.feedbackSelectButton:Enable() else self.feedbackSelectButton:Disable() end
 end
 
+-- Main-menu commands supersede an open report and any return queued by Escape.
+-- Clear intent before Hide: OnHide must not reopen a window the user just closed.
+function ns:HideFeedbackPanelForMenu()
+    self.feedbackReturnToMenu, self.feedbackReturnToken = nil, nil
+    if self.feedbackPanel then self.feedbackPanel:Hide() end
+end
+
+-- WoW closes every UISpecialFrames entry during one Escape sweep. Restoring the
+-- main window inside OnHide would let that same sweep hide it again. A zero-delay
+-- timer returns on the next frame; its identity cancels stale close/reopen work.
+local function feedbackHidden(panel)
+    ns.feedbackURL:ClearFocus()
+    if panel:IsShown() or not ns.feedbackReturnToMenu then return end
+    local token = {}
+    ns.feedbackReturnToken = token
+    C_Timer.After(0, function()
+        if ns.feedbackReturnToken ~= token then return end
+        local main = ns.feedbackReturnToMenu
+        ns.feedbackReturnToMenu, ns.feedbackReturnToken = nil, nil
+        if main and ns.Menu and UIParent:IsShown() and not panel:IsShown() and not main:IsShown() then
+            ns.Menu.Show()
+        end
+    end)
+end
+
 -- This is an ordinary, unprotected window. Opening it must not reconfigure the
 -- buff button or acquire keyboard focus while the player is moving.
 function ns:ShowFeedbackPanel(kind)
@@ -83,7 +108,7 @@ function ns:ShowFeedbackPanel(kind)
         self.feedbackURL:SetScript("OnTextChanged", function(self, userInput)
             if userInput then self:SetText(ns.feedbackURLValue or "") end
         end)
-        panel:SetScript("OnHide", function() ns.feedbackURL:ClearFocus() end)
+        panel:SetScript("OnHide", feedbackHidden)
         self.feedbackSelectButton = Theme.Button(panel, "Link markieren", 24, 604, 164, 34, function()
             ns.feedbackURL:SetFocus(); ns.feedbackURL:HighlightText()
         end)
@@ -91,5 +116,12 @@ function ns:ShowFeedbackPanel(kind)
     end
     self.feedbackKind, self.feedbackIncludeTechnical = kind, false
     self:UpdateFeedbackReport()
+    -- Only one FMB root is visible. Its descendants otherwise interleave with
+    -- the other DIALOG root, even though both backgrounds are fully opaque.
+    self.feedbackReturnToken = nil
+    if self.panel and self.panel:IsShown() then
+        self.feedbackReturnToMenu = self.panel
+        self.panel:Hide()
+    end
     self.feedbackPanel:Show()
 end

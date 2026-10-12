@@ -226,6 +226,7 @@ function Menu.Select(view)
     return true
 end
 function Menu.Show()
+    if ns.HideFeedbackPanelForMenu then ns:HideFeedbackPanelForMenu() end
     if not ns.panel then build() end
     ns.panel:Show()
     Menu.Select(Menu.current)

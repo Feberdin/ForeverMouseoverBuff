@@ -10,7 +10,7 @@ Wähle einen gelernten Paladinsegen für den befreundeten Spieler unter deiner
 Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
 um seine automatischen Grüße abzulehnen.
 
-**0.7.4 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.7.5 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Oberfläche und Grüße sind überwiegend deutsch. Das native Sanctum-Menü ist
 automatisiert und im nachgebildeten Layout geprüft; der Ingame-Test steht noch aus. Gespeicherte 0.7.2-Diagnosen
@@ -57,6 +57,10 @@ Klasse**; die vorbereiteten Grußstile anderer Klassen ergänzen keine Zauber.
 `/fmb auto` aktiviert die automatische Auswahl außerhalb des Kampfes. Mit
 `/fmb might`, `/fmb wisdom` oder `/fmb kings` wählst du einen festen Modus.
 `/fmb on` und `/fmb off` schalten die Bufffunktion ein oder aus.
+
+Beim Öffnen von Feedback wird das Hauptmenü ausgeblendet. Schließen oder Escape
+führt zur bisherigen Seite zurück. Direkt geöffnetes Feedback (`/fmb feedback`)
+schließt wieder ohne Hauptmenü, wenn es vorher nicht geöffnet war.
 
 ## 💬 Drei unabhängige Nachrichtenschalter
 

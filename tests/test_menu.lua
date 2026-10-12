@@ -133,6 +133,117 @@ test("all page content fits above the footer", function()
         end
     end
 end)
+-- Model the timer/event boundary, but execute the real menu and feedback code.
+-- WoW's Escape sweep may visit both special windows in either order; returning
+-- on the next frame prevents that same sweep from closing the restored menu.
+local function feedbackSetup()
+    local ns, state = setup()
+    state.pending = {}
+    _G.C_Timer = {After = function(delay, callback)
+        eq(delay, 0, "UI return must wait only until the next frame")
+        state.pending[#state.pending + 1] = callback
+    end}
+    function state.flush()
+        local pending = state.pending; state.pending = {}
+        for _, callback in ipairs(pending) do callback() end
+    end
+    ns.IssueFeedback = {Build = function()
+        return {url = "https://github.com/Feberdin/ForeverMouseoverBuff/issues/new", preview = "Synthetic report"}
+    end}
+    assert(loadfile("src/ForeverMouseoverBuff/FeedbackUI.lua"))("ForeverMouseoverBuff", ns)
+    ns.Menu.Select("help")
+    return ns, state
+end
+
+test("feedback hides the main menu and its descendants without changing preferences", function()
+    local ns = feedbackSetup()
+    local db = ns.db
+    ns.feedbackButton:Click()
+    eq(ns.panel:IsShown(), false, "Main menu must be hidden behind feedback")
+    eq(ns.Menu.pages.help:IsVisible(), false, "Main-menu children must not bleed through")
+    eq(ns.feedbackButton:IsVisible(), false)
+    eq(ns.feedbackPanel:IsShown(), true)
+    eq(ns.Menu.current, "help"); eq(ns.db, db); eq(ns.db.mode, "auto")
+end)
+test("feedback close returns to the selected page and releases copy focus once", function()
+    local ns, state = feedbackSetup()
+    ns.feedbackButton:Click(); ns.feedbackSelectButton:Click()
+    ns.feedbackPanel.closeButton:Click()
+    eq(ns.feedbackPanel:IsShown(), false); eq(ns.feedbackURL.focused, false)
+    state.flush()
+    eq(ns.panel:IsShown(), true); eq(ns.Menu.current, "help")
+    ns.panel:Hide(); ns.feedbackPanel:Hide(); state.flush()
+    eq(ns.panel:IsShown(), false, "Repeated Hide must not reopen a closed menu")
+end)
+test("feedback Escape in the copy field restores the prior page", function()
+    local ns, state = feedbackSetup()
+    ns:ShowFeedbackPanel(); ns.feedbackSelectButton:Click()
+    ns.feedbackURL.scripts.OnEscapePressed(ns.feedbackURL)
+    state.flush()
+    eq(ns.feedbackURL.focused, false); eq(ns.feedbackPanel:IsShown(), false)
+    eq(ns.panel:IsShown(), true); eq(ns.Menu.current, "help")
+end)
+test("feedback global Escape restores after either special-window sweep order", function()
+    for _, reverse in ipairs({false, true}) do
+        local ns, state = feedbackSetup()
+        ns:ShowFeedbackPanel()
+        local frames = reverse and {ns.feedbackPanel, ns.panel} or {ns.panel, ns.feedbackPanel}
+        for _, frame in ipairs(frames) do if frame:IsShown() then frame:Hide() end end
+        state.flush()
+        eq(ns.panel:IsShown(), true, "Escape must return to the menu after the sweep")
+        eq(ns.feedbackPanel:IsShown(), false)
+        for _, frame in ipairs(frames) do if frame:IsShown() then frame:Hide() end end
+        state.flush(); eq(ns.panel:IsShown(), false)
+    end
+end)
+test("feedback opened alone closes without resurrecting the menu", function()
+    local ns, state = feedbackSetup()
+    ns.panel:Hide(); ns:ShowFeedbackPanel()
+    ns.feedbackPanel.closeButton:Click(); state.flush()
+    eq(ns.panel:IsShown(), false); eq(ns.feedbackPanel:IsShown(), false)
+end)
+test("feedback is dismissed when the main menu is explicitly opened", function()
+    local ns, state = feedbackSetup()
+    ns:ShowFeedbackPanel(); ns.feedbackSelectButton:Click()
+    ns:ShowPanel()
+    eq(ns.feedbackPanel:IsShown(), false, "Explicit menu opening must close feedback")
+    eq(ns.feedbackURL.focused, false); eq(ns.panel:IsShown(), true)
+    ns.panel:Hide(); state.flush()
+    eq(ns.panel:IsShown(), false, "Stale return callback must not undo a later close")
+end)
+test("feedback reopening cancels the previous deferred return", function()
+    local ns, state = feedbackSetup()
+    ns:ShowFeedbackPanel(); ns.feedbackPanel:Hide()
+    ns:ShowFeedbackPanel("wish"); state.flush()
+    eq(ns.panel:IsShown(), false); eq(ns.feedbackPanel:IsShown(), true)
+    ns.feedbackPanel:Hide(); state.flush()
+    eq(ns.panel:IsShown(), true); eq(ns.Menu.current, "help")
+end)
+test("feedback kind changes preserve the original return destination", function()
+    local ns, state = feedbackSetup()
+    ns:ShowFeedbackPanel("bug"); ns:ShowFeedbackPanel("wish")
+    ns:ShowFeedbackPanel("feature")
+    eq(ns.panel:IsShown(), false); eq(ns.feedbackKind, "feature")
+    ns.feedbackPanel:Hide(); state.flush()
+    eq(ns.panel:IsShown(), true); eq(ns.Menu.current, "help")
+end)
+test("feedback queued return is canceled by a later menu open and close", function()
+    local ns, state = feedbackSetup()
+    ns:ShowFeedbackPanel(); ns.feedbackPanel:Hide()
+    ns:ShowPanel(); ns.panel:Hide(); state.flush()
+    eq(ns.panel:IsShown(), false); eq(ns.feedbackPanel:IsShown(), false)
+end)
+test("feedback inherited parent hide does not restore another window", function()
+    local ns, state = feedbackSetup()
+    ns:ShowFeedbackPanel()
+    UIParent:Hide()
+    -- A hidden parent emits OnHide, while the child's own shown bit stays true.
+    ns.feedbackPanel.scripts.OnHide(ns.feedbackPanel)
+    state.flush(); eq(ns.panel:IsShown(), false)
+    UIParent:Show(); eq(ns.feedbackPanel:IsVisible(), true)
+    ns.feedbackPanel:Hide(); state.flush(); eq(ns.panel:IsShown(), true)
+end)
+
 local count = 0
 for _, item in ipairs(tests) do
     if not arg[1] or item.name:find(arg[1], 1, true) then

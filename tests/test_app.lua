@@ -36,7 +36,12 @@ local function setup(saved, modules)
         function frame:SetText(value) self.text = value end
         function frame:GetText() return self.text end
         function frame:Show() self.shown = true end
-        function frame:Hide() self.shown = false end
+        -- Native Hide runs OnHide only on a shown-to-hidden transition.
+        function frame:Hide()
+            if not self.shown then return end
+            self.shown = false
+            if self.scripts.OnHide then self.scripts.OnHide(self) end
+        end
         function frame:IsShown() return self.shown end
         function frame:SetFocus() self.focused = true end
         function frame:ClearFocus() self.focused = false end
@@ -67,6 +72,11 @@ local function setup(saved, modules)
     _G.SlashCmdList = {}
     _G.UISpecialFrames = {}
     _G.UIParent = newFrame()
+    state.pendingUI = {}
+    _G.C_Timer = {After = function(delay, callback)
+        eq(delay, 0, "Only next-frame UI restoration is expected")
+        state.pendingUI[#state.pendingUI + 1] = callback
+    end}
     _G.DEFAULT_CHAT_FRAME = {AddMessage = function(_, message) state.logs[#state.logs + 1] = message end}
     _G.UIErrorsFrame = {AddMessage = function(_, message) state.notices[#state.notices + 1] = message end}
     _G.SOUNDKIT = {RAID_WARNING = 8959}
@@ -244,7 +254,7 @@ test("issue_feedback_main_menu_exposes_button_and_copy_text_cannot_drift", funct
     ns.feedbackURL.scripts.OnTextChanged(ns.feedbackURL, true)
     eq(ns.feedbackURL:GetText(), original, "Copy field must stay consistent with preview")
     ns.feedbackURL:SetFocus()
-    ns.feedbackPanel.scripts.OnHide()
+    ns.feedbackPanel:Hide()
     eq(ns.feedbackURL.focused, false)
 end)
 

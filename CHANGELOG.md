@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.5 Beta — Feedback window navigation
+
+- Fix main-menu text and buttons drawing through the feedback dialog: only one
+  FMB window is visible at a time.
+- Closing feedback or pressing Escape returns to the previous page when opened
+  from the menu. Directly opened feedback leaves the menu closed.
+- Main-menu commands and quick reopen/close sequences cancel stale return work;
+  copy focus is released when the dialog hides.
+- Ten permanent window-lifecycle regression/edge-case tests, including both
+  Escape sweep orders and inherited parent visibility. No buff or ranking changes.
+
 ## 0.7.4 — 2026-10-12 — Beta
 
 - Replace the old Blizzard-style settings panel with the native Sanctum menu:

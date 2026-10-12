@@ -45,7 +45,12 @@ function Fixture.install()
         function result:SetParent(value) self.parent = value end
         function result:GetParent() return self.parent end
         function result:Show() self.shown = true end
-        function result:Hide() self.shown = false end
+        -- Native Hide runs OnHide only on a shown-to-hidden transition.
+        function result:Hide()
+            if not self.shown then return end
+            self.shown = false
+            if self.scripts.OnHide then self.scripts.OnHide(self) end
+        end
         function result:IsShown() return self.shown end
         function result:IsVisible() return self.shown and (not self.parent or self.parent:IsVisible()) end
         function result:Enable() self.disabled = false end

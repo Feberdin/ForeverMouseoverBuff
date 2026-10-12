@@ -10,7 +10,7 @@ Choose a learned Paladin blessing for the friendly player under your mouse.
 Other classes can install Forever Mouseover Buff simply to decline its automatic
 greetings.
 
-**0.7.4 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.7.5 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 The interface and greetings are primarily German. The native Sanctum menu has
 automated behavior and offline layout coverage; its in-game acceptance is still pending. Saved 0.7.2 diagnostics show
@@ -53,6 +53,10 @@ use works for **every class**; the other greeting styles do not add their spells
 
 Use `/fmb auto` for automatic selection outside combat, or choose `/fmb might`,
 `/fmb wisdom` or `/fmb kings`. `/fmb on` and `/fmb off` control buff functionality.
+
+Opening feedback hides the main menu. Closing or Escape returns to the previous
+page. Standalone `/fmb feedback` closes without opening a previously closed menu.
+Only one FMB window is visible at a time.
 
 ## 💬 Three separate message controls
 
@@ -195,7 +199,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.7.4 --output dist/review-0.7.4
+python3 scripts/prepare-release.py --version 0.7.5 --output dist/review-0.7.5
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party

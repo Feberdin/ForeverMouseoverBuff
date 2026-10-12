@@ -4,7 +4,7 @@
 -- Invariants: no hover/timer casts, key replacement, self fallback or dynamic combat selection.
 -- Debug: /fmb diag; /fmb debug on; /fmb status. Structured local logs flush on reload/logout.
 local _, ns = ...
-ns.VERSION = "0.7.4"
+ns.VERSION = "0.7.5"
 local binding = "CLICK ForeverMouseoverBuffButton:LeftButton"
 local modes = {auto = "Auto", might = "Macht", wisdom = "Weisheit", kings = "Könige"}
 local elapsed = 0
