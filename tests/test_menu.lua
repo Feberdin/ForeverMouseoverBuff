@@ -10,13 +10,15 @@ end
 local function setup()
     local state = assert(loadfile("tests/menu_frames.lua"))().install()
     local ns = {db = {enabled = true, mode = "auto", sound = true, whisper = true,
-        receiveWhispers = false, showOutgoingWhispers = false, sealSound = true, rankingEnabled = false},
+        receiveWhispers = false, showOutgoingWhispers = false, sealSound = true, rankingEnabled = false,
+        classPriorities = {}},
         VERSION = "0.7.4", initialized = true,
         decision = {ready = false, text = "Fahre mit der Maus über einen anderen befreundeten Spieler."},
         API = {Locked = function() return false end}}
     -- Load the actual visual controls as an integration boundary: hit areas,
     -- selected state and child geometry must not depend on a second theme fake.
     assert(loadfile("src/ForeverMouseoverBuff/Theme.lua"))("ForeverMouseoverBuff", ns)
+    assert(loadfile("src/ForeverMouseoverBuff/Core.lua"))("ForeverMouseoverBuff", ns)
     -- Loading the real old App preserves a meaningful preimplementation failure:
     -- the opening panel is 460 pixels wide rather than the approved 840-pixel menu.
     assert(loadfile("src/ForeverMouseoverBuff/App.lua"))("ForeverMouseoverBuff", ns)
@@ -43,6 +45,26 @@ local function setup()
         if command == "auto" or command == "might" or command == "wisdom" or command == "kings" then ns.db.mode = command end
         if ns.Menu then ns.Menu.Refresh() end
     end
+    -- App is the settings boundary: record intentional writes without mocking
+    -- the Core priority ordering/validation that the real menu consumes.
+    state.priorityWrites, state.priorityResets, state.casts = {}, {}, 0
+    ns.SetClassPriorities = function(_, token, list)
+        state.priorityWrites[#state.priorityWrites + 1] = {token = token, list = list}
+        if state.rejectPriorityWrites then return false end
+        assert(ns.Core.ValidPriorityList(list), "Menu must submit a valid priority list")
+        ns.db.classPriorities[token] = {}
+        for index, family in ipairs(list) do ns.db.classPriorities[token][index] = family end
+        ns.Menu.Refresh()
+        return true
+    end
+    ns.ResetClassPriorities = function(_, token)
+        state.priorityResets[#state.priorityResets + 1] = token
+        ns.db.classPriorities[token] = nil
+        ns.Menu.Refresh()
+        return true
+    end
+    _G.CastSpellByName = function() state.casts = state.casts + 1 end
+    _G.CastSpellByID = function() state.casts = state.casts + 1 end
     ns.ShowFeedbackPanel = function() state.feedbackOpened = true end
     local file = io.open("src/ForeverMouseoverBuff/Menu.lua", "rb")
     if file then file:close(); assert(loadfile("src/ForeverMouseoverBuff/Menu.lua"))("ForeverMouseoverBuff", ns) end
@@ -62,16 +84,163 @@ test("approved spacious menu replaces the old narrow button stack", function()
     eq(ns.panel.height, 620, "main menu height")
     eq(ns.Menu.current, "buffs")
 end)
-test("six pages switch exclusively and invalid navigation preserves selection", function()
+test("seven pages switch exclusively and invalid navigation preserves selection", function()
     local ns = setup()
     local count = 0
     for _ in pairs(ns.Menu.pages) do count = count + 1 end
-    eq(count, 6)
+    eq(count, 7)
     ns.Menu.Select("messages")
     for name, page in pairs(ns.Menu.pages) do eq(page:IsShown(), name == "messages", name) end
     eq(ns.Menu.Select("unknown"), false)
     eq(ns.Menu.current, "messages")
 end)
+-- The user edits an ordered set of active families. Inactive families remain
+-- visible below it so they can be re-enabled without remembering their names.
+local function priorities(ns, token)
+    return table.concat(ns.Core.GetPriorities(ns.db.classPriorities, token), ",")
+end
+local function openPriorities(ns)
+    eq(ns.Menu.Select("priorities"), true, "class priority page must be available")
+    assert(ns.Menu.classButtons.DRUID, "Druid class selector must be visible")
+    ns.Menu.classButtons.DRUID:Click()
+end
+
+test("class priorities show nine classes and the three druid defaults", function()
+    local ns, state = setup()
+    openPriorities(ns)
+    local count = 0
+    for token, button in pairs(ns.Menu.classButtons) do
+        count = count + 1
+        eq(button:IsVisible(), true, token .. " class is visible")
+        eq(button.selected, token == "DRUID", token .. " selected state")
+    end
+    eq(count, 9)
+    eq(priorities(ns, "DRUID"), "kings,wisdom,might")
+    for index, family in ipairs({"kings", "wisdom", "might"}) do
+        local row = ns.Menu.priorityRows[index]
+        eq(row.family, family, "displayed priority " .. index)
+        eq(row.active.selected, true, family .. " enabled")
+    end
+    eq(ns.Menu.priorityRows[1].up:IsEnabled(), false, "first cannot move up")
+    eq(ns.Menu.priorityRows[3].down:IsEnabled(), false, "last cannot move down")
+    eq(#state.priorityWrites, 0, "viewing defaults must not create an override")
+    assert(textContains(state, "außerhalb des Kampfes"))
+    assert(textContains(state, "Eigene vorhandene Segen bleiben erhalten"))
+    assert(textContains(state, "anderen Paladinen"))
+end)
+test("class priorities reorder only the selected class without casting", function()
+    local ns, state = setup()
+    openPriorities(ns)
+    local mageDefault = priorities(ns, "MAGE")
+    ns.Menu.priorityRows[2].up:Click()
+    eq(priorities(ns, "DRUID"), "wisdom,kings,might")
+    eq(ns.Menu.priorityRows[1].family, "wisdom", "redraw uses saved ordering")
+    eq(priorities(ns, "MAGE"), mageDefault, "another class is unchanged")
+    ns.Menu.priorityRows[2].down:Click()
+    eq(priorities(ns, "DRUID"), "wisdom,might,kings")
+    eq(state.priorityWrites[1].token, "DRUID")
+    ns.Menu.classButtons.MAGE:Click()
+    eq(ns.Menu.classButtons.MAGE.selected, true)
+    eq(ns.Menu.classButtons.DRUID.selected, false)
+    ns.Menu.classButtons.DRUID:Click()
+    eq(ns.Menu.priorityRows[3].family, "kings", "class switches retain ordering")
+    eq(state.casts, 0); eq(#state.commands, 0)
+end)
+test("class priorities disable and reenable families at the end", function()
+    local ns, state = setup()
+    openPriorities(ns)
+    ns.Menu.priorityRows[1].active:Click()
+    eq(priorities(ns, "DRUID"), "wisdom,might")
+    eq(ns.Menu.priorityRows[3].family, "kings", "inactive family stays visible last")
+    eq(ns.Menu.priorityRows[3].active.selected, false)
+    eq(ns.Menu.priorityRows[3].up:IsEnabled(), false)
+    eq(ns.Menu.priorityRows[3].down:IsEnabled(), false)
+    eq(ns.Menu.priorityRows[2].down:IsEnabled(), false, "active list ends before inactive families")
+    ns.Menu.priorityRows[3].active:Click()
+    eq(priorities(ns, "DRUID"), "wisdom,might,kings")
+    eq(ns.Menu.priorityRows[3].active.selected, true)
+    ns.Menu.priorityRows[1].active:Click()
+    ns.Menu.priorityRows[1].active:Click()
+    ns.Menu.priorityRows[1].active:Click()
+    eq(priorities(ns, "DRUID"), "", "all families may be deliberately disabled")
+    assert(textContains(state, "Kein Segen aktiviert"), "empty priorities need an explicit status")
+    eq(state.casts, 0)
+end)
+test("class priorities reset only the selected override", function()
+    local ns, state = setup()
+    ns.db.classPriorities.MAGE = {"might"}
+    openPriorities(ns)
+    ns.Menu.priorityRows[2].up:Click()
+    ns.Menu.priorityReset:Click()
+    eq(ns.db.classPriorities.DRUID, nil)
+    eq(priorities(ns, "DRUID"), "kings,wisdom,might")
+    eq(priorities(ns, "MAGE"), "might")
+    eq(state.priorityResets[1], "DRUID")
+    eq(ns.Menu.priorityRows[1].family, "kings")
+    eq(state.casts, 0)
+end)
+test("class priorities reject invalid saved data until an explicit reset", function()
+    local ns, state = setup()
+    local damaged = {"kings", "kings"}
+    ns.db.classPriorities.DRUID = damaged
+    openPriorities(ns)
+    assert(textContains(state, "Ungültige Priorität"), "bad data needs a reset instruction")
+    for _, row in ipairs(ns.Menu.priorityRows) do
+        eq(row.active:IsEnabled(), false); eq(row.up:IsEnabled(), false); eq(row.down:IsEnabled(), false)
+        row.active:Click(); row.up:Click(); row.down:Click()
+    end
+    eq(#state.priorityWrites, 0)
+    eq(ns.db.classPriorities.DRUID, damaged, "opening a damaged setting must not overwrite it")
+    ns.Menu.priorityReset:Click()
+    eq(priorities(ns, "DRUID"), "kings,wisdom,might")
+    eq(ns.Menu.priorityRows[1].active:IsEnabled(), true)
+end)
+test("class priorities explain how to repair a malformed complete map", function()
+    local ns, state = setup()
+    ns.db.classPriorities = "damaged"
+    openPriorities(ns)
+    assert(textContains(state, "/fmb priorities reset"), "malformed maps need the explicit all-classes recovery command")
+    assert(textContains(state, "alle Klassen"), "the recovery scope must be clear")
+    eq(ns.db.classPriorities, "damaged", "the UI must preserve malformed data until an explicit reset")
+    eq(#state.priorityWrites, 0); eq(state.casts, 0)
+end)
+test("class priorities keep displayed ordering when the App rejects a write", function()
+    local ns, state = setup()
+    openPriorities(ns)
+    state.rejectPriorityWrites = true
+    ns.Menu.priorityRows[2].up:Click()
+    eq(priorities(ns, "DRUID"), "kings,wisdom,might")
+    eq(ns.Menu.priorityRows[1].family, "kings")
+    assert(textContains(state, "nicht übernommen"), "failed changes need visible feedback")
+    eq(state.casts, 0)
+end)
+test("class priority navigation and class controls keep clear hit areas above the footer", function()
+    local ns = setup()
+    openPriorities(ns)
+    local rectangles = {}
+    for _, button in pairs(ns.Menu.navigation) do
+        local point = button.points[1]
+        local top = -point[5]
+        assert(top + button.height <= 493, "navigation must stay above the all-classes note")
+        rectangles[#rectangles + 1] = {left = point[4], top = top, width = button.width, height = button.height}
+    end
+    for _, button in pairs(ns.Menu.classButtons) do
+        eq(button:IsVisible(), true)
+        assert(button.width >= 175 and button.height >= 28, "class choices need readable hit areas")
+        local point = button.points[1]
+        rectangles[#rectangles + 1] = {left = point[4] + 228, top = -point[5] + 137,
+            width = button.width, height = button.height}
+    end
+    for index, first in ipairs(rectangles) do
+        for nextIndex = index + 1, #rectangles do
+            local second = rectangles[nextIndex]
+            local overlap = first.left < second.left + second.width and second.left < first.left + first.width
+                and first.top < second.top + second.height and second.top < first.top + first.height
+            eq(overlap, false, "controls must not overlap")
+        end
+    end
+end)
+
 test("receive outgoing and export keep independent existing command paths", function()
     local ns, state = setup()
     ns.receiveButton:Click(); eq(state.commands[1], "receive on")

@@ -5,7 +5,7 @@
   "flavor": "Forever",
   "gameVersion": "1.60.1",
   "interface": 16001,
-  "version": "0.7.2",
+  "version": "0.8.0",
   "license": "MIT License",
   "suggestedMainCategory": "Buffs & Debuffs",
   "suggestedAdditionalCategories": [
@@ -17,10 +17,9 @@
   "publicRepositoryUrl": "https://github.com/Feberdin/ForeverMouseoverBuff",
   "rankingEndpoint": null,
   "releaseType": "beta",
-  "publicationStatus": "GitHub v0.7.2 published; CurseForge project and file submitted, moderation pending",
+  "publicationStatus": "Release manifest; actual publication and moderation status are authoritative on GitHub and CurseForge.",
   "projectSlug": "forever-mouseover-buff",
   "publicProjectUrl": "https://www.curseforge.com/wow/addons/forever-mouseover-buff",
-  "fileId": 9150370,
-  "fileName": "ForeverMouseoverBuff-0.7.2.zip",
-  "publicReleaseUrl": "https://github.com/Feberdin/ForeverMouseoverBuff/releases/tag/v0.7.2"
+  "fileName": "ForeverMouseoverBuff-0.8.0.zip",
+  "publicReleaseUrl": "https://github.com/Feberdin/ForeverMouseoverBuff/releases/tag/v0.8.0"
 }

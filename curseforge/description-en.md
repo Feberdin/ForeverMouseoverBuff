@@ -6,11 +6,11 @@ Choose a learned Paladin blessing for the friendly player under your mouse.
 Other classes can install Forever Mouseover Buff simply to decline its automatic
 greetings.
 
-**0.7.2 Beta · WoW Forever 1.60.1 · Interface 16001**  
-The interface and greetings are primarily German. Saved 0.7.2 diagnostics show
-two additional confirmed casts, no increase in failures and no ERROR among the
-64 most recent events. This is limited live evidence; broader in-game acceptance
-is ongoing.
+**0.8.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+
+The interface and greetings are primarily German. Class priorities and the native
+Sanctum menu have automated behavior and offline layout coverage. Live gameplay
+and receipt of greetings by another player still need in-game acceptance.
 
 ## 🛡️ What it does
 
@@ -45,6 +45,29 @@ use works for **every class**; the other greeting styles do not add their spells
 
 Use `/fmb auto` for automatic selection outside combat, or choose `/fmb might`,
 `/fmb wisdom` or `/fmb kings`. `/fmb on` and `/fmb off` control buff functionality.
+
+## Class priorities outside combat
+
+Open `/fmb priorities` (or **Klassen-Priorität** in the menu). Choose a recipient
+class, enable the blessings you want and move them with **Hoch** / **Runter**.
+The first enabled, missing, learned and level-appropriate blessing is selected.
+An empty list disables automatic buffs for that class. **Standard wiederherstellen**
+restores only the selected class. Preferences are saved per character on reload/logout.
+
+Druids default to **Kings → Wisdom → Might**. For example, a Druid with Kings and
+Wisdom supplied by other paladins can receive your Might. Existing blessings of
+the same family are preserved regardless of rank. Your own existing Might, Wisdom
+or Kings is also preserved, even if excluded from the new list: this prevents
+repeated key presses from replacing your own blessing in a cycle. This is an
+ordered choice of one blessing, not three simultaneous blessings from one paladin.
+Use an explicit fixed mode when you intentionally want to replace your own buff.
+
+These settings apply only to **Auto outside combat**. The combat key remains fixed
+to learned Kings; manual modes ignore class priorities. Settings never cast a spell.
+Unreadable aura information still blocks selection. Invalid saved priorities block
+Auto with `INVALID_PRIORITIES`; correct the list in the menu or deliberately use
+`/fmb priorities reset` to restore **all** classes. `CLASS_DISABLED` means all
+blessings for the current class have been switched off.
 
 ## 💬 Three separate message controls
 

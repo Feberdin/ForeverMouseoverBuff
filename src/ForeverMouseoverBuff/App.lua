@@ -4,7 +4,7 @@
 -- Invariants: no hover/timer casts, key replacement, self fallback or dynamic combat selection.
 -- Debug: /fmb diag; /fmb debug on; /fmb status. Structured local logs flush on reload/logout.
 local _, ns = ...
-ns.VERSION = "0.7.6"
+ns.VERSION = "0.8.0"
 local binding = "CLICK ForeverMouseoverBuffButton:LeftButton"
 local modes = {auto = "Auto", might = "Macht", wisdom = "Weisheit", kings = "Könige"}
 local elapsed = 0
@@ -239,6 +239,9 @@ function ns:Decision()
     end
     local ok, context = pcall(self.API.ReadContext, self.db.mode)
     if not ok then return blocked("CONTEXT_ERROR", "Spielerdaten konnten nicht gelesen werden. /fmb status prüfen.") end
+    -- Preferences are local policy, not game facts. Attach the current saved
+    -- selection to each fresh snapshot, including the snapshot read on key-up.
+    if type(context) == "table" then context.classPriorities = self.db.classPriorities end
     local good, decision = pcall(self.Core.Decide, context)
     if not good or type(decision) ~= "table" then
         return blocked("DECISION_ERROR", "Buff-Auswahl fehlgeschlagen. /fmb status prüfen.")
@@ -419,11 +422,74 @@ function ns:ShowPanel()
     self:Refresh()
 end
 
+-- Edit a detached candidate and commit it only after complete validation. This
+-- keeps invalid input from partially changing another class or arming a spell.
+-- Example: DRUID={"wisdom","might"} disables Kings for automatic Druid buffs.
+local function priorityMapCopy(config)
+    if config == nil then return {} end
+    if type(config) ~= "table" or getmetatable(config) ~= nil then return nil end
+    local copy, count = {}, 0
+    for key, value in pairs(config) do
+        count = count + 1
+        if count > 9 then return nil end
+        copy[key] = value
+    end
+    return copy
+end
+
+local function priorityError(self)
+    self:Log("INVALID_PRIORITIES")
+    say("Klassen-Priorität ungültig; Änderung nicht gespeichert. Unter /fmb priorities jede Segensart höchstens einmal auswählen. /fmb priorities reset setzt alle Klassen auf Standard zurück.")
+    return false
+end
+
+function ns:SetClassPriorities(classToken, priorities)
+    if not self.initialized then self:Initialize() end
+    if not self.Core.GetPriorities(nil, classToken) or not self.Core.ValidPriorityList(priorities) then
+        return priorityError(self)
+    end
+    local candidate = priorityMapCopy(self.db.classPriorities)
+    if not candidate then return priorityError(self) end
+    local order = {}
+    for index, family in ipairs(priorities) do order[index] = family end
+    candidate[classToken] = order
+    if not self.Core.GetPriorities(candidate, classToken) then return priorityError(self) end
+    self.db.classPriorities = candidate
+    if self.Menu then self.Menu.priorityError = nil end
+    self:Refresh()
+    say("Klassen-Priorität gespeichert. Sie gilt im Automodus außerhalb des Kampfes.")
+    return true
+end
+
+-- Resetting one class preserves other overrides. The explicit global command
+-- also recovers a malformed saved map; login never silently discards that map.
+function ns:ResetClassPriorities(classToken)
+    if not self.initialized then self:Initialize() end
+    if classToken == nil then
+        self.db.classPriorities = {}
+    else
+        if not self.Core.GetPriorities(nil, classToken) then return priorityError(self) end
+        local candidate = priorityMapCopy(self.db.classPriorities)
+        if not candidate then return priorityError(self) end
+        candidate[classToken] = nil
+        if not self.Core.GetPriorities(candidate, classToken) then return priorityError(self) end
+        self.db.classPriorities = candidate
+    end
+    -- Recovery can originate from a slash command after a failed menu action.
+    -- Clear that stale UI error before showing the successfully restored list.
+    if self.Menu then self.Menu.priorityError = nil end
+    self:Refresh()
+    say(classToken and "Klassen-Priorität auf Standard zurückgesetzt. Andere Klassen bleiben unverändert."
+        or "Prioritäten aller Klassen auf Standard zurückgesetzt.")
+    return true
+end
+
 function ns:Help()
     say("WoW-Optionen → Tastaturbelegung → Forever Mouseover Buff: freie Taste für Mouseover-Spieler buffen vergeben. Das Addon belegt keine Taste selbst.")
     say("Maus über einen befreundeten Spieler halten, Taste drücken und loslassen. Solange du selbst außerhalb des Kampfes bist, darf das Ziel auch kämpfen. Ein vorhandener gleichartiger Segen bleibt erhalten; Auto wählt eine hilfreiche Alternative. Auf Reittieren ist die Auto-Auswahl gesperrt.")
     say("Im Kampf: dieselbe Taste wirkt ausschließlich Segen der Könige, sobald gelernt. Keine Klassen-, Rang- oder Buffprüfung; eigene Segen können ersetzt werden. An/Aus-Änderungen gelten erst nach dem Kampf.")
-    say("Auto: Krieger/Schurken Macht → Könige; Magier/Priester/Hexenmeister Weisheit → Könige; Jäger/Hybride Könige → Weisheit. Eigene nützliche Segen bleiben stehen. Nur gelernte Ränge bis zur Zielstufe.")
+    say("Auto: Unter /fmb priorities für jede Zielklasse Segen aktivieren und nach Priorität ordnen. Druiden: standardmäßig Könige → Weisheit → Macht. Bereits vorhandene fremde Segen werden übersprungen; eigene Segen bleiben stehen. Nur gelernte Ränge bis zur Zielstufe.")
+    say("/fmb priorities reset setzt alle Klassen auf Standard zurück. Einzelne Klassen lassen sich im Menü zurücksetzen. Die Prioritäten gelten außerhalb des Kampfes im Modus Auto; feste Modi bleiben unabhängig.")
     say("/fmb auto | might | wisdom | kings wählt den Modus; /fmb on | off schaltet ein/aus. /fmb debug on, /fmb status, danach /fmb debug off für Fehlerdiagnose.")
     say("Gesperrte Buff-Taste: Erklärung im Bild und Chat, Hinweiston höchstens alle 2 Sekunden. /fmb sound on | off schaltet den Ton; /fmb soundtest prüft ihn.")
     say('Bestätigter Segen: zwölf wechselnde Grüße passend zu deiner Klasse und deinem Volk, mit Empfängername und passender Volksanrede. Bei unbekannter Klasse bleibt der Text neutral. /fmb whisper on | off schaltet ihn. Bei unklaren oder geschützten Empfängerdaten wird nichts gesendet.')
@@ -473,7 +539,12 @@ end
 function ns:Command(command)
     if not self.initialized then self:Initialize() end
     command = (safeString(command) or ""):match("^%s*(.-)%s*$"):lower()
-    if modes[command] then self.db.mode = command
+    if command == "priorities" then
+        self:ShowPanel()
+        if self.Menu then self.Menu.Select("priorities") end
+        return
+    elseif command == "priorities reset" then self:ResetClassPriorities(); return
+    elseif modes[command] then self.db.mode = command
     elseif command == "on" or command == "off" then
         self.db.enabled = command == "on"
         if not self:RefreshCombatAction() and self.API.Locked() then
@@ -555,7 +626,8 @@ function ns:Initialize()
     if type(self.db.sealSound) ~= "boolean" then self.db.sealSound = true end
     if type(self.db.receiveWhispers) ~= "boolean" then self.db.receiveWhispers = true end
     if type(self.db.showOutgoingWhispers) ~= "boolean" then self.db.showOutgoingWhispers = false end
-    self.db.schema = 8
+    if self.db.classPriorities == nil then self.db.classPriorities = {} end
+    self.db.schema = 9
     self:InitializeDiagnostics()
     self:CaptureDiagnosticClient()
     self.initialized = true
