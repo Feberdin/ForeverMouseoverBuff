@@ -357,11 +357,9 @@ function tests.own_useful_primary_is_preserved_without_guessing_talents()
     blocked(input, "OWN_BLESSING_PRESERVED")
 end
 
-function tests.own_unhelpful_wisdom_on_warrior_allows_might()
+function tests.own_wisdom_on_warrior_is_preserved_even_when_outside_priorities()
     local input = withBlessings(context(), { blessing("wisdom", true, 19742) })
-    local result = Core.Decide(input)
-    equal(result.ready, true)
-    equal(result.family, "might")
+    blocked(input, "OWN_BLESSING_PRESERVED")
 end
 
 function tests.every_class_has_only_the_documented_useful_fallback()
@@ -457,6 +455,150 @@ function tests.explicit_empty_blessing_list_matches_safe_legacy_context()
     local input = context()
     input.blessings = {}
     equal(Core.Decide(input).spellID, 102)
+end
+
+-- Class settings are an explicit ordered list. A removed family is disabled,
+-- never a hidden fallback; an empty list disables Auto for that target class.
+function tests.configured_priority_order_overrides_class_defaults()
+    local input = context()
+    input.classPriorities = { WARRIOR = { "kings", "might", "wisdom" } }
+    local result = Core.Decide(input)
+    equal(result.ready, true)
+    equal(result.family, "kings", "first configured family must take priority")
+    equal(result.code, "READY")
+end
+
+function tests.druid_with_foreign_kings_and_wisdom_receives_might()
+    local input = withBlessings(context(), {
+        blessing("kings", false, 20217), blessing("wisdom", false, 19742),
+    })
+    input.target.class = "DRUID"
+    local result = Core.Decide(input)
+    equal(result.ready, true, "Druid must still receive the third missing family")
+    equal(result.family, "might")
+    equal(result.spellID, 102)
+    equal(result.code, "READY_FALLBACK")
+    equal(result.fallbackFrom, "kings")
+    equal(result.fallbackReason, "HAS_BLESSING")
+end
+
+function tests.disabled_family_never_becomes_an_implicit_fallback()
+    local input = withBlessings(context(), { blessing("kings", false, 20217) })
+    input.classPriorities = { WARRIOR = { "kings" } }
+    blocked(input, "HAS_BLESSING")
+    input.blessings, input.hasBlessing, input.spells[5].known = {}, false, false
+    blocked(input, "NO_KNOWN_SPELL")
+end
+
+function tests.empty_priority_list_disables_auto_for_only_that_class()
+    local input = context()
+    input.classPriorities = { WARRIOR = {} }
+    blocked(input, "CLASS_DISABLED")
+    input.target.class = "DRUID"
+    equal(Core.Decide(input).family, "kings")
+end
+
+function tests.invalid_priority_config_blocks_auto_without_guessing()
+    for _, config in ipairs({ false, "kings", { WARRIOR = { "unknown" } },
+        { WARRIOR = { "kings", "kings" } }, { WARRIOR = { [2] = "kings" } },
+        { UNKNOWN = { "kings" } }, setmetatable({}, {}),
+        { WARRIOR = setmetatable({ "kings" }, {}) } }) do
+        local input = context()
+        input.classPriorities = config
+        blocked(input, "INVALID_PRIORITIES")
+    end
+end
+
+function tests.own_permanent_blessing_survives_priority_reorder_or_disable()
+    for _, ownFamily in ipairs({ "kings", "wisdom", "might" }) do
+        local input = withBlessings(context(), { blessing(ownFamily, true) })
+        input.classPriorities = { WARRIOR = { "wisdom", "might", "kings" } }
+        blocked(input, "OWN_BLESSING_PRESERVED")
+        input.classPriorities.WARRIOR = ownFamily == "kings" and { "might" } or { "kings" }
+        blocked(input, "OWN_BLESSING_PRESERVED")
+    end
+end
+
+function tests.custom_priorities_keep_range_and_mana_failures_blocking()
+    local input = context()
+    input.classPriorities = { WARRIOR = { "kings", "might" } }
+    input.spells[5].inRange = false
+    blocked(input, "OUT_OF_RANGE")
+    input.spells[5].inRange, input.spells[5].usable = true, false
+    blocked(input, "NOT_USABLE")
+end
+
+function tests.manual_selection_ignores_empty_or_invalid_class_settings()
+    for _, config in ipairs({ { WARRIOR = {} }, false, { WARRIOR = { "unknown" } } }) do
+        local input = context()
+        input.mode, input.classPriorities = "might", config
+        equal(Core.Decide(input).family, "might")
+        equal(Core.Decide(input).ready, true)
+    end
+end
+
+-- The public settings helpers return independent plain data, so menu edits
+-- cannot change defaults or another caller's still-visible settings view.
+function tests.class_options_are_complete_stable_and_independent()
+    local expected = {
+        { "DRUID", "Druide" }, { "WARLOCK", "Hexenmeister" }, { "HUNTER", "Jäger" },
+        { "WARRIOR", "Krieger" }, { "MAGE", "Magier" }, { "PALADIN", "Paladin" },
+        { "PRIEST", "Priester" }, { "SHAMAN", "Schamane" }, { "ROGUE", "Schurke" },
+    }
+    local options = Core.ClassOptions()
+    equal(#options, 9)
+    for index, value in ipairs(expected) do
+        equal(options[index].token, value[1])
+        equal(options[index].name, value[2])
+    end
+    options[1].token, options[1].name = "CHANGED", "Changed"
+    options[2] = nil
+    local fresh = Core.ClassOptions()
+    equal(#fresh, 9)
+    equal(fresh[1].token, "DRUID")
+    equal(fresh[1].name, "Druide")
+end
+
+function tests.priority_list_validator_accepts_only_dense_unique_known_families()
+    for _, list in ipairs({ {}, { "kings" }, { "might", "wisdom" },
+        { "wisdom", "kings", "might" } }) do
+        equal(Core.ValidPriorityList(list), true)
+    end
+    equal(Core.ValidPriorityList(nil), false)
+    for _, list in ipairs({ false, "kings", 1, { "unknown" }, { "kings", "kings" },
+        { [2] = "kings" }, { [1] = "kings", [3] = "might" }, { [0] = "kings" },
+        { [1.5] = "kings" }, { "kings", "wisdom", "might", "kings" },
+        { "kings", extra = "might" }, { true }, setmetatable({ "kings" }, {}),
+        setmetatable({}, { __index = { "kings" } }) }) do
+        equal(Core.ValidPriorityList(list), false)
+    end
+end
+
+function tests.get_priorities_returns_independent_defaults_and_class_overrides()
+    local defaults = Core.GetPriorities(nil, "DRUID")
+    equal(table.concat(defaults, ","), "kings,wisdom,might")
+    defaults[1] = "changed"
+    equal(Core.GetPriorities(nil, "DRUID")[1], "kings")
+    local config = { WARRIOR = { "kings", "might" }, DRUID = {} }
+    local configured = Core.GetPriorities(config, "WARRIOR")
+    equal(table.concat(configured, ","), "kings,might")
+    configured[1] = "changed"
+    equal(config.WARRIOR[1], "kings")
+    equal(#Core.GetPriorities(config, "DRUID"), 0)
+    equal(table.concat(Core.GetPriorities(config, "MAGE"), ","), "wisdom,kings")
+end
+
+function tests.get_priorities_rejects_invalid_class_and_entire_invalid_config()
+    for _, classToken in ipairs({ false, {}, 12, "druid", "UNKNOWN" }) do
+        equal(Core.GetPriorities(nil, classToken), nil)
+    end
+    equal(Core.GetPriorities(nil, nil), nil)
+    for _, config in ipairs({ false, 12, "invalid", { [1] = {} }, { UNKNOWN = {} },
+        { DRUID = false }, { DRUID = { "kings", "kings" } },
+        { DRUID = { [2] = "kings" } }, setmetatable({}, {}),
+        { DRUID = setmetatable({}, {}) } }) do
+        equal(Core.GetPriorities(config, "WARRIOR"), nil)
+    end
 end
 
 -- A named filter makes the exact first red test reproducible without hiding failures.

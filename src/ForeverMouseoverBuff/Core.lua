@@ -1,21 +1,32 @@
 -- Purpose: Decide whether a safe mouseover blessing can be proposed, without WoW API calls.
--- Input: Public, sanitized player/target/spell facts. Output: a decision table.
--- Invariant: This module never casts spells. Debugging uses the stable decision code.
+-- Input: Public, sanitized player/target/spell facts and optional class priorities.
+-- Output: a decision table, copied class choices or validated priority lists.
+-- Invariant: Never casts spells or replaces our permanent blessing in Auto mode.
+-- Debug: Run tests/test_core.lua; each blocked decision has a stable reason code.
 local _, namespace = ...
 local Core = {}
 namespace.Core = Core
 
 -- Ordered, visible defaults avoid guessing a player's talents or group role.
--- A warrior never falls back to mana regeneration. Hybrids get Wisdom after
--- Kings, rather than assuming they deal melee damage. Manual mode stays exact.
+-- Warrior defaults exclude mana regeneration; users can explicitly change them.
+-- Druids accept all three families: Kings, then Wisdom, then Might. Manual mode
+-- stays exact. These tables are private so UI edits cannot alter the defaults.
 local classFamilies = {
     WARRIOR = { "might", "kings" }, ROGUE = { "might", "kings" },
     MAGE = { "wisdom", "kings" }, PRIEST = { "wisdom", "kings" },
     WARLOCK = { "wisdom", "kings" }, HUNTER = { "kings", "wisdom" },
     PALADIN = { "kings", "wisdom" }, SHAMAN = { "kings", "wisdom" },
-    DRUID = { "kings", "wisdom" },
+    DRUID = { "kings", "wisdom", "might" },
 }
 local families = { might = true, wisdom = true, kings = true }
+local permanentFamilies = { "might", "wisdom", "kings" }
+local classOptions = {
+    { token = "DRUID", name = "Druide" }, { token = "WARLOCK", name = "Hexenmeister" },
+    { token = "HUNTER", name = "Jäger" }, { token = "WARRIOR", name = "Krieger" },
+    { token = "MAGE", name = "Magier" }, { token = "PALADIN", name = "Paladin" },
+    { token = "PRIEST", name = "Priester" }, { token = "SHAMAN", name = "Schamane" },
+    { token = "ROGUE", name = "Schurke" },
+}
 local messages = {
     INVALID_CONTEXT = "Spielerdaten fehlen oder sind ungültig. Bitte erneut über einen Spieler fahren.",
     UNSUPPORTED_CLASS = "Diese Version unterstützt die Segen des Paladins.",
@@ -36,8 +47,10 @@ local messages = {
     TARGET_CLASS_UNKNOWN = "Die Klasse dieses Spielers ist unbekannt; kein Segen wird geraten.",
     AURA_UNKNOWN = "Vorhandene Segen sind noch nicht sicher bekannt; bitte kurz warten.",
     HAS_BLESSING = "Vorhandene Segen bleiben erhalten; kein zusätzlicher passender Segen ist verfügbar.",
-    OWN_BLESSING_PRESERVED = "Dein passender Segen ist bereits vorhanden und bleibt erhalten.",
+    OWN_BLESSING_PRESERVED = "Dein Segen ist bereits vorhanden und bleibt erhalten.",
     INVALID_MODE = "Die Buff-Auswahl ist ungültig. Bitte Auto, Macht, Weisheit oder Könige wählen.",
+    INVALID_PRIORITIES = "Die Klassen-Prioritäten sind ungültig. Bitte im Menü die Standardwerte wiederherstellen.",
+    CLASS_DISABLED = "Für diese Klasse sind im Auto-Modus alle Segen deaktiviert. Bitte im Menü einen Segen aktivieren.",
     INVALID_SPELL_DATA = "Zauber-, Rang- oder Reichweitendaten fehlen. Bitte erneut versuchen.",
     NO_KNOWN_SPELL = "Kein Segen aus der gewählten Auswahl ist gelernt.",
     TARGET_LEVEL_TOO_LOW = "Kein gelernter Rang passt sicher zur Stufe dieses Spielers.",
@@ -64,6 +77,55 @@ local function knownBooleans(value, keys)
         if type(value[key]) ~= "boolean" then return false end
     end
     return true
+end
+
+-- Settings are small plain lists. Reject holes, duplicates and inherited data
+-- so malformed saved settings never cause an unintended implicit fallback.
+-- Example: { "wisdom", "kings" } is valid; { [2] = "kings" } is not.
+function Core.ValidPriorityList(list)
+    if type(list) ~= "table" or getmetatable(list) ~= nil then return false end
+    local count, seen = 0, {}
+    for index, family in pairs(list) do
+        count = count + 1
+        if count > 3 or not positiveInteger(index, 3) or type(family) ~= "string"
+            or not families[family] or seen[family] then
+            return false
+        end
+        seen[family] = true
+    end
+    for index = 1, count do
+        if list[index] == nil then return false end
+    end
+    return true
+end
+
+-- The whole configuration must be valid before selecting a class. Missing
+-- class rows use defaults; an explicit empty row means the class is disabled.
+function Core.GetPriorities(config, classToken)
+    if type(classToken) ~= "string" or not classFamilies[classToken] then return nil end
+    if config ~= nil then
+        if type(config) ~= "table" or getmetatable(config) ~= nil then return nil end
+        for token, list in pairs(config) do
+            if type(token) ~= "string" or not classFamilies[token]
+                or not Core.ValidPriorityList(list) then
+                return nil
+            end
+        end
+    end
+    local source = config and config[classToken] or classFamilies[classToken]
+    local result = {}
+    for index, family in ipairs(source) do result[index] = family end
+    return result
+end
+
+-- Return fresh rows as well as a fresh list, since the menu may retain a view
+-- while another settings refresh obtains the same alphabetical class choices.
+function Core.ClassOptions()
+    local result = {}
+    for index, option in ipairs(classOptions) do
+        result[index] = { token = option.token, name = option.name }
+    end
+    return result
 end
 
 -- WoW facts may arrive at different times. Unknown is never treated as false/safe.
@@ -202,13 +264,22 @@ function Core.Decide(context)
     if context.mode ~= "auto" and not families[context.mode] then
         return blocked("INVALID_MODE")
     end
-    local priorities = context.mode == "auto" and classFamilies[context.target.class] or { context.mode }
+    local priorities
+    if context.mode == "auto" then
+        priorities = Core.GetPriorities(context.classPriorities, context.target.class)
+        if not priorities then return blocked("INVALID_PRIORITIES") end
+        if #priorities == 0 then return blocked("CLASS_DISABLED") end
+    else
+        priorities = { context.mode }
+    end
     local primary = priorities[1]
     local state, auraReason = blessingState(context)
     if not state then return blocked(auraReason, primary) end
     if not validSpells(context.spells) then return blocked("INVALID_SPELL_DATA", primary) end
     if context.mode == "auto" then
-        for _, family in ipairs(priorities) do
+        -- Even a newly disabled family must survive: casting a different family
+        -- would remove our existing blessing and make settings edits destructive.
+        for _, family in ipairs(permanentFamilies) do
             if state.owned[family] then return blocked("OWN_BLESSING_PRESERVED", family) end
         end
     end

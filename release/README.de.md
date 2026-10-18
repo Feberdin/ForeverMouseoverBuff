@@ -10,13 +10,12 @@ Wähle einen gelernten Paladinsegen für den befreundeten Spieler unter deiner
 Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
 um seine automatischen Grüße abzulehnen.
 
-**0.7.6 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.8.0 Beta · WoW Forever 1.60.1 · Interface 16001**
 
-Oberfläche und Grüße sind überwiegend deutsch. Das native Sanctum-Menü ist
-automatisiert und im nachgebildeten Layout geprüft; der Ingame-Test steht noch aus. Gespeicherte 0.7.2-Diagnosen
-zeigen zwei zusätzlich bestätigte Zaubervorgänge, keinen Anstieg der Fehlerzähler
-und kein ERROR unter den letzten 64 Ereignissen. Das ist ein begrenzter
-Praxisnachweis; die umfassendere Ingame-Abnahme läuft weiter.
+Oberfläche und Grüße sind überwiegend deutsch. Klassenprioritäten und das native
+Sanctum-Menü sind automatisiert und im nachgebildeten Layout geprüft. Die
+Ingame-Abnahme und der tatsächliche Grußempfang bei einem anderen Spieler stehen
+noch aus.
 
 ## 🛡️ Was das Addon kann
 
@@ -61,6 +60,30 @@ Klasse**; die vorbereiteten Grußstile anderer Klassen ergänzen keine Zauber.
 Beim Öffnen von Feedback wird das Hauptmenü ausgeblendet. Schließen oder Escape
 führt zur bisherigen Seite zurück. Direkt geöffnetes Feedback (`/fmb feedback`)
 schließt wieder ohne Hauptmenü, wenn es vorher nicht geöffnet war.
+
+## Prioritäten je Zielklasse
+
+Öffne `/fmb priorities` oder im Menü **Klassen-Priorität**. Wähle die Klasse des
+Empfängers, schalte die gewünschten Segen ein und ordne sie mit **Hoch** und
+**Runter**. Gewählt wird der erste aktive, fehlende, gelernte und zur Zielstufe
+passende Segen. Sind alle drei ausgeschaltet, wird diese Klasse im Automodus
+übersprungen. **Standard wiederherstellen** setzt nur die gewählte Klasse zurück.
+Die Einstellungen werden pro eigenem Charakter bei Reload oder Logout gespeichert.
+
+Für Druiden gilt standardmäßig **Könige → Weisheit → Macht**. Hat ein Druide
+Könige und Weisheit von anderen Paladinen, kannst du Macht ergänzen. Bereits
+vorhandene gleichartige Segen bleiben unabhängig vom Rang erhalten. Auch dein
+eigener Macht-, Weisheit- oder Könige-Segen bleibt stehen, selbst wenn du ihn aus
+der Liste entfernst. So ersetzt wiederholtes Drücken nicht ständig deinen eigenen
+Segen. Die Liste wählt einen passenden Segen; sie ermöglicht keine drei gleichzeitigen
+Segen desselben Paladins. Für einen bewussten Wechsel bleibt der feste Modus verfügbar.
+
+Die Reihenfolge gilt ausschließlich bei **Auto außerhalb des Kampfes**. Im Kampf
+bleibt die Taste auf gelerntem Könige; feste Modi ignorieren die Klassenliste.
+Einstellungen lösen keinen Zauber aus. Unklare Auren sperren weiterhin die Auswahl.
+`INVALID_PRIORITIES` meldet ungültige gespeicherte Prioritäten: Liste im Menü
+korrigieren oder mit `/fmb priorities reset` bewusst **alle** Klassen zurücksetzen.
+`CLASS_DISABLED` bedeutet: Alle Segen für die aktuelle Zielklasse sind ausgeschaltet.
 
 ## 💬 Drei unabhängige Nachrichtenschalter
 

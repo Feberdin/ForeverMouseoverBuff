@@ -957,6 +957,116 @@ test("structured_diagnostics_unreadable_saved_history_does_not_block_the_ui_or_c
     assert(table.concat(state.logs, "\n"):find("Arbeitsspeicher", 1, true))
 end)
 
+-- Exercise saved preferences through the real decision and deliberate-click
+-- boundaries: a visually reordered list must change the actual selected spell.
+local function priorityTarget(state)
+    state.context.target.class = "DRUID"
+    state.context.spells[#state.context.spells + 1] = {spellID = 20217,
+        spellName = "Segen der Könige", family = "kings", learnedLevel = 1,
+        known = true, inRange = true, usable = true}
+    state.context.spells[#state.context.spells + 1] = {spellID = 19742,
+        spellName = "Segen der Weisheit", family = "wisdom", learnedLevel = 1,
+        known = true, inRange = true, usable = true}
+end
+
+test("priority_saved_order_drives_preview_and_actual_click", function()
+    local ns, state = setup({classPriorities = {DRUID = {"might", "wisdom", "kings"}}})
+    priorityTarget(state)
+    ns:Refresh()
+    eq(ns.decision.family, "might", "saved Druid order must override the Kings default")
+    eq(#state.actions, 0, "preview cannot cast")
+    click(state)
+    eq(state.actions[1].spellID, 19834, "native click must use the configured first family")
+end)
+
+test("priority_edit_is_detached_persistent_and_rechecked_on_click", function()
+    local ns, state = setup()
+    priorityTarget(state)
+    local order = {"wisdom", "might"}
+    assert(type(ns.SetClassPriorities) == "function", "class priorities must be editable")
+    eq(ns:SetClassPriorities("DRUID", order), true)
+    eq(ns.decision.family, "wisdom")
+    order[1] = "kings"
+    eq(ns.db.classPriorities.DRUID[1], "wisdom", "do not retain caller-owned arrays")
+    eq(#state.actions, 0, "saving preferences cannot cast")
+    ns.db.classPriorities.DRUID = {"might"}
+    click(state)
+    eq(state.actions[1].spellID, 19834, "click must reread order after a stale preview")
+    local nextSession, nextState = setup(ns.db)
+    priorityTarget(nextState)
+    eq(nextSession:Decision().family, "might", "saved order survives reload")
+end)
+
+test("priority_invalid_edit_does_not_change_saved_selection", function()
+    local ns, state = setup({classPriorities = {DRUID = {"wisdom"}}})
+    assert(type(ns.SetClassPriorities) == "function", "class priorities need validation")
+    for _, invalid in ipairs({false, "kings", {"kings", "kings"}, {"unknown"}, {[2] = "might"}}) do
+        eq(ns:SetClassPriorities("DRUID", invalid), false)
+        eq(ns.db.classPriorities.DRUID[1], "wisdom")
+    end
+    eq(ns:SetClassPriorities("NOT_A_CLASS", {"might"}), false)
+    eq(#state.actions, 0)
+    assert(table.concat(state.logs, "\n"):find("Priorität", 1, true), "explain invalid input")
+end)
+
+test("priority_empty_list_disables_only_selected_class_and_reset_restores_default", function()
+    local ns, state = setup({classPriorities = {WARRIOR = {"kings"}}})
+    priorityTarget(state)
+    assert(type(ns.SetClassPriorities) == "function", "each class needs its own on/off selection")
+    eq(ns:SetClassPriorities("DRUID", {}), true)
+    eq(ns.decision.code, "CLASS_DISABLED")
+    click(state); eq(#state.actions, 0)
+    assert(type(ns.ResetClassPriorities) == "function", "defaults need an explicit restore action")
+    eq(ns:ResetClassPriorities("DRUID"), true)
+    eq(ns.decision.family, "kings")
+    eq(ns.db.classPriorities.WARRIOR[1], "kings", "reset one class must preserve the others")
+end)
+
+test("priority_edits_in_combat_do_not_touch_protected_action_or_cast", function()
+    local ns, state = setup()
+    state.locked = true
+    local writes, reads = state.attributeWrites, state.reads
+    assert(type(ns.SetClassPriorities) == "function", "preferences can be saved during combat")
+    eq(ns:SetClassPriorities("DRUID", {"might"}), true)
+    eq(state.attributeWrites, writes, "combat router stays fixed")
+    eq(state.reads, reads, "no target inspection during combat")
+    eq(#state.actions, 0)
+    state.locked = false
+    priorityTarget(state)
+    eq(ns:Decision().family, "might")
+end)
+
+test("priority_corrupt_saved_map_blocks_auto_and_explicit_reset_recovers", function()
+    local ns, state = setup({classPriorities = "invalid"})
+    eq(ns.db.classPriorities, "invalid", "do not silently discard corrupt preferences")
+    eq(ns:Decision().code, "INVALID_PRIORITIES")
+    ns:Command("priorities reset")
+    eq(type(ns.db.classPriorities), "table")
+    eq(ns:Decision().family, "might")
+    eq(#state.actions, 0)
+end)
+
+test("priority_command_opens_class_settings_without_casting", function()
+    local ns, state = setup()
+    ns:Command("priorities")
+    eq(ns.Menu.current, "priorities", "shortcut must open the class settings page")
+    eq(#state.actions, 0)
+end)
+
+test("priority_global_recovery_clears_failed_class_reset_feedback", function()
+    local ns, state = setup({classPriorities = "damaged"})
+    ns:Command("priorities")
+    ns.Menu.priorityReset.scripts.OnClick(ns.Menu.priorityReset)
+    assert(ns.Menu.priorityError, "a failed per-class reset must explain the error")
+    assert(ns.Menu.priorityStatus:GetText():find("/fmb priorities reset", 1, true),
+        "the failed reset must keep its concrete recovery command visible")
+    ns:Command("priorities reset")
+    eq(ns.Menu.priorityError, nil, "successful recovery must clear stale failure feedback")
+    assert(not ns.Menu.priorityStatus:GetText():find("nicht übernommen", 1, true))
+    eq(ns:Decision().ready, true)
+    eq(#state.actions, 0)
+end)
+
 local count, failures = 0, 0
 for _, entry in ipairs(tests) do
     if not arg[1] or entry.name:find(arg[1], 1, true) then

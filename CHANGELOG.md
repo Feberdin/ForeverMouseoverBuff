@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.0 Beta — Priorities for each recipient class
+
+- Add a class-priority page with all nine recipient classes, ordered Might,
+  Wisdom and Kings choices, per-family switches and per-class default restore.
+- Use the saved list on both preview and the fresh deliberate buff key press.
+  An empty list disables only that recipient class in automatic mode.
+- Druids now default to Kings → Wisdom → Might: when other paladins already
+  supply Kings and Wisdom, select learned and level-appropriate Might.
+- Preserve any own permanent blessing in Auto, including one excluded from the
+  list. Previously, an own blessing outside the default class list could be
+  replaced. This closes that gap and prevents accidental replacement after edits.
+- Keep fixed manual modes and the preconfigured combat Kings action independent.
+- Validate preferences before saving; add CLASS_DISABLED / INVALID_PRIORITIES
+  diagnostics and an explicit `/fmb priorities reset` recovery command.
+
+Automated tests cover the selection, persistence, native input boundary and menu
+geometry. Live gameplay and recipient delivery remain separate acceptance checks.
+
 ## 0.7.6 Beta — Quiet outgoing greetings
 
 - Keep **Send automatic greetings** and **Hide my greetings** independently

@@ -1,4 +1,4 @@
--- Purpose: the native Sanctum settings menu with six readable, focused pages.
+-- Purpose: the native Sanctum settings menu with seven readable, focused pages.
 -- Input: initialized preferences and detached Stats/Diagnostic snapshots.
 -- Output: ordinary UI frames and deliberate calls to the existing command API.
 -- Invariants: no cast, binding change, HTTP request or fabricated counter/rank.
@@ -10,6 +10,7 @@ ns.Menu = Menu
 local modeNames = {auto = "Automatisch", might = "Macht", wisdom = "Weisheit", kings = "Könige"}
 local views = {
     {id = "buffs", name = "Buffs & Taste"},
+    {id = "priorities", name = "Klassen-Priorität"},
     {id = "messages", name = "Grüße & Chat"},
     {id = "sounds", name = "Töne"},
     {id = "stats", name = "Meine Statistik"},
@@ -18,7 +19,7 @@ local views = {
 }
 
 -- Presentation helpers keep coordinates local to each page. All setting changes
--- use App.Command, so the existing validation and combat deferral stay in charge.
+-- use App methods, so existing validation and combat deferral stay in charge.
 local function text(parent, value, x, y, width, height, size, color)
     return ns.Theme.Text(parent, value, x, y, width, height, size or 13, color or ns.Theme.colors.text)
 end
@@ -59,6 +60,105 @@ local function buildBuffs(page)
     Menu.controls.enabled = ns.Theme.Toggle(page, "Mouseover-Buffs aktiv", "Gelernte Segen für andere freundliche Spieler.", 0, 332, 588,
         function() ns:Command(ns.db.enabled and "off" or "on") end)
     Menu.combat = text(page, "", 0, 404, 588, 32, 12, ns.Theme.colors.muted)
+end
+
+-- Priority editing always starts with Core's detached active list. For example,
+-- disabling Kings in {kings, wisdom, might} submits {wisdom, might}; re-enabling
+-- it appends Kings. Reordering cannot edit another class or arm a spell.
+local allFamilies = {"kings", "wisdom", "might"}
+local function enable(button, enabled)
+    if enabled then button:Enable() else button:Disable() end
+end
+local function savePriorities(priorities)
+    Menu.priorityError = nil
+    if not ns:SetClassPriorities(Menu.priorityClass, priorities) then
+        Menu.priorityError = "Änderung nicht übernommen. Unter Diagnose den Status prüfen."
+    end
+    Menu.Refresh()
+end
+local function changePriority(family, direction)
+    local priorities = ns.Core.GetPriorities(ns.db.classPriorities, Menu.priorityClass)
+    if not priorities then return end
+    local position
+    for index, current in ipairs(priorities) do
+        if current == family then position = index; break end
+    end
+    if direction == 0 then
+        if position then table.remove(priorities, position)
+        else priorities[#priorities + 1] = family end
+    else
+        local destination = position and position + direction
+        if not destination or destination < 1 or destination > #priorities then return end
+        priorities[position], priorities[destination] = priorities[destination], priorities[position]
+    end
+    savePriorities(priorities)
+end
+local function refreshPriorities()
+    local priorities = ns.Core.GetPriorities(ns.db.classPriorities, Menu.priorityClass)
+    local order, active = {}, {}
+    for _, family in ipairs(priorities or {}) do
+        order[#order + 1] = family; active[family] = true
+    end
+    -- Always keep disabled choices visible below the active ordered list.
+    for _, family in ipairs(allFamilies) do
+        if not active[family] then order[#order + 1] = family end
+    end
+    for token, button in pairs(Menu.classButtons) do
+        button:SetSelected(token == Menu.priorityClass)
+    end
+    for index, row in ipairs(Menu.priorityRows) do
+        local family = order[index]
+        row.family = family
+        row.label:SetText((active[family] and (index .. ". ") or "– ") .. modeNames[family])
+        row.active:SetText(active[family] and "AN" or "AUS")
+        row.active:SetSelected(active[family] == true)
+        enable(row.active, priorities ~= nil)
+        enable(row.up, priorities ~= nil and active[family] and index > 1)
+        enable(row.down, priorities ~= nil and active[family] and index < #priorities)
+    end
+    local note = priorities and (#priorities == 0 and "Kein Segen aktiviert – diese Klasse wird im Auto-Modus ausgelassen."
+        or "Aktive Segen werden von oben nach unten geprüft; ausgeschaltete übersprungen.")
+        or "Ungültige Priorität. Standard für diese Klasse wiederherstellen;\nbei beschädigten Gesamtdaten: /fmb priorities reset (alle Klassen)."
+    Menu.priorityStatus:SetText(Menu.priorityError or note)
+    Menu.priorityStatus:SetTextColor(unpackValues((Menu.priorityError or not priorities)
+        and ns.Theme.colors.gold or ns.Theme.colors.muted))
+end
+
+-- All nine classes remain visible; no dropdown or role guessing is required.
+-- Small independent buttons give every family an explicit on/off and order action.
+local function buildPriorities(page)
+    heading(page, "Segen nach Klasse priorisieren.", "Gilt im Auto-Modus außerhalb des Kampfes. Klasse wählen,\nSegen aktivieren und die Reihenfolge mit Hoch / Runter ändern.")
+    Menu.classButtons, Menu.priorityRows = {}, {}
+    Menu.priorityClass = "DRUID"
+    for index, option in ipairs(ns.Core.ClassOptions()) do
+        local token = option.token
+        local x, y = ((index - 1) % 3) * 198, 78 + math.floor((index - 1) / 3) * 33
+        Menu.classButtons[token] = ns.Theme.Button(page, option.name, x, y, 190, 28, function()
+            Menu.priorityClass, Menu.priorityError = token, nil
+            Menu.Refresh()
+        end)
+    end
+    Menu.priorityStatus = text(page, "", 0, 178, 588, 31, 11, ns.Theme.colors.muted)
+    for index = 1, 3 do
+        local row, y = {}, 212 + (index - 1) * 47
+        card(page, y, 40)
+        row.label = text(page, "", 14, y + 10, 265, 24, 15)
+        row.active = ns.Theme.Button(page, "", 292, y + 4, 70, 32,
+            function() changePriority(row.family, 0) end)
+        row.up = ns.Theme.Button(page, "Hoch", 374, y + 4, 94, 32,
+            function() changePriority(row.family, -1) end)
+        row.down = ns.Theme.Button(page, "Runter", 480, y + 4, 94, 32,
+            function() changePriority(row.family, 1) end)
+        Menu.priorityRows[index] = row
+    end
+    Menu.priorityReset = ns.Theme.Button(page, "Standard wiederherstellen", 0, 358, 256, 32, function()
+        Menu.priorityError = nil
+        if not ns:ResetClassPriorities(Menu.priorityClass) then
+            Menu.priorityError = "Standard nicht übernommen. /fmb priorities reset\nsetzt alle Klassen zurück."
+        end
+        Menu.Refresh()
+    end)
+    text(page, "Eigene vorhandene Segen bleiben erhalten. Weitere fehlende Segen\nkönnen von anderen Paladinen ergänzt werden.", 0, 400, 588, 36, 12, ns.Theme.colors.muted)
 end
 
 local function buildMessages(page)
@@ -147,7 +247,7 @@ local function build()
     theme.Rect(panel, 208, 138, 1, 410, theme.colors.edge)
     for index, view in ipairs(views) do
         local id = view.id
-        Menu.navigation[id] = theme.Button(panel, view.name, 20, 140 + (index - 1) * 51, 171, 42,
+        Menu.navigation[id] = theme.Button(panel, view.name, 20, 140 + (index - 1) * 47, 171, 40,
             function() Menu.Select(id) end)
         local page = CreateFrame("Frame", nil, panel)
         page:SetSize(588, 438); page:SetPoint("TOPLEFT", panel, "TOPLEFT", 228, -137)
@@ -160,6 +260,7 @@ local function build()
     text(panel, "v" .. ns.VERSION .. "  ·  Feberdin", 22, 590, 206, 17, 10, theme.colors.muted)
     text(panel, "Einstellungen direkt übernommen · Datei beim nächsten /reload", 254, 589, 563, 21, 10, theme.colors.muted)
     buildBuffs(Menu.pages.buffs)
+    buildPriorities(Menu.pages.priorities)
     buildMessages(Menu.pages.messages)
     buildSounds(Menu.pages.sounds)
     buildStats(Menu.pages.stats)
@@ -217,7 +318,8 @@ function Menu.Refresh()
     Menu.status:SetTextColor(unpackValues(color))
     Menu.combat:SetText(ns.combatDirty and "Kampfbelegung: Änderung wird nach dem Kampf übernommen."
         or "Im Kampf: dieselbe Taste wirkt Könige, sobald gelernt. Die automatische Prüfung vorhandener Segen pausiert.")
-    if Menu.current == "stats" then refreshStats()
+    if Menu.current == "priorities" then refreshPriorities()
+    elseif Menu.current == "stats" then refreshStats()
     elseif Menu.current == "diagnostics" then refreshDiagnostics() end
 end
 function Menu.Select(view)
