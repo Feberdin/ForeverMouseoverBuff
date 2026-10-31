@@ -1,6 +1,6 @@
 # Forever Mouseover Buff
 
-![Forever Mouseover Buff mit goldenem Mauszeiger und originalem Feberdin-Ritterlogo](release/assets/brand-banner.png)
+![Forever Mouseover Buff mit goldenem Mauszeiger und originalem Feberdin-Ritterlogo](release/assets/launch-hero-0.9.0.png)
 
 **[English](README.md)** · [Änderungen](CHANGELOG.md) · [Mitmachen](CONTRIBUTING.md) · [Feberdin-Design](BRANDING.md)
 
@@ -10,7 +10,7 @@ Wähle einen gelernten Paladinsegen für den befreundeten Spieler unter deiner
 Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
 um seine automatischen Grüße abzulehnen.
 
-**0.8.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.9.0 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Oberfläche und Grüße sind überwiegend deutsch. Klassenprioritäten und das native
 Sanctum-Menü sind automatisiert und im nachgebildeten Layout geprüft. Die
@@ -46,10 +46,10 @@ Klasse**; die vorbereiteten Grußstile anderer Klassen ergänzen keine Zauber.
    `ForeverMouseoverBuff/ForeverMouseoverBuff.toc` liegen.
 2. Starte WoW nach der ersten Installation neu. Bei einem Update reicht
    normalerweise `/reload`.
-3. Öffne mit `/fmb` die Einstellungen.
-4. Als Paladin vergibst du unter **Tastaturbelegung → Forever Mouseover Buff**
-   eine freie Taste. Fahre über einen freundlichen Spieler, drücke die Taste und
-   lasse sie wieder los.
+3. Folge der kurzen Einführung. Mit `/fmb` öffnest du später die Einstellungen.
+4. Als Paladin wählst du im Addon **Taste einrichten** oder gibst `/fmb bind` ein
+   und vergibst eine freie Taste. Fahre über einen freundlichen Spieler, drücke
+   die Taste und lasse sie wieder los.
 5. Du möchtest nur die Grüße abschalten? Gib `/fmb receive off` ein. Dafür
    brauchst du weder einen Paladin noch eine Buff-Taste.
 
@@ -60,6 +60,38 @@ Klasse**; die vorbereiteten Grußstile anderer Klassen ergänzen keine Zauber.
 Beim Öffnen von Feedback wird das Hauptmenü ausgeblendet. Schließen oder Escape
 führt zur bisherigen Seite zurück. Direkt geöffnetes Feedback (`/fmb feedback`)
 schließt wieder ohne Hauptmenü, wenn es vorher nicht geöffnet war.
+
+## Kurze Einführung und deine eigene Buff-Taste
+
+Die Einführung erscheint nach Installation oder Update auf diese Version einmal
+pro Charakter automatisch. Mit `/fmb intro` kannst du sie erneut öffnen. Sie
+erklärt Mouseover, das Verhalten im Kampf und die optionalen Grüße, ohne deine
+bisherigen Einstellungen zu ändern. Schließen überspringt die Einführung; bei
+späteren normalen Logins bleibt das Menü geschlossen. Du kannst jederzeit zur
+Einführung zurückkehren.
+
+Öffne `/fmb bind` oder **Buffs & Taste → Taste wählen**. Starte die
+Tastenerfassung und drücke eine freie Tastaturtaste, bei Bedarf zusammen mit Alt,
+Strg, Umschalt oder Cmd auf dem Mac. Auch die mittlere Maustaste, Maustaste 4/5
+und das Mausrad sind möglich. Linke und rechte Maustaste bleiben für die normale
+Bedienung frei.
+Gespeichert wird im aktuell aktiven WoW-Belegungssatz: accountweit oder nur für
+diesen Charakter. Eine neue freie Taste ersetzt die bisherigen FMB-Tasten.
+Wählst du eine bereits FMB zugewiesene Taste, bleibt deren Belegung unverändert.
+
+Eine schon anderweitig belegte Taste wird mit einer Erklärung abgelehnt. Wähle
+eine freie Kombination oder gib die Taste bewusst in WoWs Tastaturbelegung frei.
+Escape, Fensterschließen oder Kampfbeginn bricht die Erfassung ab. Änderungen sind
+nur außerhalb des Kampfes möglich. Das Entfernen der Buff-Belegung betrifft nur
+FMB-Tasten. Es wird keine Taste automatisch vergeben; die Einrichtung löst keinen
+Zauber aus. **Tastaturbelegung → Forever Mouseover Buff** bleibt ebenfalls nutzbar.
+
+
+![Introduction](release/assets/launch-intro-0.9.0.png)
+
+![Buff key setup](release/assets/launch-keybinding-0.9.0.png)
+
+*Vorschau aus dem Addon-Code · deutsche Oberfläche; keine Ingame-Aufnahme.*
 
 ## Prioritäten je Zielklasse
 

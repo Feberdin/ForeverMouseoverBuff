@@ -1,10 +1,10 @@
 -- Purpose: automatic OOC blessings, a fixed learned Kings combat binding, and feedback.
 -- Input: public API snapshots, /fmb, Blizzard key bindings and UI events.
 -- Output: status, throttled feedback, native key-up casts, confirmed whispers and seal reminders.
--- Invariants: no hover/timer casts, key replacement, self fallback or dynamic combat selection.
+-- Invariants: no hover/timer casts, automatic key assignment, self fallback or dynamic combat selection.
 -- Debug: /fmb diag; /fmb debug on; /fmb status. Structured local logs flush on reload/logout.
 local _, ns = ...
-ns.VERSION = "0.8.0"
+ns.VERSION = "0.9.0"
 local binding = "CLICK ForeverMouseoverBuffButton:LeftButton"
 local modes = {auto = "Auto", might = "Macht", wisdom = "Weisheit", kings = "Könige"}
 local elapsed = 0
@@ -184,7 +184,7 @@ function ns:BindingKey()
 end
 
 function ns:BindingLabel()
-    return self:BindingKey() or "Noch keine Taste – WoW-Tastaturbelegung öffnen"
+    return self:BindingKey() or "Noch keine Taste"
 end
 
 -- The protected router keeps the original binding name. Its combat branch is
@@ -485,7 +485,8 @@ function ns:ResetClassPriorities(classToken)
 end
 
 function ns:Help()
-    say("WoW-Optionen → Tastaturbelegung → Forever Mouseover Buff: freie Taste für Mouseover-Spieler buffen vergeben. Das Addon belegt keine Taste selbst.")
+    say("/fmb intro zeigt die kurze Einführung. /fmb bind öffnet die Tastenwahl; Escape bricht ab. Belegte Tasten bleiben geschützt.")
+    say("Alternativ: WoW-Optionen → Tastaturbelegung → Forever Mouseover Buff. Ohne deine Auswahl wird keine Taste belegt.")
     say("Maus über einen befreundeten Spieler halten, Taste drücken und loslassen. Solange du selbst außerhalb des Kampfes bist, darf das Ziel auch kämpfen. Ein vorhandener gleichartiger Segen bleibt erhalten; Auto wählt eine hilfreiche Alternative. Auf Reittieren ist die Auto-Auswahl gesperrt.")
     say("Im Kampf: dieselbe Taste wirkt ausschließlich Segen der Könige, sobald gelernt. Keine Klassen-, Rang- oder Buffprüfung; eigene Segen können ersetzt werden. An/Aus-Änderungen gelten erst nach dem Kampf.")
     say("Auto: Unter /fmb priorities für jede Zielklasse Segen aktivieren und nach Priorität ordnen. Druiden: standardmäßig Könige → Weisheit → Macht. Bereits vorhandene fremde Segen werden übersprungen; eigene Segen bleiben stehen. Nur gelernte Ränge bis zur Zielstufe.")
@@ -539,7 +540,13 @@ end
 function ns:Command(command)
     if not self.initialized then self:Initialize() end
     command = (safeString(command) or ""):match("^%s*(.-)%s*$"):lower()
-    if command == "priorities" then
+    if command == "intro" then
+        if self.Menu then self.Menu.ShowIntroduction() end
+        return
+    elseif command == "bind" then
+        if self.Menu then self.Menu.BeginBinding() end
+        return
+    elseif command == "priorities" then
         self:ShowPanel()
         if self.Menu then self.Menu.Select("priorities") end
         return
@@ -646,7 +653,11 @@ function ns:Initialize()
     if self.RankingExport then self.RankingExport.Initialize() end
     self.API.RefreshSpellbook()
     self:CreateActionButton()
-    self:ShowPanel()
+    if self.db.introductionSeen ~= true then
+        if self.API.Locked() then self.introductionPending = true
+        elseif self.Menu then self.Menu.ShowIntroduction() end
+    end
+    self:Refresh()
     if self.SealReminder then self.SealReminder.Check() end
 end
 
@@ -697,6 +708,10 @@ function ns:OnEvent(event, unit, second, third, fourth)
         -- preparation as soon as safe, without invoking the native action handler.
         if self.button then clearAction(self.button) end
         self:RefreshCombatAction()
+        if self.introductionPending and self.Menu then
+            self.introductionPending = nil
+            self.Menu.ShowIntroduction()
+        end
     end
     self:Refresh()
 end

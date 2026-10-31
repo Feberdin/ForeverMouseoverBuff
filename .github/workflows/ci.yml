@@ -42,8 +42,8 @@ jobs:
           node --check service/static/upload.js
       - name: Static checks
         run: |
-          .ci-tools/bin/ruff check scripts/prepare-release.py tests/test_release_package.py tests/test_diagnostics_end_to_end.py tests/test_issue_templates.py service companion
-          .ci-tools/bin/ruff format --check scripts/prepare-release.py tests/test_release_package.py tests/test_diagnostics_end_to_end.py tests/test_issue_templates.py service companion
+          .ci-tools/bin/ruff check scripts/prepare-release.py release/assets/render-launch-0.9.0.py tests/test_release_package.py tests/test_diagnostics_end_to_end.py tests/test_issue_templates.py service companion
+          .ci-tools/bin/ruff format --check scripts/prepare-release.py release/assets/render-launch-0.9.0.py tests/test_release_package.py tests/test_diagnostics_end_to_end.py tests/test_issue_templates.py service companion
           shellcheck scripts/check-portable.sh
           sh -n scripts/check-portable.sh
           python3 -m json.tool service/openapi.json > /dev/null
@@ -51,4 +51,4 @@ jobs:
       - name: Prepare reviewed packages without publishing
         run: |
           mkdir -p dist
-          python3 scripts/prepare-release.py --version 0.8.0 --output dist/ci-0.8.0
+          python3 scripts/prepare-release.py --version 0.9.0 --output dist/ci-0.9.0

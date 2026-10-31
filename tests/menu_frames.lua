@@ -39,6 +39,9 @@ function Fixture.install()
         function result:SetAlpha(value) self.alpha = value end
         function result:SetScale(value) self.scale = value end
         function result:GetEffectiveScale() return self.scale or 1 end
+        function result:EnableKeyboard(value) self.keyboardEnabled = value end
+        function result:EnableMouseWheel(value) self.mouseWheelEnabled = value end
+        function result:SetPropagateKeyboardInput(value) self.propagateKeyboard = value end
         function result:SetFrameStrata(value) self.strata = value end
         function result:GetFrameLevel() return self.level or 1 end
         function result:SetFrameLevel(value) self.level = value end

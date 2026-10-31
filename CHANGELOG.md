@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.0 Beta — Introduction and in-addon key setup
+
+- Show a short introduction once per character after the update; reopen it with
+  `/fmb intro`. Explain deliberate mouseover buffing, combat Kings and greetings.
+- Add direct key setup on **Buffs & Taste** and through `/fmb bind`, including
+  keyboard modifiers, the middle mouse button, buttons 4/5 and the mouse wheel.
+- Preserve other actions: reject occupied keys and save deliberate changes in
+  WoW's current account-wide or character-specific binding set. Removing a
+  binding affects only FMB keys; no default key is installed.
+- Cancel capture with Escape, window close or combat entry. Keep the native
+  CLICK action and combat behavior; setup never casts a spell.
+- Keep previously shown introductions closed on later logins, including after
+  skipping them, while retaining accessible
+  help, class priorities and all existing saved preferences.
+
+Prepared locally as a Beta candidate. In-game key delivery, combat transitions
+and recipient delivery remain separate release acceptance checks. This changelog
+records the prepared changes, not a publication or an in-game test result.
+
 ## 0.8.0 Beta — Priorities for each recipient class
 
 - Add a class-priority page with all nine recipient classes, ordered Might,

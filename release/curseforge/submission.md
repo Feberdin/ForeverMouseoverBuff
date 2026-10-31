@@ -1,9 +1,10 @@
 # CurseForge submission record and update guide
 
-Recorded on **2026-10-12**. The GitHub repository and v0.7.2 release are public.
+Historical record from **2026-10-12**. The GitHub repository and v0.7.2 release are public.
 CurseForge project **1741880** (`forever-mouseover-buff`) and file **9150370**
 (`ForeverMouseoverBuff-0.7.2.zip`, Beta, Forever 1.60.1) have been submitted.
-**CurseForge moderation is still pending**; submission is not approval.
+**At that recorded date, CurseForge moderation was pending**; this historical
+record does not establish the current moderation state.
 The GitHub source link is saved in the project. Ranking stays local.
 
 - [GitHub source](https://github.com/Feberdin/ForeverMouseoverBuff)
@@ -11,6 +12,29 @@ The GitHub source link is saved in the project. Ranking stays local.
 - [CurseForge project](https://www.curseforge.com/wow/addons/forever-mouseover-buff)
 
 The following notes document the inputs and repeatable steps for later updates.
+
+## Authorized update: 0.9.0 Beta
+
+On **2026-10-31**, the owner explicitly requested completion for WoW Forever and
+publication on CurseForge with new product images. Publish the update to the
+existing project **1741880** (`forever-mouseover-buff`); no new project is needed.
+The update adds a short introduction and deliberate key setup inside the addon.
+
+Local installation in the active Forever AddOns directory is complete: 26 files,
+version 0.9.0, Interface 16001, runtime bytes matched to the reviewed source.
+The installed client is 1.60.1.70685. SavedVariables were not modified. File
+installation does not establish successful loading or real input delivery in WoW.
+
+Keep the authorized publication marked **Beta** while live acceptance remains
+open: keyboard/mouse bindings, modifier combinations, occupied-key rejection,
+Escape/window/combat cancellation, account/character persistence and introduction
+re-opening. The local evidence is in `docs/release-polish-validation.md`.
+
+Final release images, source commit, exact-commit CI and package hashes must be
+checked before upload. This preparation record does not claim a completed upload,
+moderation approval or stable-release acceptance. Record the actual file ID,
+release URL, download hash and platform status after publication; populate the
+candidate's currently empty public release URL only after the release exists.
 
 ## Is GitHub required?
 
@@ -31,11 +55,14 @@ and [Project Submission Guide and Tips](https://support.curseforge.com/support/s
 - Original icon: `release/assets/project-icon.png`, 400×400 PNG; vector source
   beside it. The guideline requires a square PNG at least 400×400 and an original
   graphic, not a generic game logo. Upload this avatar separately from addon files.
-- Description banner: `release/assets/curseforge-banner.png`, 800×300 PNG. The
+- New 0.9.0 launch series: `release/assets/launch-{hero,intro,keybinding}-0.9.0.png`,
+  each 1600×900 and below 2 MiB. Provenance and reproduction: `release/assets/launch-0.9.0.md`.
+  The interface images are code-derived previews, not in-game screenshots.
+- Legacy description banner: `release/assets/curseforge-banner.png`, 800×300 PNG. The
   observed editor requires a width below 850 pixels. The full 1600×600 banner
   and 1280×640 GitHub Social Preview remain separate source assets.
 - Brand guide: `BRANDING.md`; the owner-provided knight is preserved unchanged.
-- Installable package: `ForeverMouseoverBuff-0.7.2.zip`, containing one addon
+- Prepared installable package: `ForeverMouseoverBuff-0.9.0.zip`, containing one addon
   directory with its runtime files and license. It excludes the web prototype,
   companion, tests, user data and native game/WIM files.
 - Source: reviewed own-code snapshot with portable CI in
@@ -59,19 +86,19 @@ and moderation result rather than relabeling untested work as a stable release.
 ## Manual publication sequence
 
 1. Complete source review and applicable publication / privacy review. Record
-   which native/in-game checks have actually run; keep the 0.7.2 release marked
+   which native/in-game checks have actually run; keep the candidate marked
    Beta while its broader in-game acceptance is ongoing. Resolve publication blockers
    before a public listing.
-2. Sign into the intended CurseForge author account, choose a distinct project
-   name and paste the reviewed English metadata and description.
+2. Sign into the intended CurseForge author account, open existing project
+   **1741880** and update the reviewed English description and release images.
 3. Upload the original icon, choose MIT and appropriate categories.
 4. Select Forever / 1.60.1 and upload the installable ZIP, not the source ZIP.
 5. Add changelog, release type and optional WIM relation only if available and
    desired; WIM is not a required dependency.
 6. Submit for moderation. Verify acceptance, displayed description, downloadable
    ZIP contents and flavor selection. A local ZIP is not an approved publication.
-7. Record the actual project ID/URL. Add source/issues links only after a real
-   repository exists. Never substitute another project's ID.
+7. Record the new file ID and its actual download/status under project **1741880**.
+   Preserve the existing source/issues links and verify the downloaded ZIP hash.
 
 After every GitHub push, inspect the CI run for that exact commit; local checks
 do not establish remote CI. The v0.7.2 release commit is

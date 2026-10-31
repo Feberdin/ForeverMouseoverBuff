@@ -18,13 +18,18 @@ end
 
 -- The fake preserves the Blizzard template's native OnClick marker. It counts
 -- attempted actions, not successful WoW casts; it also models the OOC hard gate.
-local function setup(saved, modules)
-    local state = {frames = {}, locked = false, nativeClicks = 0, actions = {}, reads = 0,
+local function setup(saved, modules, initialCombat)
+    local state = {frames = {}, locked = initialCombat == true, nativeClicks = 0, actions = {}, reads = 0,
         context = fixture(), logs = {}, notices = {}, sounds = {}, attributeWrites = 0,
         refreshBook = 0, templateMissing = false, kingsKnown = false, now = 100}
     local function newFrame(name)
         local frame = {scripts = {}, attributes = {}, shown = true, text = ""}
         function frame:SetScript(event, handler) self.scripts[event] = handler end
+        function frame:GetFrameLevel() return self.level or 1 end
+        function frame:SetFrameLevel(value) self.level = value end
+        function frame:EnableKeyboard(value) self.keyboardEnabled = value end
+        function frame:EnableMouseWheel(value) self.mouseWheelEnabled = value end
+        function frame:SetPropagateKeyboardInput(value) self.propagateKeyboard = value end
         function frame:GetScript(event) return self.scripts[event] end
         function frame:RegisterEvent(event) self.events = self.events or {}; self.events[event] = true end
         function frame:SetAttribute(key, value)
@@ -165,6 +170,38 @@ local function click(state, between)
     button.scripts.OnClick(button, "LeftButton", false)
     if button.scripts.PostClick then button.scripts.PostClick(button, "LeftButton", false) end
 end
+
+test("introduction opens once per character and can be replayed", function()
+    local ns, state = setup()
+    eq(ns.Menu.current, "intro", "first login must explain the addon before settings")
+    eq(ns.db.introductionSeen, true, "successful display is remembered")
+    eq(#state.actions, 0, "introduction must never cast")
+    local saved = ns.db
+    ns = setup(saved)
+    assert(not ns.panel or not ns.panel:IsShown(), "returning login must not reopen the menu")
+    ns:Command("intro")
+    eq(ns.Menu.current, "intro")
+    eq(ns.panel:IsShown(), true, "intro command reopens the introduction")
+end)
+test("introduction manually seen during combat does not reopen at combat end", function()
+    local ns, state = setup(nil, nil, true)
+    assert(not ns.panel, "first-login introduction waits until combat ends")
+    ns:Command("intro")
+    eq(ns.Menu.current, "intro")
+    ns.panel:Hide()
+    state.locked = false
+    ns:OnEvent("PLAYER_REGEN_ENABLED")
+    eq(ns.panel:IsShown(), false, "explicitly dismissed introduction must stay closed")
+    eq(#state.actions, 0)
+end)
+test("introduction deferred by combat is shown safely after combat", function()
+    local ns, state = setup(nil, nil, true)
+    assert(not ns.panel)
+    state.locked = false
+    ns:OnEvent("PLAYER_REGEN_ENABLED")
+    eq(ns.Menu.current, "intro"); eq(ns.db.introductionSeen, true)
+    eq(#state.actions, 0)
+end)
 
 -- GitHub is a deliberate external boundary. Synthetic builders let these
 -- contracts observe exactly when diagnostics and URLs reach the copy dialog.
@@ -853,6 +890,7 @@ test("outgoing_chat_toggle_persists_and_keeps_receiver_and_sender_controls_indep
     eq(ns.db.receiveWhispers, false); eq(ns.db.whisper, true)
     local reloaded = setup(ns.db)
     eq(reloaded.db.showOutgoingWhispers, true)
+    reloaded:ShowPanel() -- Returning logins now leave the menu closed until requested.
     reloaded.outgoingButton.scripts.OnClick()
     eq(reloaded.db.showOutgoingWhispers, false)
     eq(reloaded.db.receiveWhispers, false); eq(reloaded.db.whisper, true)

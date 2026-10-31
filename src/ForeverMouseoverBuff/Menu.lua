@@ -1,7 +1,7 @@
--- Purpose: the native Sanctum settings menu with seven readable, focused pages.
+-- Purpose: native Sanctum settings, a short introduction and deliberate key setup.
 -- Input: initialized preferences and detached Stats/Diagnostic snapshots.
 -- Output: ordinary UI frames and deliberate calls to the existing command API.
--- Invariants: no cast, binding change, HTTP request or fabricated counter/rank.
+-- Invariants: no cast or HTTP; key changes require explicit input outside combat.
 -- Debug: /fmb opens the menu; lua tests/test_menu.lua checks navigation and actions.
 local _, ns = ...
 local unpackValues = unpack or table.unpack
@@ -42,24 +42,122 @@ local function action(parent, label, x, y, width, command)
     return ns.Theme.Button(parent, label, x, y, width, 34, function() ns:Command(command) end)
 end
 
+-- Capture consumes both press and release. In particular, choosing an already
+-- bound key must not let its key-up reach the buff router while this dialog is open.
+-- Example: SHIFT down, F6 down, SHIFT up, F6 up still selects SHIFT-F6 once.
+function Menu.CancelBinding(message)
+    Menu.pendingKey, Menu.pendingInput = nil, nil
+    if Menu.capture then
+        Menu.capture:EnableKeyboard(false)
+        Menu.capture:Hide()
+    end
+    if message and Menu.bindingNotice then Menu.bindingNotice:SetText(message) end
+end
+local function acceptKey(key)
+    if not ns.Keybinding then
+        Menu.captureMessage:SetText("Tastenmodul fehlt. Vollständiges Addon installieren und /reload ausführen.")
+        return
+    end
+    local ok, message = ns.Keybinding.Assign(key)
+    if ok then Menu.CancelBinding(message); Menu.Refresh()
+    else Menu.captureMessage:SetText(message) end
+end
+local function inputDown(input)
+    if input == "ESCAPE" then Menu.CancelBinding("Tastenwahl abgebrochen."); return end
+    if not ns.Keybinding then return end
+    local key = ns.Keybinding.FromInput(input)
+    if key then Menu.pendingInput, Menu.pendingKey = input, key end
+end
+local function inputUp(input)
+    if Menu.pendingInput ~= input then return end
+    local key = Menu.pendingKey
+    Menu.pendingInput, Menu.pendingKey = nil, nil
+    acceptKey(key)
+end
+local function buildCapture(page)
+    local capture = CreateFrame("Frame", nil, page)
+    Menu.capture = capture
+    capture:SetSize(588, 438); capture:SetPoint("TOPLEFT", page, "TOPLEFT", 0, 0)
+    capture:SetFrameLevel(page:GetFrameLevel() + 20)
+    ns.Theme.Rect(capture, 0, 0, 588, 438, ns.Theme.colors.bg)
+    text(capture, "Deine Taste für AutoBuff", 16, 22, 556, 38, 23, ns.Theme.colors.gold)
+    text(capture, "Jetzt die gewünschte Taste drücken und loslassen.\nAuch mit Umschalt, Strg, Alt oder Cmd kombinierbar.", 16, 84, 556, 54, 15)
+    text(capture, "Maustaste oder Mausrad: Maus über dieses Feld bewegen.\nLinke und rechte Maustaste bleiben für die normale Bedienung frei.\nEine neue Taste ersetzt deine bisherigen Buff-Tasten.\nAndere belegte Tasten werden nicht überschrieben.", 16, 155, 556, 75, 12, ns.Theme.colors.muted)
+    Menu.captureMessage = text(capture, "", 16, 248, 556, 78, 14, ns.Theme.colors.gold)
+    Menu.captureCancel = ns.Theme.Button(capture, "Abbrechen (Escape)", 16, 359, 250, 36,
+        function() Menu.CancelBinding("Tastenwahl abgebrochen.") end)
+    capture:EnableMouse(true); capture:EnableMouseWheel(true)
+    capture:SetPropagateKeyboardInput(false)
+    capture:SetScript("OnKeyDown", function(_, key) inputDown(key) end)
+    capture:SetScript("OnKeyUp", function(_, key) inputUp(key) end)
+    capture:SetScript("OnMouseDown", function(_, key) inputDown(key) end)
+    capture:SetScript("OnMouseUp", function(_, key) inputUp(key) end)
+    capture:SetScript("OnMouseWheel", function(_, delta)
+        if delta == 0 or not ns.Keybinding then return end
+        acceptKey(ns.Keybinding.FromInput(delta > 0 and "MOUSEWHEELUP" or "MOUSEWHEELDOWN"))
+    end)
+    capture:SetScript("OnHide", function(self)
+        self:EnableKeyboard(false)
+        Menu.pendingInput, Menu.pendingKey = nil, nil
+    end)
+    capture:Hide()
+end
+function Menu.BeginBinding()
+    Menu.Show()
+    Menu.Select("buffs")
+    if ns.API.Locked() then
+        Menu.bindingNotice:SetText("Tastenwahl erst nach dem Kampf möglich.")
+        return
+    end
+    Menu.captureMessage:SetText("Warte auf deine Taste …")
+    Menu.capture:Show()
+    Menu.capture:EnableKeyboard(true)
+end
+
 local function buildBuffs(page)
     heading(page, "Deine Segen. Eine Taste.", "Für Paladine: Mouseover auswählen, Taste drücken und loslassen.\nDas Addon wählt einen passenden gelernten Segen.")
     card(page, 78, 76)
     text(page, "AKTUELLER STATUS", 16, 90, 550, 16, 10, ns.Theme.colors.muted)
     Menu.status = text(page, "", 16, 113, 550, 33, 14)
-    card(page, 168, 64)
+    card(page, 168, 102)
     text(page, "DEINE BUFF-TASTE", 16, 179, 220, 15, 10, ns.Theme.colors.muted)
-    Menu.binding = text(page, "", 16, 199, 190, 23, 18, ns.Theme.colors.gold)
-    text(page, "Ändern: WoW-Optionen → Tastaturbelegung\n→ Forever Mouseover Buff", 240, 183, 332, 36, 12, ns.Theme.colors.muted)
-    text(page, "AUSWAHL AUSSERHALB DES KAMPFES", 0, 249, 588, 18, 10, ns.Theme.colors.muted)
+    Menu.binding = text(page, "", 16, 201, 256, 24, 16, ns.Theme.colors.gold)
+    Menu.bindingChoose = ns.Theme.Button(page, "Taste wählen", 284, 184, 155, 34, Menu.BeginBinding)
+    Menu.bindingClear = ns.Theme.Button(page, "Entfernen", 449, 184, 123, 34, function()
+        if ns.Keybinding then
+            local _, message = ns.Keybinding.Clear()
+            Menu.bindingNotice:SetText(message); Menu.Refresh()
+        end
+    end)
+    Menu.bindingNotice = text(page, "Optional: WoW-Tastaturbelegung → Forever Mouseover Buff", 16, 234, 556, 28, 11, ns.Theme.colors.muted)
+    text(page, "AUSWAHL AUSSERHALB DES KAMPFES", 0, 285, 588, 18, 10, ns.Theme.colors.muted)
     Menu.modeButtons = {}
     for index, mode in ipairs({"auto", "might", "wisdom", "kings"}) do
         local choice = mode
-        Menu.modeButtons[choice] = action(page, modeNames[choice], (index - 1) * 150, 278, 138, choice)
+        Menu.modeButtons[choice] = action(page, modeNames[choice], (index - 1) * 150, 310, 138, choice)
     end
-    Menu.controls.enabled = ns.Theme.Toggle(page, "Mouseover-Buffs aktiv", "Gelernte Segen für andere freundliche Spieler.", 0, 332, 588,
+    Menu.controls.enabled = ns.Theme.Toggle(page, "Mouseover-Buffs aktiv", "Gelernte Segen für andere freundliche Spieler.", 0, 356, 588,
         function() ns:Command(ns.db.enabled and "off" or "on") end)
-    Menu.combat = text(page, "", 0, 404, 588, 32, 12, ns.Theme.colors.muted)
+    Menu.combat = text(page, "", 0, 421, 588, 16, 10, ns.Theme.colors.muted)
+    buildCapture(page)
+end
+
+-- A single short page introduces the actual workflow. It shares the menu window
+-- so Escape, feedback and the normal navigation never create stacked dialogs.
+local function buildIntroduction(page)
+    heading(page, "Willkommen bei AutoBuff.", "Forever Mouseover Buff – in drei Schritten startklar.\nDie Einführung findest du später unter Hilfe oder /fmb intro.")
+    card(page, 78, 90)
+    text(page, "1   Deine Buff-Taste wählen", 16, 90, 550, 26, 18, ns.Theme.colors.gold)
+    text(page, "Unter „Buffs & Taste“ eine freie Taste oder Maustaste zuweisen.\nOhne Zuweisung wird keine Taste verändert.", 16, 124, 550, 36, 12)
+    card(page, 180, 95)
+    text(page, "2   Maus über einen freundlichen Spieler", 16, 192, 550, 26, 18, ns.Theme.colors.gold)
+    text(page, "Taste drücken und loslassen – jeder Segen braucht einen Tastendruck.\nPaladine: Auto wählt außerhalb deines Kampfes einen gelernten Segen.\nIm Kampf wirkt dieselbe Taste nur Könige, sobald gelernt.", 16, 225, 550, 47, 12)
+    card(page, 287, 82)
+    text(page, "3   Grüße nach deinem Geschmack", 16, 299, 550, 26, 18, ns.Theme.colors.gold)
+    text(page, "Standard: Grüße an, eigene Kopien verborgen. Unter „Grüße & Chat“\nändern. Alle Klassen können dort den Empfang ausschalten.", 16, 332, 550, 32, 12)
+    Menu.introBinding = ns.Theme.Button(page, "Taste einrichten", 0, 388, 185, 38, Menu.BeginBinding)
+    Menu.introMessages = ns.Theme.Button(page, "Grüße einstellen", 197, 388, 185, 38, function() Menu.Select("messages") end)
+    Menu.introDone = ns.Theme.Button(page, "Los geht’s", 394, 388, 194, 38, function() Menu.Select("buffs") end)
 end
 
 -- Priority editing always starts with Core's detached active list. For example,
@@ -223,8 +321,8 @@ local function buildHelp(page)
     text(page, "Bericht und technische Angaben erst prüfen. Danach den Link\nkopieren und die Meldung selbst auf GitHub absenden.", 16, 124, 550, 39, 12, ns.Theme.colors.muted)
     ns.feedbackButton = ns.Theme.Button(page, "Feedback & Hilfe auf GitHub", 16, 170, 357, 31,
         function() ns:ShowFeedbackPanel() end)
-    text(page, "01   Taste einmal zuweisen", 0, 236, 588, 25, 15)
-    text(page, "WoW-Optionen → Tastaturbelegung → Forever Mouseover Buff.", 32, 263, 550, 24, 12, ns.Theme.colors.muted)
+    Menu.introReplay = ns.Theme.Button(page, "Einführung erneut ansehen", 0, 228, 320, 34, function() Menu.ShowIntroduction() end)
+    text(page, "Taste wählen: „Buffs & Taste“ oder /fmb bind.", 0, 271, 588, 24, 12, ns.Theme.colors.muted)
     text(page, "02   Freundlichen Spieler mit der Maus wählen", 0, 306, 588, 25, 15)
     text(page, "Zum Wirken die Buff-Taste drücken und loslassen.", 32, 333, 550, 24, 12, ns.Theme.colors.muted)
     text(page, "03   Wenn etwas nicht klappt", 0, 376, 588, 25, 15)
@@ -237,6 +335,7 @@ local function build()
     local theme = ns.Theme
     local panel = theme.Window("ForeverMouseoverBuffPanel", "", 840, 620)
     ns.panel = panel
+    panel:SetScript("OnHide", function() Menu.CancelBinding() end)
     theme.Icon(panel, theme.Path("ProjectIcon"), 24, 22, 68, 68)
     text(panel, "FOREVER", 108, 24, 525, 20, 12, theme.colors.gold)
     text(panel, "Mouseover Buff", 106, 48, 580, 34, 27)
@@ -253,6 +352,9 @@ local function build()
         page:SetSize(588, 438); page:SetPoint("TOPLEFT", panel, "TOPLEFT", 228, -137)
         Menu.pages[id] = page
     end
+    local intro = CreateFrame("Frame", nil, panel)
+    intro:SetSize(588, 438); intro:SetPoint("TOPLEFT", panel, "TOPLEFT", 228, -137)
+    Menu.pages.intro = intro
     theme.Rect(panel, 20, 493, 171, 63, theme.colors.panel)
     text(panel, "FÜR ALLE KLASSEN", 32, 504, 151, 16, 10, theme.colors.gold)
     text(panel, "Grüße empfangen oder\nausblenden – du entscheidest.", 32, 526, 151, 29, 10, theme.colors.muted)
@@ -266,6 +368,7 @@ local function build()
     buildStats(Menu.pages.stats)
     buildDiagnostics(Menu.pages.diagnostics)
     buildHelp(Menu.pages.help)
+    buildIntroduction(intro)
 end
 
 local function refreshStats()
@@ -312,25 +415,38 @@ function Menu.Refresh()
     ns.outgoingButton:SetValue(ns.db.showOutgoingWhispers ~= true)
     for mode, button in pairs(Menu.modeButtons) do button:SetSelected(ns.db.mode == mode) end
     Menu.binding:SetText(ns:BindingLabel())
+    local locked = ns.API.Locked()
+    enable(Menu.bindingChoose, not locked)
+    enable(Menu.bindingClear, not locked and ns:BindingKey() ~= nil)
+    if locked and Menu.capture:IsShown() then Menu.CancelBinding("Tastenwahl wegen Kampfbeginn abgebrochen.") end
     local decision = ns.decision
     Menu.status:SetText(decision and decision.text or "Status wird beim nächsten Mouseover geprüft.")
     local color = decision and decision.ready and ns.Theme.colors.mint or ns.Theme.colors.gold
     Menu.status:SetTextColor(unpackValues(color))
     Menu.combat:SetText(ns.combatDirty and "Kampfbelegung: Änderung wird nach dem Kampf übernommen."
-        or "Im Kampf: dieselbe Taste wirkt Könige, sobald gelernt. Die automatische Prüfung vorhandener Segen pausiert.")
+        or "Im Kampf: feste Könige, sobald gelernt; keine automatische Buffprüfung.")
     if Menu.current == "priorities" then refreshPriorities()
     elseif Menu.current == "stats" then refreshStats()
     elseif Menu.current == "diagnostics" then refreshDiagnostics() end
 end
 function Menu.Select(view)
     if not Menu.pages[view] then return false end
+    Menu.CancelBinding()
     Menu.current = view
     for id, page in pairs(Menu.pages) do
         if id == view then page:Show() else page:Hide() end
-        Menu.navigation[id]:SetSelected(id == view)
+        if Menu.navigation[id] then Menu.navigation[id]:SetSelected(id == view) end
     end
     Menu.Refresh()
     return true
+end
+function Menu.ShowIntroduction()
+    Menu.Show()
+    Menu.Select("intro")
+    -- Remember display only after construction succeeds. Closing is a valid skip;
+    -- /fmb intro always reopens this same help page without resetting preferences.
+    ns.db.introductionSeen = true
+    ns.introductionPending = nil
 end
 function Menu.Show()
     if ns.HideFeedbackPanelForMenu then ns:HideFeedbackPanelForMenu() end

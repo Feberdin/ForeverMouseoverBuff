@@ -95,6 +95,25 @@ class ReleaseTests(unittest.TestCase):
             self.prepare()
         self.assertEqual(marker.read_text(), "keep me")
 
+    def test_launch_artwork_ships_in_source_without_inflating_game_addon(self):
+        # Public release images belong to the developer archive, never the game UI.
+        names = [
+            "hero-art-0.9.0.jpg",
+            "launch-0.9.0.html",
+            "launch-0.9.0.md",
+            "render-launch-0.9.0.py",
+        ]
+        for view in ("hero", "intro", "keybinding"):
+            names.extend(f"launch-{view}-0.9.0.{ext}" for ext in ("png", "svg"))
+        for name in names:
+            target = self.root / "release/assets" / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"synthetic public artwork")
+        result = self.prepare()
+        for name in names:
+            self.assertIn("release/assets/" + name, result["source_files"])
+            self.assertFalse(any(name in path for path in result["addon_files"]))
+
     def test_counter_helpers_ship_and_load_before_statistics(self):
         self.prepare()
         with zipfile.ZipFile(self.output / "ForeverMouseoverBuff-0.7.0.zip") as archive:
@@ -150,6 +169,7 @@ class ReleaseTests(unittest.TestCase):
         result = self.prepare()
         with zipfile.ZipFile(self.output / "ForeverMouseoverBuff-0.7.0.zip") as addon:
             for name in (
+                "Keybinding.lua",
                 "Theme.lua",
                 "Menu.lua",
                 "Media/ProjectIcon.tga",

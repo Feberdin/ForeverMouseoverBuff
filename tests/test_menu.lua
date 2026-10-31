@@ -78,17 +78,147 @@ local function textContains(state, part)
     return false
 end
 
+-- Release setup must be reachable through visible controls, without casting or
+-- changing any key simply because a user opens the menu.
+test("binding setup offers a deliberate key picker in the buffs page", function()
+    local ns, state = setup()
+    local picker
+    for _, node in ipairs(state.nodes) do
+        if node.kind == "Button" and node.label and node.label.text == "Taste wählen" then picker = node end
+    end
+    assert(picker, "Buffs & Taste must offer a visible Taste wählen control")
+    picker:Click()
+    eq(ns.Menu.capture:IsShown(), true, "click opens key capture")
+    eq(state.casts, 0, "opening key setup cannot cast")
+end)
+
+-- Use the real binding module with a native API boundary fake. The UI tests
+-- exercise actual press/release handlers, rather than calling Assign directly.
+local function bindingSetup()
+    local ns, state = setup()
+    state.bindings, state.bindingWrites, state.bindingSaves = {F1 = "TARGETSELF"}, 0, 0
+    local command = "CLICK ForeverMouseoverBuffButton:LeftButton"
+    _G.GetBindingKey = function()
+        local result = {}
+        for key, actionName in pairs(state.bindings) do
+            if actionName == command then result[#result + 1] = key end
+        end
+        table.sort(result)
+        return unpack(result)
+    end
+    _G.GetBindingAction = function(key) return state.bindings[key] or "" end
+    _G.GetCurrentBindingSet = function() return 2 end
+    _G.SetBinding = function(key, actionName)
+        state.bindingWrites = state.bindingWrites + 1
+        state.bindings[key] = actionName
+        return true
+    end
+    _G.SaveBindings = function(scope) eq(scope, 2); state.bindingSaves = state.bindingSaves + 1 end
+    _G.IsShiftKeyDown = function() return state.shift == true end
+    _G.IsControlKeyDown, _G.IsAltKeyDown, _G.IsMetaKeyDown = function() return false end, function() return false end, function() return false end
+    _G.issecretvalue = function() return false end
+    ns.API.Locked = function() return state.locked == true end
+    ns.BindingLabel = function() return GetBindingKey() or "Noch keine Taste" end
+    assert(loadfile("src/ForeverMouseoverBuff/Keybinding.lua"))("ForeverMouseoverBuff", ns)
+    return ns, state, command
+end
+local function keyboard(ns, event, key)
+    ns.Menu.capture.scripts[event](ns.Menu.capture, key)
+end
+test("binding setup consumes press and release then saves the selected chord once", function()
+    local ns, state, command = bindingSetup()
+    ns.Menu.bindingChoose:Click()
+    eq(state.bindingWrites, 0, "opening must not assign")
+    eq(ns.Menu.capture.propagateKeyboard, false)
+    eq(ns.Menu.capture.keyboardEnabled, true)
+    state.shift = true
+    keyboard(ns, "OnKeyDown", "F6")
+    eq(state.bindingWrites, 0, "press alone must not assign")
+    state.shift = false
+    keyboard(ns, "OnKeyUp", "LSHIFT")
+    eq(state.bindingWrites, 0, "modifier release must not assign")
+    keyboard(ns, "OnKeyUp", "F6")
+    eq(state.bindings["SHIFT-F6"], command)
+    eq(state.bindingSaves, 1)
+    eq(state.bindings.F1, "TARGETSELF")
+    eq(ns.Menu.binding.text, "SHIFT-F6")
+    eq(ns.Menu.capture:IsShown(), false)
+    eq(ns.Menu.capture.keyboardEnabled, false)
+    eq(state.casts, 0)
+end)
+test("binding setup collision keeps the picker open with a useful explanation", function()
+    local ns, state = bindingSetup()
+    ns.Menu.bindingChoose:Click()
+    keyboard(ns, "OnKeyDown", "F1"); keyboard(ns, "OnKeyUp", "F1")
+    eq(state.bindings.F1, "TARGETSELF"); eq(state.bindingWrites, 0)
+    eq(ns.Menu.capture:IsShown(), true)
+    assert(ns.Menu.captureMessage.text:find("bereits belegt", 1, true))
+    keyboard(ns, "OnKeyDown", "ESCAPE")
+    eq(ns.Menu.capture:IsShown(), false); eq(ns.Menu.capture.keyboardEnabled, false)
+    eq(ns.panel:IsShown(), true, "Escape leaves settings available")
+end)
+test("binding setup cancels pending input on close navigation combat and explicit cancel", function()
+    for _, reason in ipairs({"close", "page", "combat", "cancel"}) do
+        local ns, state = bindingSetup()
+        ns.Menu.bindingChoose:Click(); keyboard(ns, "OnKeyDown", "F6")
+        if reason == "close" then ns.panel:Hide()
+        elseif reason == "page" then ns.Menu.Select("messages")
+        elseif reason == "combat" then state.locked = true; ns.Menu.Refresh()
+        else ns.Menu.captureCancel:Click() end
+        eq(ns.Menu.capture:IsShown(), false, reason)
+        eq(ns.Menu.capture.keyboardEnabled, false, reason)
+        keyboard(ns, "OnKeyUp", "F6")
+        eq(state.bindingWrites, 0, reason); eq(state.casts, 0)
+    end
+end)
+test("binding setup refuses to open in combat and rejects release without press", function()
+    local ns, state = bindingSetup()
+    state.locked = true; ns.Menu.BeginBinding()
+    eq(ns.Menu.capture:IsShown(), false)
+    assert(ns.Menu.bindingNotice.text:find("Kampf", 1, true))
+    state.locked = false; ns.Menu.BeginBinding()
+    keyboard(ns, "OnKeyUp", "F6"); eq(state.bindingWrites, 0)
+end)
+test("binding setup supports mouse buttons wheel and explicit removal", function()
+    local ns, state, command = bindingSetup()
+    ns.Menu.bindingChoose:Click()
+    local capture = ns.Menu.capture
+    capture.scripts.OnMouseDown(capture, "Button5")
+    eq(state.bindingWrites, 0)
+    capture.scripts.OnMouseUp(capture, "Button5")
+    eq(state.bindings.BUTTON5, command)
+    ns.Menu.bindingChoose:Click()
+    capture.scripts.OnMouseWheel(capture, -1)
+    eq(state.bindings.MOUSEWHEELDOWN, command); eq(state.bindings.BUTTON5, nil)
+    ns.Menu.bindingClear:Click()
+    eq(state.bindings.MOUSEWHEELDOWN, nil); eq(state.bindings.F1, "TARGETSELF")
+    eq(state.casts, 0)
+end)
+test("introduction controls lead to setup messages and replay without changing preferences", function()
+    local ns, state = bindingSetup()
+    ns.Menu.ShowIntroduction()
+    eq(ns.Menu.current, "intro"); eq(ns.db.introductionSeen, true)
+    ns.Menu.introBinding:Click(); eq(ns.Menu.capture:IsShown(), true)
+    ns.Menu.captureCancel:Click()
+    ns.Menu.ShowIntroduction(); ns.Menu.introMessages:Click()
+    eq(ns.Menu.current, "messages"); eq(ns.db.whisper, true)
+    ns.Menu.Select("help"); ns.Menu.introReplay:Click()
+    eq(ns.Menu.current, "intro")
+    ns.Menu.introDone:Click(); eq(ns.Menu.current, "buffs")
+    eq(state.bindingWrites, 0); eq(state.casts, 0)
+end)
+
 test("approved spacious menu replaces the old narrow button stack", function()
     local ns = setup()
     eq(ns.panel.width, 840, "main menu width")
     eq(ns.panel.height, 620, "main menu height")
     eq(ns.Menu.current, "buffs")
 end)
-test("seven pages switch exclusively and invalid navigation preserves selection", function()
+test("seven settings pages plus introduction switch exclusively", function()
     local ns = setup()
     local count = 0
     for _ in pairs(ns.Menu.pages) do count = count + 1 end
-    eq(count, 7)
+    eq(count, 8)
     ns.Menu.Select("messages")
     for name, page in pairs(ns.Menu.pages) do eq(page:IsShown(), name == "messages", name) end
     eq(ns.Menu.Select("unknown"), false)

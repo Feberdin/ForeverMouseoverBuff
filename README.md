@@ -1,6 +1,6 @@
 # Forever Mouseover Buff
 
-![Forever Mouseover Buff: golden cursor and the original Feberdin knight logo](release/assets/brand-banner.png)
+![Forever Mouseover Buff: golden cursor and the original Feberdin knight logo](release/assets/launch-hero-0.9.0.png)
 
 **[Deutsch](README.de.md)** · [Quickstart](#-start-in-a-minute) · [Message controls](#-three-separate-message-controls) · [Changelog](CHANGELOG.md)
 
@@ -10,7 +10,7 @@ Choose a learned Paladin blessing for the friendly player under your mouse.
 Other classes can install Forever Mouseover Buff simply to decline its automatic
 greetings.
 
-**0.8.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.9.0 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 The interface and greetings are primarily German. Class priorities and the native
 Sanctum menu have automated behavior and offline layout coverage. Live gameplay
@@ -43,9 +43,9 @@ use works for **every class**; the other greeting styles do not add their spells
    manual ZIP installation, check that the folder contains
    `ForeverMouseoverBuff/ForeverMouseoverBuff.toc`.
 2. Restart WoW after first installation. An update normally needs `/reload`.
-3. Enter `/fmb` to open the controls.
-4. Paladins: assign a free key under **Key Bindings → Forever Mouseover Buff**.
-   Hover a friendly player, then press and release that key.
+3. Follow the short introduction. `/fmb` opens the controls later.
+4. Paladins: choose **Taste einrichten** in the addon, or enter `/fmb bind`,
+   and assign a free key. Hover a friendly player, then press and release it.
 5. Only want to decline greetings? Enter `/fmb receive off`. No buff binding is
    needed, and your character can be any class.
 
@@ -55,6 +55,37 @@ Use `/fmb auto` for automatic selection outside combat, or choose `/fmb might`,
 Opening feedback hides the main menu. Closing or Escape returns to the previous
 page. Standalone `/fmb feedback` closes without opening a previously closed menu.
 Only one FMB window is visible at a time.
+
+## A short introduction and your own buff key
+
+The introduction appears automatically once per character after installing or
+updating to this version. Open it again with `/fmb intro`. It explains the
+mouseover action, combat behavior and optional greetings without changing your
+existing preferences. Closing it skips the introduction; ordinary later logins
+keep the menu closed. You can return to it at any time.
+
+Open `/fmb bind` or **Buffs & Taste → Taste wählen**. Start key capture and
+press a free keyboard key, optionally with Alt, Ctrl, Shift or Cmd on a Mac.
+You can also use the middle mouse button, mouse buttons 4/5 or the mouse wheel.
+Left and right mouse buttons remain available for ordinary interaction.
+The chosen key is saved
+in WoW's currently active account-wide or character-specific binding set.
+Choosing a new free key replaces the previous FMB keys. Selecting an existing
+FMB key leaves its current assignments unchanged.
+
+A key already assigned to another action is rejected with an explanation; choose
+a free combination or free the key deliberately in WoW's key binding settings.
+Escape, closing the window or entering combat cancels key capture. Binding
+changes are available outside combat only. Removing the buff binding affects
+only FMB's keys. No key is assigned automatically and setup never casts a spell.
+The usual **Key Bindings → Forever Mouseover Buff** entry remains available.
+
+
+![Introduction](release/assets/launch-intro-0.9.0.png)
+
+![Buff key setup](release/assets/launch-keybinding-0.9.0.png)
+
+*Preview from the addon code · German interface; not an in-game screenshot.*
 
 ## Class priorities outside combat
 
@@ -143,7 +174,7 @@ the key uses fixed learned Kings without this automatic selection.
 ## ✨ Sanctum in-game menu
 
 `/fmb` opens the native dark teal menu with the original Feberdin knight and
-addon icon. The sidebar separates buffs and key binding help, greetings, sounds,
+addon icon. The sidebar separates buffs and key setup, greetings, sounds,
 local statistics, diagnostics and feedback. Mint switches show the current
 settings; gold marks the selected page and blessing mode. Settings apply at once.
 The window fits smaller screens and closes with Escape. Statistics and diagnosis
@@ -224,7 +255,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.8.0 --output dist/review-0.8.0
+python3 scripts/prepare-release.py --version 0.9.0 --output dist/review-0.9.0
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party
