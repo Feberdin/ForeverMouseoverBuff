@@ -210,3 +210,10 @@ Code-Vorschau gekennzeichnete UI-Ansichten. Herkunft und Reproduktion stehen in
 The three image URLs at tag `v0.9.0` were fetched and matched their local files.
 
 Check timestamp: `2026-10-31T13:54:09+00:00`.
+
+### Moderation update — 2026-10-31T13:56:23+00:00
+
+CurseForge now shows file **9384236** as **Approved**. The public
+[0.9.0 Beta file page](https://www.curseforge.com/wow/addons/forever-mouseover-buff/files/9384236) is accessible and identifies the new version
+as the **Main File** for Forever 1.60.1. Publication is complete. The Beta label
+continues to reflect the remaining real-client acceptance described above.
