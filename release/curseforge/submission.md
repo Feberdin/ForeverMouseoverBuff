@@ -34,7 +34,7 @@ Final release images, source commit, exact-commit CI and package hashes must be
 checked before upload. This preparation record does not claim a completed upload,
 moderation approval or stable-release acceptance. Record the actual file ID,
 release URL, download hash and platform status after publication; populate the
-candidate's currently empty public release URL only after the release exists.
+public release URL only after the release exists; see the dated publication record below.
 
 ## Is GitHub required?
 
@@ -122,3 +122,21 @@ authentication or anti-cheat. Valid older counters migrate; damaged records are
 preserved and statistic updates pause while buffing remains available. The event
 export stays readable and separate from counter storage. Do not advertise
 verified ranks, server integration or unsupported classes.
+
+## Publication record — 2026-10-31
+
+- Release source: commit `98c2b663173b5083274ce0808d9e596cad30e2a1`, tag `v0.9.0`.
+- GitHub prerelease and both ZIPs are public: [0.9.0 Beta](https://github.com/Feberdin/ForeverMouseoverBuff/releases/tag/v0.9.0).
+- Exact-source CI passed for [main](https://github.com/Feberdin/ForeverMouseoverBuff/actions/runs/41207149498) and [tag](https://github.com/Feberdin/ForeverMouseoverBuff/actions/runs/41207149531).
+- CurseForge file **9384236**, **Beta**, **Forever 1.60.1**, uploaded successfully.
+  Status at this check: **Under Review**. Automatic publication after moderation is enabled.
+  This record does not claim moderation approval; the public main file still showed 0.8.0.
+- The English/German description and [three-image gallery](https://www.curseforge.com/wow/addons/forever-mouseover-buff/gallery) are publicly visible.
+- The new CDN ZIP was downloaded and matched the reviewed package byte for byte.
+  Addon SHA-256: `81c6397f9f39d2e3ba309a7e1c0b81d83e2864f6c8a8c857d7c0206a4a5e0004`.
+- Source ZIP SHA-256: `9e705feda31798789d15758b23207f7a5fba9b98c2f2fd92cb5e2c4f4d3ade91`.
+  Published ZIPs remain bound to the release commit above; this later publication record does not replace them.
+
+The three image URLs at tag `v0.9.0` were fetched and matched their local files.
+
+Check timestamp: `2026-10-31T13:54:09+00:00`.

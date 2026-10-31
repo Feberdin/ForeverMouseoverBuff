@@ -4,9 +4,9 @@
 
 Für die Veröffentlichung ausdrücklich freigegebene Version **0.9.0 Beta** für
 WoW Forever 1.60.1 / Interface 16001. Der Auftrag umfasst die Fertigstellung und
-die Veröffentlichung auf CurseForge mit neuen Produktbildern. Dieser Bericht
-belegt lokale Prüfung und Installation; ein erfolgter Upload oder eine
-Plattformfreigabe wird daraus nicht abgeleitet.
+die Veröffentlichung auf CurseForge mit neuen Produktbildern. Die Prüfabschnitte
+belegen lokale Prüfung und Installation. Der datierte Publikationsvermerk am
+Ende dokumentiert Upload und Plattformstatus getrennt davon.
 Der sichere CLICK-Router und die eigentliche Segenauswahl bleiben unverändert.
 
 - Eine kurze Einführung erscheint einmal pro Charakter, auch nach dem Update.
@@ -192,3 +192,21 @@ Der Vertrag prüft zugleich, dass Marketing-Dateien nicht ins installierbare Add
 Die Bildserie umfasst ein KI-unterstütztes Titelmotiv und zwei ausdrücklich als
 Code-Vorschau gekennzeichnete UI-Ansichten. Herkunft und Reproduktion stehen in
 `release/assets/launch-0.9.0.md`. Originale Feberdin-Marken bleiben unverändert.
+
+## Publication record — 2026-10-31
+
+- Release source: commit `98c2b663173b5083274ce0808d9e596cad30e2a1`, tag `v0.9.0`.
+- GitHub prerelease and both ZIPs are public: [0.9.0 Beta](https://github.com/Feberdin/ForeverMouseoverBuff/releases/tag/v0.9.0).
+- Exact-source CI passed for [main](https://github.com/Feberdin/ForeverMouseoverBuff/actions/runs/41207149498) and [tag](https://github.com/Feberdin/ForeverMouseoverBuff/actions/runs/41207149531).
+- CurseForge file **9384236**, **Beta**, **Forever 1.60.1**, uploaded successfully.
+  Status at this check: **Under Review**. Automatic publication after moderation is enabled.
+  This record does not claim moderation approval; the public main file still showed 0.8.0.
+- The English/German description and [three-image gallery](https://www.curseforge.com/wow/addons/forever-mouseover-buff/gallery) are publicly visible.
+- The new CDN ZIP was downloaded and matched the reviewed package byte for byte.
+  Addon SHA-256: `81c6397f9f39d2e3ba309a7e1c0b81d83e2864f6c8a8c857d7c0206a4a5e0004`.
+- Source ZIP SHA-256: `9e705feda31798789d15758b23207f7a5fba9b98c2f2fd92cb5e2c4f4d3ade91`.
+  Published ZIPs remain bound to the release commit above; this later publication record does not replace them.
+
+The three image URLs at tag `v0.9.0` were fetched and matched their local files.
+
+Check timestamp: `2026-10-31T13:54:09+00:00`.

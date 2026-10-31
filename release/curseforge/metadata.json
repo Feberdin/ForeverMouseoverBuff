@@ -17,9 +17,11 @@
   "publicRepositoryUrl": "https://github.com/Feberdin/ForeverMouseoverBuff",
   "rankingEndpoint": null,
   "releaseType": "beta",
-  "publicationStatus": "Prepared locally as a Beta candidate; this manifest does not establish publication or moderation approval.",
+  "publicationStatus": "GitHub prerelease published; CurseForge file 9384236 uploaded and Under Review at the recorded check. Automatic publication is enabled after approval.",
   "projectSlug": "forever-mouseover-buff",
   "publicProjectUrl": "https://www.curseforge.com/wow/addons/forever-mouseover-buff",
   "fileName": "ForeverMouseoverBuff-0.9.0.zip",
-  "publicReleaseUrl": null
+  "publicReleaseUrl": "https://github.com/Feberdin/ForeverMouseoverBuff/releases/tag/v0.9.0",
+  "curseforgeFileId": 9384236,
+  "publicationCheckedAt": "2026-10-31T13:54:09+00:00"
 }
