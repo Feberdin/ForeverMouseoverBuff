@@ -7,14 +7,14 @@ local function test(name, fn) tests[#tests + 1] = {name = name, fn = fn} end
 local function eq(got, expected, label)
     assert(got == expected, (label or "value") .. ": expected " .. tostring(expected) .. ", got " .. tostring(got))
 end
-local function setup()
+local function setup(classToken)
     local state = assert(loadfile("tests/menu_frames.lua"))().install()
     local ns = {db = {enabled = true, mode = "auto", sound = true, whisper = true,
         receiveWhispers = false, showOutgoingWhispers = false, sealSound = true, rankingEnabled = false,
         classPriorities = {}},
         VERSION = "0.7.4", initialized = true,
         decision = {ready = false, text = "Fahre mit der Maus über einen anderen befreundeten Spieler."},
-        API = {Locked = function() return false end}}
+        API = {Locked = function() return false end, PlayerClass = function() return classToken or "PALADIN" end}}
     -- Load the actual visual controls as an integration boundary: hit areas,
     -- selected state and child geometry must not depend on a second theme fake.
     assert(loadfile("src/ForeverMouseoverBuff/Theme.lua"))("ForeverMouseoverBuff", ns)
@@ -194,6 +194,72 @@ test("binding setup supports mouse buttons wheel and explicit removal", function
     eq(state.bindings.MOUSEWHEELDOWN, nil); eq(state.bindings.F1, "TARGETSELF")
     eq(state.casts, 0)
 end)
+-- The first visible step must show the actual key and lead directly to capture.
+-- Setting up a key changes labels immediately, without replaying the intro.
+test("key setup introduction shows missing key and refreshes after deliberate assignment", function()
+    local ns, state = bindingSetup()
+    ns.Menu.ShowIntroduction()
+    assert(ns.Menu.introBindingStatus, "introduction must show the actual binding status")
+    eq(ns.Menu.introBindingStatus.text, "Keine Buff-Taste belegt – bitte jetzt einrichten!")
+    eq(ns.Menu.introBinding.label.text, "Jetzt Taste einrichten")
+    eq(ns.Menu.introDone.label.text, "Später einrichten")
+    eq(state.bindingWrites, 0, "showing intro must not assign any key")
+    ns.Menu.introBinding:Click()
+    eq(ns.Menu.capture:IsShown(), true, "one click starts deliberate key capture")
+    ns.Menu.capture.scripts.OnKeyDown(ns.Menu.capture, "F8")
+    ns.Menu.capture.scripts.OnKeyUp(ns.Menu.capture, "F8")
+    ns.Menu.ShowIntroduction()
+    eq(ns.Menu.introBindingStatus.text, "Deine Buff-Taste: F8")
+    eq(ns.Menu.introBinding.label.text, "Taste ändern")
+    eq(ns.Menu.introDone.label.text, "Los geht’s")
+    eq(state.bindingSaves, 1)
+    state.bindings.F8 = nil
+    ns.Menu.Refresh()
+    eq(ns.Menu.introBindingStatus.text, "Keine Buff-Taste belegt – bitte jetzt einrichten!")
+    eq(state.casts, 0)
+end)
+test("key setup introduction disables capture during combat and restores it afterwards", function()
+    local ns, state = bindingSetup()
+    ns.Menu.ShowIntroduction()
+    state.locked = true
+    ns.Menu.Refresh()
+    eq(ns.Menu.introBinding:IsEnabled(), false, "combat disables setup CTA")
+    state.locked = false
+    ns.Menu.Refresh()
+    eq(ns.Menu.introBinding:IsEnabled(), true)
+    eq(state.bindingWrites, 0)
+end)
+
+-- The shared action key needs a visible explanation before a low-health target
+-- unexpectedly receives a heal. Selection thresholds remain Core's decision.
+test("healing_guidance_explains_same_key_threshold_stillness_and_combat_in_introduction", function()
+    local ns, state = setup()
+    ns.Menu.ShowIntroduction()
+    local texts = {}
+    for _, node in ipairs(state.nodes) do
+        local ancestor = node.parent
+        while ancestor and ancestor ~= ns.Menu.pages.intro do ancestor = ancestor.parent end
+        if ancestor and type(node.text) == "string" then texts[#texts + 1] = node.text end
+    end
+    local intro = table.concat(texts, "\n")
+    assert(intro:find("unter 50 %", 1, true), "intro must explain the strict healing threshold")
+    assert(intro:find("im Stehen", 1, true), "intro must explain player stillness")
+    assert(intro:find("Lichtblitz", 1, true), "intro must name the preferred heal")
+    assert(intro:find("Wenn Lichtblitz nicht nutzbar ist: Heiliges Licht.", 1, true),
+        "intro must explain usable-spell fallback, including a learned but unusable Flash")
+    assert(intro:find("Könige", 1, true), "intro must retain the combat action")
+    eq(state.casts, 0)
+end)
+test("healing_guidance_settings_explain_buff_and_heal_on_the_same_key", function()
+    local ns, state = setup()
+    ns.Menu.Select("buffs")
+    assert(textContains(state, "Segen und Heilung"), "settings must describe both deliberate actions")
+    ns.decision = {ready = true, code = "READY_HEAL", text = "Lichtblitz: freundlich, unter 50 %, im Stehen."}
+    ns.Menu.Refresh()
+    eq(ns.Menu.status.text, ns.decision.text, "ready heal must use the actual Core status")
+    eq(state.casts, 0)
+end)
+
 test("introduction controls lead to setup messages and replay without changing preferences", function()
     local ns, state = bindingSetup()
     ns.Menu.ShowIntroduction()
@@ -559,6 +625,20 @@ test("feedback inherited parent hide does not restore another window", function(
     state.flush(); eq(ns.panel:IsShown(), false)
     UIParent:Show(); eq(ns.feedbackPanel:IsVisible(), true)
     ns.feedbackPanel:Hide(); state.flush(); eq(ns.panel:IsShown(), true)
+end)
+
+-- Cause plus recovery needs room for several lines on the existing status card.
+test("guidance_status_reserves_room_for_cause_and_recovery", function()
+    local ns = setup()
+    assert(ns.Menu.status.height >= 44, "status must fit cause and recovery without clipping")
+end)
+
+test("mage_menu_exposes_only_its_direct_buffs_and_explains_combat", function()
+    local ns, state=setup("MAGE")
+    assert(ns.Menu.modeButtons.intellect,"Mage needs Intelligence selector")
+    eq(ns.Menu.modeButtons.might,nil,"No Paladin selector on Mage")
+    assert(textContains(state,"Intelligenz"),"class spell labels visible")
+    assert(ns.Menu.combat.text:find("gesperrt",1,true),"Mage combat is blocked")
 end)
 
 local count = 0

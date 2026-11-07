@@ -22,6 +22,7 @@ from pathlib import Path
 
 LOG = logging.getLogger("fmb.release")
 ADDON_NAMES = (
+    "FeberdinDiagnostics.lua",
     "Core.lua",
     "API.lua",
     "Hash.lua",
@@ -35,12 +36,14 @@ ADDON_NAMES = (
     "RankingExport.lua",
     "Whisper.lua",
     "SealReminder.lua",
+    "AutoThanks.lua",
     "Diagnostics.lua",
     "Feedback.lua",
     "Theme.lua",
     "Keybinding.lua",
     "Menu.lua",
     "FeedbackUI.lua",
+    "AttemptTrace.lua",
     "App.lua",
     "ForeverMouseoverBuff.toc",
     "ForeverMouseoverBuff_Camelot.toc",
@@ -50,6 +53,7 @@ ADDON_NAMES = (
 )
 PORTABLE_TESTS = (
     "test_core.lua",
+    "test_classes.lua",
     "test_api.lua",
     "test_counter_codec.lua",
     "test_stats.lua",
@@ -61,6 +65,7 @@ PORTABLE_TESTS = (
     "test_chat_display.lua",
     "test_whisper.lua",
     "test_seal_reminder.lua",
+    "test_auto_thanks.lua",
     "test_diagnostics.lua",
     "test_feedback.lua",
     "test_theme.lua",

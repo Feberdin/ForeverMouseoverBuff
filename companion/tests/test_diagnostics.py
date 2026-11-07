@@ -49,6 +49,20 @@ class DiagnosticTests(unittest.TestCase):
         )
         return status, out.getvalue(), err.getvalue()
 
+    def test_ready_heal_is_preserved_as_a_public_core_event(self):
+        status, output, error = self.report(
+            b'schema=2,version="0.9.2",sequence=1,codes={"READY_HEAL"},'
+            b'fallbackReason="READY_HEAL",'
+            b'events={{sequence=1,code="READY_HEAL",severity="INFO",origin="CORE"}}'
+        )
+        self.assertEqual((status, error), (0, ""))
+        result = json.loads(output)
+        self.assertEqual(result["codes"], ["READY_HEAL"])
+        self.assertEqual(result["events"][0]["code"], "READY_HEAL")
+        self.assertEqual(result["events"][0]["severity"], "INFO")
+        self.assertEqual(result["events"][0]["origin"], "CORE")
+        self.assertEqual(result["fallbackReason"], "READY_HEAL")
+
     def test_legacy_diagnostics_can_be_read_locally_without_ranking_export_or_network(self):
         status, output, error = self.invoke(
             b'ForeverMouseoverBuffDB = { diagnostics = {version="0.7.1", '

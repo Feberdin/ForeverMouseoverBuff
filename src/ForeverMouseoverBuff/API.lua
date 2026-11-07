@@ -1,13 +1,15 @@
 -- Purpose: Read the public Forever spellbook and current player/mouseover facts.
--- Input: selected blessing family. Output: a detached context or fixed combat spell.
+-- Input: selected blessing family; optional public health/speed. Output: a detached context or fixed combat spell.
 -- Invariants: never cast, inspect identities, unwrap secrets, or treat unknown as safe.
 -- Debug: /fmb status and fixed API.LastCode/ns:Log codes; tests/test_api.lua.
 local _, namespace = ...
 local API = {}
 namespace.API = API
-local spellCache, nameCache
+local spellCache, nameCache, playerClassCache
 local MAX_LINES, MAX_SLOTS, MAX_CANDIDATES, MAX_AURAS = 100, 2000, 200, 255
 local familyIDs = { [19740] = "might", [19742] = "wisdom", [20217] = "kings" }
+local healIDs = { [19750] = "flash", [635] = "holy_light" }
+local healFamilies = { flash = true, holy_light = true }
 
 -- These identities identify known blessing families, not learned abilities or
 -- target level rules. Localized labels additionally cover future same-name ranks.
@@ -114,8 +116,18 @@ end
 
 local function classToken(unit)
     local ok, _, token = call(UnitClass, unit)
-    if ok and text(token, 30) and token:match("^[A-Z]+$") then return token end
+    if ok and text(token, 30) and token:match("^[A-Z]+$") then
+        if unit == "player" then playerClassCache = token end
+        return token
+    end
     issue("API_STATE_UNKNOWN")
+end
+
+-- Menu/export callers obtain only a validated public class token. Combat uses
+-- the already prepared action and never calls this helper for dynamic selection.
+function API.PlayerClass()
+    if lockState() ~= false then return playerClassCache end
+    return classToken("player")
 end
 
 local function spellName(id)
@@ -173,17 +185,48 @@ function API.CombatBlessing()
     return { spellID = 20217, spellName = name }, "COMBAT_SPELL_READY"
 end
 
+-- Only the caster's profile is required. A Mage must not depend on localized
+-- Paladin spell names being present. Optional alternate labels identify group
+-- equivalents and differently named Warlock detection ranks, never learn spells.
+local groupEquivalents = {
+    MAGE = { {23028, "intellect"} },
+    PRIEST = { {21562, "fortitude"}, {27681, "spirit"}, {27683, "shadow"} },
+    DRUID = { {21849, "mark"} },
+}
 local function names()
     if nameCache then return nameCache end
-    local result = { families = {}, blessings = {} }
-    for _, id in ipairs(blessingBaseIDs) do
-        local name = spellName(id)
-        if name then
-            result.blessings[name] = blessingFamilies[id]
-            if familyIDs[id] then result.families[name] = familyIDs[id] end
-        elseif familyIDs[id] then
-            issue("API_SPELL_NAMES_UNKNOWN")
-            return nil
+    local class = classToken("player")
+    local profile = namespace.Core.BuffProfile(class)
+    if not profile then return nil end
+    local result = { families = {}, blessings = {}, paladin = class == "PALADIN" }
+    if class == "PALADIN" then
+        for _, id in ipairs(blessingBaseIDs) do
+            local name = spellName(id)
+            if name then
+                result.blessings[name] = blessingFamilies[id]
+                if familyIDs[id] then result.families[name] = familyIDs[id] end
+            elseif familyIDs[id] then issue("API_SPELL_NAMES_UNKNOWN"); return nil end
+        end
+        for id, family in pairs(healIDs) do
+            local name = spellName(id)
+            if name then result.families[name] = family end
+        end
+    else
+        for _, entry in ipairs(profile.families) do
+            local name = spellName(entry[2])
+            -- A valid but unlearned optional spell may have no client label.
+            -- Skip that family; actual learned slots still need complete metadata.
+            if name then result.families[name], result.blessings[name] = entry[1], entry[1] end
+            for index = 4, #entry do
+                local alternate = spellName(entry[index])
+                if alternate then
+                    result.families[alternate], result.blessings[alternate] = entry[1], entry[1]
+                end
+            end
+        end
+        for _, entry in ipairs(groupEquivalents[class] or {}) do
+            local name = spellName(entry[1])
+            if name then result.blessings[name] = entry[2] end
         end
     end
     nameCache = result
@@ -271,7 +314,7 @@ function API.RefreshSpellbook()
     spellCache, nameCache = nil, nil
 end
 
-local function readSpells()
+local function readSpells(healing)
     if not spellCache then
         spellCache = buildSpellbook()
         if not spellCache then issue("API_SPELLBOOK_UNKNOWN"); return nil end
@@ -280,16 +323,18 @@ local function readSpells()
     local usable = method(C_Spell, "IsSpellUsable")
     local result = {}
     for _, item in ipairs(spellCache) do
-        local inRange = boolean(range, item.spellID, "mouseover")
-        local ok, isUsable, insufficientPower = call(usable, item.spellID)
-        if inRange == nil or not ok or not public(isUsable) or not public(insufficientPower)
-            or type(isUsable) ~= "boolean" or type(insufficientPower) ~= "boolean" then
-            issue("API_SPELL_STATE_UNKNOWN")
-            return nil
+        if (healFamilies[item.family] == true) == (healing == true) then
+            local inRange = boolean(range, item.spellID, "mouseover")
+            local ok, isUsable, insufficientPower = call(usable, item.spellID)
+            if inRange == nil or not ok or not public(isUsable) or not public(insufficientPower)
+                or type(isUsable) ~= "boolean" or type(insufficientPower) ~= "boolean" then
+                issue("API_SPELL_STATE_UNKNOWN")
+                return nil
+            end
+            result[#result + 1] = { spellID = item.spellID, spellName = item.spellName,
+                family = item.family, learnedLevel = item.learnedLevel, known = true,
+                inRange = inRange, usable = isUsable and not insufficientPower }
         end
-        result[#result + 1] = { spellID = item.spellID, spellName = item.spellName,
-            family = item.family, learnedLevel = item.learnedLevel, known = true,
-            inRange = inRange, usable = isUsable and not insufficientPower }
     end
     return result
 end
@@ -311,7 +356,8 @@ local function scanBlessings(getter, labels, filter)
             issue("API_AURAS_UNKNOWN")
             return nil
         end
-        local family = blessingFamilies[id] or labels.blessings[name]
+        local family = labels.blessings[name]
+        if labels.paladin then family = blessingFamilies[id] or family end
         if family then result[#result + 1] = { spellID = id, family = family } end
     end
 end
@@ -352,8 +398,20 @@ local function finish(context)
     if locked ~= false then
         context.playerCombat = locked
         context.spells, context.auraState, context.hasBlessing, context.blessings = nil, nil, nil, nil
+        context.heals, context.playerSpeed = nil, nil
+        if context.target then context.target.health, context.target.maxHealth = nil, nil end
     end
     return context
+end
+
+-- Health and speed are optional public facts, never inferred from secret or
+-- unavailable values. Reject before arithmetic/comparison and keep buffs usable.
+local function optionalNumber(getter, unit)
+    if not public(getter) or type(getter) ~= "function" then return nil end
+    local ok, value = call(getter, unit)
+    if ok and public(value) and type(value) == "number" and value == value
+        and value >= 0 and value < math.huge then return value end
+    issue("API_STATE_UNKNOWN")
 end
 
 -- Contexts deliberately contain no actor names, GUIDs, identities or unit chains.
@@ -367,7 +425,7 @@ function API.ReadContext(mode)
     context.mounted = boolean(IsMounted)
     context.flying = boolean(IsFlying)
     context.inVehicle = boolean(UnitInVehicle, "player")
-    if context.playerClass ~= "PALADIN" or context.mounted ~= false
+    if not namespace.Core.BuffProfile(context.playerClass) or context.mounted ~= false
         or context.flying ~= false or context.inVehicle ~= false then return finish(context) end
     local target = { exists = boolean(UnitExists, "mouseover") }
     context.target = target
@@ -382,6 +440,14 @@ function API.ReadContext(mode)
     -- missing/secret combat flags are irrelevant, unlike the aura data below.
     if target.isPlayer ~= true or target.friendly ~= true or target.dead ~= false
         or target.isSelf ~= false or target.connected ~= true or target.visible ~= true then return finish(context) end
+    -- These reads happen only after a proven unlocked state and safe recipient.
+    -- The click path repeats this snapshot; hovering itself never casts anything.
+    target.health = optionalNumber(UnitHealth, "mouseover")
+    target.maxHealth = optionalNumber(UnitHealthMax, "mouseover")
+    context.playerSpeed = optionalNumber(GetUnitSpeed, "player")
+    if context.playerClass == "PALADIN" and target.health ~= nil and target.maxHealth ~= nil and context.playerSpeed ~= nil then
+        context.heals = readSpells(true)
+    end
     target.class = classToken("mouseover")
     local levelOK, level = call(UnitLevel, "mouseover")
     if levelOK and integer(level, 1, 1000) then target.level = level end

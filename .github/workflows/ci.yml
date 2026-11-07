@@ -51,4 +51,4 @@ jobs:
       - name: Prepare reviewed packages without publishing
         run: |
           mkdir -p dist
-          python3 scripts/prepare-release.py --version 0.9.0 --output dist/ci-0.9.0
+          python3 scripts/prepare-release.py --version 0.10.0 --output dist/ci-0.10.0

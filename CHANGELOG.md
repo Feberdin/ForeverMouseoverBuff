@@ -1,5 +1,60 @@
 # Changelog
 
+## 0.9.3 Beta — Heal and buff with the same key
+
+- Outside your own combat, a deliberate FMB keypress heals a friendly mouseover
+  strictly below 50% health while you are standing still. Prefer learned, usable
+  Flash of Light; otherwise use learned, usable Holy Light, with spell-specific
+  range checks. WoW remains authoritative for cast failures such as line of sight.
+- While moving, or at exactly 50% health or above, retain the usual blessing
+  selection. Combat keeps the fixed learned Kings action.
+- Keep healing separate from buff greetings, buff statistics and ranking counts.
+  Preserve the improved first-use key setup and actionable status guidance.
+
+Prepared locally after automated verification. In-game healing, combat
+transitions and recipient delivery remain separate acceptance checks.
+This entry does not claim publication.
+
+## 0.9.2 Beta — Actionable buff guidance
+
+- Explain blocked selections with a concrete recovery step: move closer, choose a
+  living friendly player, learn a blessing, select Auto, or reload missing data.
+- Link missing-key guidance directly to `/fmb bind`; a learned combat Kings
+  action no longer appears ready when no buff key is assigned. Binding reads
+  during combat never inspect targets or edit protected actions.
+- Leave generic unusable spells to WoW's authoritative reason; do not guess mana
+  loss, cooldowns or line of sight. Existing fixed diagnostic codes remain intact.
+- Reserve three lines for cause and recovery in the status card. Feedback stays
+  on deliberate input with the existing repeat limit; previews add no chat spam.
+- Add ten permanent Core/App/Menu regressions, observed failing before the fix.
+
+- Include the shared `FeberdinDiagnostics.lua` runtime module in reviewed source
+  and addon packages, before Core in both manifests. A permanent regression test
+  covers the previously blocked packaging path.
+- Keep shared diagnostics local and bounded to 100 entries: fixed codes plus
+  validated own Lua filenames and line numbers; no raw errors, player names or
+  chat. Use `/fmbdiag status`, `clear`, `on` or `off` to inspect and control it.
+  This module performs no network requests or uploads.
+
+Prepared locally after automated validation; no publication or in-game
+acceptance is claimed.
+
+## 0.9.1 Beta — Clear first-use key setup
+
+- Returning characters without a buff key see the improved introduction once,
+  including when the earlier introduction was already marked as seen.
+- Show the actual binding status, an explicit **Jetzt Taste einrichten** action,
+  and an honest **Später einrichten** skip until a key is assigned. Configured
+  users retain their keys and keep the menu closed on later logins.
+- Defer automatic introduction during login combat and disable its key setup
+  button during combat. Deliberate capture, occupied-key protection and all
+  existing preferences remain intact.
+- Add six permanent App/Menu regressions for migration, first use, persistence,
+  live binding status and combat safety.
+
+Installed locally after automated validation; no publication or in-game
+acceptance is claimed.
+
 ## 0.9.0 Beta — Introduction and in-addon key setup
 
 - Show a short introduction once per character after the update; reopen it with

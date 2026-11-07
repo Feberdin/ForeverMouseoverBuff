@@ -8,6 +8,7 @@ local unpackValues = unpack or table.unpack
 local Menu = {pages = {}, navigation = {}, controls = {}, current = "buffs"}
 ns.Menu = Menu
 local modeNames = {auto = "Automatisch", might = "Macht", wisdom = "Weisheit", kings = "Könige"}
+local function paladin() return ns:CasterClass() == "PALADIN" end
 local views = {
     {id = "buffs", name = "Buffs & Taste"},
     {id = "priorities", name = "Klassen-Priorität"},
@@ -115,10 +116,13 @@ function Menu.BeginBinding()
 end
 
 local function buildBuffs(page)
-    heading(page, "Deine Segen. Eine Taste.", "Für Paladine: Mouseover auswählen, Taste drücken und loslassen.\nDas Addon wählt einen passenden gelernten Segen.")
-    card(page, 78, 76)
+    heading(page, paladin() and "Segen und Heilung. Eine Taste." or "Deine Klassenbuffs. Eine Taste.",
+        paladin() and "Für Paladine: Mouseover auswählen, Taste drücken und loslassen.\nAußerhalb des Kampfes im Stehen: unter 50 % Heilung, sonst Segen."
+        or "Mouseover auswählen, Taste drücken und loslassen.\nGelernte direkte Buffs deiner Klasse; nur außerhalb des Kampfes.")
+    -- Reserve three short lines for the reason and its concrete recovery step.
+    card(page, 78, 82)
     text(page, "AKTUELLER STATUS", 16, 90, 550, 16, 10, ns.Theme.colors.muted)
-    Menu.status = text(page, "", 16, 113, 550, 33, 14)
+    Menu.status = text(page, "", 16, 110, 550, 44, 12)
     card(page, 168, 102)
     text(page, "DEINE BUFF-TASTE", 16, 179, 220, 15, 10, ns.Theme.colors.muted)
     Menu.binding = text(page, "", 16, 201, 256, 24, 16, ns.Theme.colors.gold)
@@ -130,13 +134,13 @@ local function buildBuffs(page)
         end
     end)
     Menu.bindingNotice = text(page, "Optional: WoW-Tastaturbelegung → Forever Mouseover Buff", 16, 234, 556, 28, 11, ns.Theme.colors.muted)
-    text(page, "AUSWAHL AUSSERHALB DES KAMPFES", 0, 285, 588, 18, 10, ns.Theme.colors.muted)
+    text(page, "BUFFAUSWAHL AUSSERHALB DES KAMPFES", 0, 285, 588, 18, 10, ns.Theme.colors.muted)
     Menu.modeButtons = {}
-    for index, mode in ipairs({"auto", "might", "wisdom", "kings"}) do
-        local choice = mode
-        Menu.modeButtons[choice] = action(page, modeNames[choice], (index - 1) * 150, 310, 138, choice)
+    for index, row in ipairs(ns.Core.BuffModes(ns:CasterClass())) do
+        local choice = row[1]
+        Menu.modeButtons[choice] = action(page, row[2], (index - 1) * 150, 310, 138, choice)
     end
-    Menu.controls.enabled = ns.Theme.Toggle(page, "Mouseover-Buffs aktiv", "Gelernte Segen für andere freundliche Spieler.", 0, 356, 588,
+    Menu.controls.enabled = ns.Theme.Toggle(page, "Mouseover-Aktion aktiv", "Gelernte Klassenbuffs für andere freundliche Spieler.", 0, 356, 588,
         function() ns:Command(ns.db.enabled and "off" or "on") end)
     Menu.combat = text(page, "", 0, 421, 588, 16, 10, ns.Theme.colors.muted)
     buildCapture(page)
@@ -148,13 +152,18 @@ local function buildIntroduction(page)
     heading(page, "Willkommen bei AutoBuff.", "Forever Mouseover Buff – in drei Schritten startklar.\nDie Einführung findest du später unter Hilfe oder /fmb intro.")
     card(page, 78, 90)
     text(page, "1   Deine Buff-Taste wählen", 16, 90, 550, 26, 18, ns.Theme.colors.gold)
-    text(page, "Unter „Buffs & Taste“ eine freie Taste oder Maustaste zuweisen.\nOhne Zuweisung wird keine Taste verändert.", 16, 124, 550, 36, 12)
-    card(page, 180, 95)
-    text(page, "2   Maus über einen freundlichen Spieler", 16, 192, 550, 26, 18, ns.Theme.colors.gold)
-    text(page, "Taste drücken und loslassen – jeder Segen braucht einen Tastendruck.\nPaladine: Auto wählt außerhalb deines Kampfes einen gelernten Segen.\nIm Kampf wirkt dieselbe Taste nur Könige, sobald gelernt.", 16, 225, 550, 47, 12)
-    card(page, 287, 82)
-    text(page, "3   Grüße nach deinem Geschmack", 16, 299, 550, 26, 18, ns.Theme.colors.gold)
-    text(page, "Standard: Grüße an, eigene Kopien verborgen. Unter „Grüße & Chat“\nändern. Alle Klassen können dort den Empfang ausschalten.", 16, 332, 550, 32, 12)
+    Menu.introBindingStatus = text(page, "", 16, 120, 550, 20, 14, ns.Theme.colors.gold)
+    text(page, "Die Taste wählst du selbst. Zum Einrichten oder Ändern unten klicken.", 16, 144, 550, 20, 12)
+    -- The shared key has two OOC actions; explain the healing gate explicitly
+    -- and reserve four lines so the combat exception remains readable too.
+    card(page, 180, 112)
+    text(page, "2   Maus über einen freundlichen Spieler", 16, 190, 550, 24, 17, ns.Theme.colors.gold)
+    text(page, paladin() and "Dieselbe Taste: Segen oder Heilung – nur auf deinen Tastendruck.\nAußerhalb des Kampfes im Stehen, Ziel unter 50 %: Lichtblitz.\nWenn Lichtblitz nicht nutzbar ist: Heiliges Licht.\nIm Kampf wirkt dieselbe Taste nur Könige, sobald gelernt."
+        or "Deine gelernten Klassenbuffs – nur auf deinen Tastendruck.\nGleichartige vorhandene Buffs bleiben erhalten.\nIm Kampf gesperrt. Auto wählt sichere Routinebuffs.\nWasserwandeln und Magieänderungen bewusst im Menü wählen.", 16, 220, 550, 64, 12)
+    card(page, 304, 70)
+    text(page, "3   Grüße nach deinem Geschmack", 16, 312, 550, 24, 17, ns.Theme.colors.gold)
+    text(page, paladin() and "Standard: Grüße an, eigene Kopien verborgen. „Grüße & Chat“: ändern.\nAlle Klassen können dort den Empfang ausschalten."
+        or "Alle Klassen können FMB-Grüße empfangen und automatisch danken.\nDas Senden persönlicher Segensgrüße gehört zum Paladin-Modul.", 16, 340, 550, 32, 12)
     Menu.introBinding = ns.Theme.Button(page, "Taste einrichten", 0, 388, 185, 38, Menu.BeginBinding)
     Menu.introMessages = ns.Theme.Button(page, "Grüße einstellen", 197, 388, 185, 38, function() Menu.Select("messages") end)
     Menu.introDone = ns.Theme.Button(page, "Los geht’s", 394, 388, 194, 38, function() Menu.Select("buffs") end)
@@ -192,6 +201,16 @@ local function changePriority(family, direction)
     savePriorities(priorities)
 end
 local function refreshPriorities()
+    if not paladin() then
+        Menu.priorityStatus:SetText("Diese Zielklassen-Prioritäten gehören zum Paladin-Modul.\nDeine eigenen Klassenbuffs wählst du unter „Buffs & Taste“.")
+        for _, button in pairs(Menu.classButtons) do enable(button, false) end
+        for _, row in ipairs(Menu.priorityRows) do
+            row.label:SetText("Paladin-Segen")
+            enable(row.active, false); enable(row.up, false); enable(row.down, false)
+        end
+        enable(Menu.priorityReset, false)
+        return
+    end
     local priorities = ns.Core.GetPriorities(ns.db.classPriorities, Menu.priorityClass)
     local order, active = {}, {}
     for _, family in ipairs(priorities or {}) do
@@ -268,9 +287,8 @@ local function buildMessages(page)
     ns.outgoingButton = ns.Theme.Toggle(page, "Eigene Grüße verbergen",
         "Keine eigenen FMB-Grüße im Chat oder WIM; keine Popups oder WIM-Töne.", 0, 234, 588,
         function() ns:Command(ns.db.showOutgoingWhispers and "outgoing off" or "outgoing on") end)
-    card(page, 322, 111)
-    text(page, "Dein Chat bleibt deine Entscheidung", 16, 337, 550, 24, 15, ns.Theme.colors.gold)
-    text(page, "Standard: Senden AN, eigene Grüße verbergen AN.\nPersönliche Whisper bleiben sichtbar. Empfänger mit FMB können\nautomatische Grüße selbst ausschalten – für jede Klasse.", 16, 368, 550, 55, 12, ns.Theme.colors.muted)
+    toggle(page, "Automatisch für Buffs danken", "AN: /danke an den lesbaren Buffgeber. Ohne Zielwechsel, mit Spam-Sperre.", 312, "autoThanks", "thanks")
+    text(page, "Standard: Danken AN. Unbekannte oder geschützte Buffgeber\nwerden ausgelassen. /fmb thanks off schaltet es sofort aus.", 0, 397, 588, 38, 12, ns.Theme.colors.muted)
 end
 
 local function buildSounds(page)
@@ -284,7 +302,7 @@ local function buildSounds(page)
 end
 
 local function buildStats(page)
-    heading(page, "Jeder Segen zählt.", "Deine lokal erfassten FMB-Segen. Community-Zähler sind unbestätigt und kein offizielles Ranking.")
+    heading(page, "Paladin-Segen zählen.", "Zähler und Ranking erfassen ausschließlich Paladin-Segen. Andere Klassen können normal buffen.")
     card(page, 78, 85)
     Menu.total = text(page, "", 16, 88, 550, 40, 31, ns.Theme.colors.mint)
     Menu.statsNote = text(page, "Erfolgreiche Segen für andere Spieler", 16, 136, 550, 19, 12, ns.Theme.colors.muted)
@@ -324,7 +342,7 @@ local function buildHelp(page)
     Menu.introReplay = ns.Theme.Button(page, "Einführung erneut ansehen", 0, 228, 320, 34, function() Menu.ShowIntroduction() end)
     text(page, "Taste wählen: „Buffs & Taste“ oder /fmb bind.", 0, 271, 588, 24, 12, ns.Theme.colors.muted)
     text(page, "02   Freundlichen Spieler mit der Maus wählen", 0, 306, 588, 25, 15)
-    text(page, "Zum Wirken die Buff-Taste drücken und loslassen.", 32, 333, 550, 24, 12, ns.Theme.colors.muted)
+    text(page, "Dieselbe Taste wirkt deinen Klassenbuff – drücken und loslassen.", 32, 333, 550, 24, 12, ns.Theme.colors.muted)
     text(page, "03   Wenn etwas nicht klappt", 0, 376, 588, 25, 15)
     text(page, "Unter „Diagnose“ den Status prüfen oder eine Meldung vorbereiten.", 32, 403, 550, 30, 12, ns.Theme.colors.muted)
 end
@@ -415,15 +433,26 @@ function Menu.Refresh()
     ns.outgoingButton:SetValue(ns.db.showOutgoingWhispers ~= true)
     for mode, button in pairs(Menu.modeButtons) do button:SetSelected(ns.db.mode == mode) end
     Menu.binding:SetText(ns:BindingLabel())
+    enable(ns.rankingButton, paladin())
+    enable(ns.uploadHelpButton, paladin())
     local locked = ns.API.Locked()
     enable(Menu.bindingChoose, not locked)
+    -- Native UPDATE_BINDINGS refreshes this status too, so external WoW changes
+    -- and deliberate key setup never leave the introduction claiming readiness.
+    local key = ns:BindingKey()
+    Menu.introBindingStatus:SetText(key and ("Deine Buff-Taste: " .. ns:BindingLabel())
+        or "Keine Buff-Taste belegt – bitte jetzt einrichten!")
+    Menu.introBinding:SetText(key and "Taste ändern" or "Jetzt Taste einrichten")
+    Menu.introDone:SetText(key and "Los geht’s" or "Später einrichten")
+    enable(Menu.introBinding, not locked)
     enable(Menu.bindingClear, not locked and ns:BindingKey() ~= nil)
     if locked and Menu.capture:IsShown() then Menu.CancelBinding("Tastenwahl wegen Kampfbeginn abgebrochen.") end
     local decision = ns.decision
     Menu.status:SetText(decision and decision.text or "Status wird beim nächsten Mouseover geprüft.")
     local color = decision and decision.ready and ns.Theme.colors.mint or ns.Theme.colors.gold
     Menu.status:SetTextColor(unpackValues(color))
-    Menu.combat:SetText(ns.combatDirty and "Kampfbelegung: Änderung wird nach dem Kampf übernommen."
+    Menu.combat:SetText(not paladin() and "Im Kampf: Klassenbuffs gesperrt. Schamanen benötigen passende Reagenzien."
+        or ns.combatDirty and "Kampfbelegung: Änderung wird nach dem Kampf übernommen."
         or "Im Kampf: feste Könige, sobald gelernt; keine automatische Buffprüfung.")
     if Menu.current == "priorities" then refreshPriorities()
     elseif Menu.current == "stats" then refreshStats()
@@ -446,6 +475,7 @@ function Menu.ShowIntroduction()
     -- Remember display only after construction succeeds. Closing is a valid skip;
     -- /fmb intro always reopens this same help page without resetting preferences.
     ns.db.introductionSeen = true
+    ns.db.introductionVersion = ns.INTRODUCTION_VERSION
     ns.introductionPending = nil
 end
 function Menu.Show()

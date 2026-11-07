@@ -47,7 +47,7 @@ local function fixture()
     end
     env.UnitClass = function(unit)
         unitAllowed(unit); count("class:" .. unit)
-        return "Localized class", unit == "player" and "PALADIN" or f.targetClass
+        return "Localized class", unit == "player" and (f.playerClass or "PALADIN") or f.targetClass
     end
     env.IsMounted = function() return f.mounted end
     env.IsFlying = function() return false end
@@ -637,6 +637,104 @@ function tests.combat_blessing_rejects_unsafe_missing_and_secret_names()
         equal(result, nil, state)
         equal(code, "COMBAT_SPELL_UNAVAILABLE", state)
     end
+end
+
+-- Optional healing facts never weaken the existing blessing safety checks.
+local function healingFixture()
+    local f = fixture()
+    f.level, f.health, f.maxHealth, f.speed = 30, 49, 100, 0
+    f.env.UnitHealth = function(unit) equal(unit, "mouseover"); f.calls.health = (f.calls.health or 0)+1; return f.health end
+    f.env.UnitHealthMax = function(unit) equal(unit, "mouseover"); return f.maxHealth end
+    f.env.GetUnitSpeed = function(unit) equal(unit, "player"); return f.speed end
+    f.names[635], f.names[19750] = "Heiliges Licht", "Lichtblitz"
+    f.entries[#f.entries+1] = {id = 635, familyID = 635, level = 1}
+    f.entries[#f.entries+1] = {id = 19750, familyID = 19750, level = 20}
+    f.entries[#f.entries+1] = {id = 19939, familyID = 19750, level = 26}
+    f.lines[1].numSpellBookItems = #f.entries
+    return f
+end
+function tests.healing_spellbook_discovers_real_learned_ranks_before_aura_block()
+    local f = healingFixture(); f.auraRestricted = true
+    local data = f:read()
+    equal(data.target.health, 49); equal(data.target.maxHealth, 100); equal(data.playerSpeed, 0)
+    equal(f.core.Decide(data).spellID, 19939)
+    equal(f.core.Decide(data).action, "heal")
+end
+function tests.healing_unlearned_flash_falls_back_to_holy_light()
+    local f = healingFixture(); f.known[19750], f.known[19939] = false, false
+    equal(f:decision().spellID, 635)
+    equal(f:decision().action, "heal")
+end
+function tests.healing_secret_or_invalid_values_never_escape_or_enable_heal()
+    local f = healingFixture(); equal(f:decision().action, "heal")
+    for _, key in ipairs({"health", "maxHealth", "speed"}) do
+        for _, invalid in ipairs({f.secret, "49", math.huge, 0/0, -1}) do
+            f.health, f.maxHealth, f.speed = 49, 100, 0; f[key] = invalid
+            local data = f:read(); local result = f.core.Decide(data)
+            equal(result.action == "heal", false)
+            if key == "speed" then equal(data.playerSpeed, nil)
+            elseif key == "health" then equal(data.target.health, nil)
+            else equal(data.target.maxHealth, nil) end
+            equal(result.ready, true, "safe buff remains available")
+        end
+    end
+end
+function tests.healing_lockdown_never_reads_health_or_speed()
+    local f = healingFixture(); equal(f:decision().action, "heal")
+    f.calls.health = nil; f.locked = true
+    f.env.UnitHealth = function() error("must not inspect health in combat") end
+    f.env.GetUnitSpeed = function() error("must not inspect speed in combat") end
+    local data = f:read()
+    equal(data.playerCombat, true); equal(data.heals, nil); equal(f.calls.health, nil)
+end
+function tests.healing_new_movement_is_reread_without_cached_healing_decision()
+    local f = healingFixture(); equal(f:decision().action, "heal")
+    f.speed = 1; equal(f:decision().spellID, 19835)
+    f.speed, f.health = 0, 50; equal(f:decision().spellID, 19835)
+    f.health = 49; equal(f:decision().spellID, 19939)
+end
+
+-- Integration: real API discovery and real Core policy, with synthetic native facts.
+function tests.six_classes_read_actual_learned_ranks_and_equivalent_auras()
+    for _, row in ipairs({{"MAGE",1459,"intellect"},{"PRIEST",1243,"fortitude"},
+        {"DRUID",1126,"mark"},{"WARLOCK",5697,"breath"},{"SHAMAN",131,"water_breathing"}}) do
+        local f=fixture(); f.playerClass=row[1]; f.targetClass="MAGE"; f.level=60
+        local profile= f.core.BuffProfile(row[1])
+        for _, entry in ipairs(profile.families) do
+            f.names[entry[2]]=entry[3]
+            for index=4,#entry do f.names[entry[index]]=entry[3] .. index end
+        end
+        f.entries={{id=row[2],familyID=row[2],level=1},
+            {id=row[2]+100000,familyID=row[2],level=20}}
+        f.lines={{itemIndexOffset=0,numSpellBookItems=2}}
+        local data=f:read(); equal(type(data.spells),"table",row[1] .. " spellbook must be read")
+        equal(#data.spells,2); equal(f.core.Decide(data).spellID,row[2]+100000)
+        f.auras={{spellId=row[2]+100000,name=f.names[row[2]]}}
+        equal(f:decision().ready,false,"same-name learned aura must be retained")
+        f.auras={}; f.usable[row[2]+100000]=false
+        equal(f:decision().code,"NOT_USABLE","no silent mana/reagent downrank")
+        f.usable[row[2]+100000]=true; f.range[row[2]+100000]=false
+        equal(f:decision().code,"OUT_OF_RANGE")
+        f.range[row[2]+100000]=true; f.combat=true
+        equal(f:read().spells,nil,"no new dynamic combat action")
+    end
+end
+
+function tests.unlearned_optional_mage_names_do_not_disable_known_intellect()
+    local f=fixture(); f.playerClass="MAGE"; f.targetClass="PRIEST"
+    f.names[1459]="Arkane Intelligenz"
+    f.entries={{id=1459,familyID=1459,level=1}}
+    f.lines={{itemIndexOffset=0,numSpellBookItems=1}}
+    equal(f:decision().spellID,1459,"missing utility name must not disable learned primary buff")
+end
+
+function tests.cached_public_caster_class_survives_combat_without_new_unit_reads()
+    local f=fixture(); equal(f.api.PlayerClass(),"PALADIN")
+    local reads=f.calls["class:player"]; f.combat=true
+    equal(f.api.PlayerClass(),"PALADIN","fixed combat Kings retains eligible export class")
+    equal(f.calls["class:player"],reads,"no dynamic class scan in combat")
+    local unknown=fixture(); unknown.combat=true
+    equal(unknown.api.PlayerClass(),nil,"no class guessed before first public snapshot")
 end
 
 local names = {}

@@ -1,15 +1,15 @@
 {
   "name": "Forever Mouseover Buff",
-  "summary": "Mouseover Paladin blessings, personal greetings and recipient controls for every class.",
+  "summary": "Mouseover buffs for six Classic classes, personal greetings and recipient controls for every class.",
   "game": "World of Warcraft",
   "flavor": "Forever",
   "gameVersion": "1.60.1",
   "interface": 16001,
-  "version": "0.9.0",
+  "version": "0.10.0",
   "license": "MIT License",
   "suggestedMainCategory": "Buffs & Debuffs",
   "suggestedAdditionalCategories": [
-    "Paladin",
+    "Class",
     "Chat & Communication"
   ],
   "proposedRepository": "Feberdin/ForeverMouseoverBuff",
@@ -17,12 +17,12 @@
   "publicRepositoryUrl": "https://github.com/Feberdin/ForeverMouseoverBuff",
   "rankingEndpoint": null,
   "releaseType": "beta",
-  "publicationStatus": "Published: GitHub prerelease and CurseForge Beta file 9384236 are public. CurseForge approval and the public main-file link were verified.",
+  "publicationStatus": "Release candidate: final commit, CI, upload and moderation not yet verified.",
   "projectSlug": "forever-mouseover-buff",
   "publicProjectUrl": "https://www.curseforge.com/wow/addons/forever-mouseover-buff",
-  "fileName": "ForeverMouseoverBuff-0.9.0.zip",
-  "publicReleaseUrl": "https://github.com/Feberdin/ForeverMouseoverBuff/releases/tag/v0.9.0",
-  "curseforgeFileId": 9384236,
-  "publicationCheckedAt": "2026-10-31T13:56:23+00:00",
-  "publicCurseforgeFileUrl": "https://www.curseforge.com/wow/addons/forever-mouseover-buff/files/9384236"
+  "fileName": "ForeverMouseoverBuff-0.10.0.zip",
+  "publicReleaseUrl": "https://github.com/Feberdin/ForeverMouseoverBuff/releases/tag/v0.10.0",
+  "curseforgeFileId": null,
+  "publicationCheckedAt": null,
+  "publicCurseforgeFileUrl": null
 }

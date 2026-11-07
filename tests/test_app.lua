@@ -18,7 +18,7 @@ end
 
 -- The fake preserves the Blizzard template's native OnClick marker. It counts
 -- attempted actions, not successful WoW casts; it also models the OOC hard gate.
-local function setup(saved, modules, initialCombat)
+local function setup(saved, modules, initialCombat, bindingKey)
     local state = {frames = {}, locked = initialCombat == true, nativeClicks = 0, actions = {}, reads = 0,
         context = fixture(), logs = {}, notices = {}, sounds = {}, attributeWrites = 0,
         refreshBook = 0, templateMissing = false, kingsKnown = false, now = 100}
@@ -104,7 +104,10 @@ local function setup(saved, modules, initialCombat)
             b.scripts.PostClick(b, "LeftButton", false)
         end
     end}
-    _G.GetBindingKey = function() return "ALT-B" end
+    _G.GetBindingKey = function()
+        if bindingKey == false then return nil end
+        return bindingKey or "ALT-B"
+    end
     _G.GetBindingText = function(key) return key end
     _G.GetTime = function() return state.now end
     _G.GetServerTime = function() return 1791810000 + math.floor(state.now) end
@@ -132,6 +135,7 @@ local function setup(saved, modules, initialCombat)
     end
     local ns = {API = {
         Locked = function() return state.locked end,
+        PlayerClass = function() return state.context.playerClass end,
         ReadContext = function(mode) state.reads = state.reads + 1; state.context.mode = mode; return state.context end,
         RefreshSpellbook = function() state.refreshBook = state.refreshBook + 1 end,
         Client = function() return {version = "1.60.1", build = "69913", interface = 16001} end,
@@ -170,6 +174,47 @@ local function click(state, between)
     button.scripts.OnClick(button, "LeftButton", false)
     if button.scripts.PostClick then button.scripts.PostClick(button, "LeftButton", false) end
 end
+
+-- Upgrading an already-seen intro must still explain the missing required key.
+-- Real App/Menu code reads native bindings; setup only replaces that API edge.
+test("key setup introduction upgrades an unbound returning character once", function()
+    local saved = {introductionSeen = true, mode = "wisdom", sound = false}
+    local ns, state = setup(saved, nil, false, false)
+    eq(ns.Menu.current, "intro", "missing key must reopen the improved introduction once")
+    eq(ns.db.introductionVersion, ns.INTRODUCTION_VERSION, "new introduction display persisted")
+    eq(ns.db.mode, "wisdom"); eq(ns.db.sound, false)
+    eq(#state.actions, 0, "showing introduction cannot cast")
+    ns.panel:Hide()
+    ns = setup(saved, nil, false, false)
+    assert(not ns.panel or not ns.panel:IsShown(), "dismissed setup must not nag on every login")
+end)
+test("key setup introduction preserves a returning character with an assigned key", function()
+    local ns = setup({introductionSeen = true})
+    assert(not ns.panel or not ns.panel:IsShown(), "an existing key needs no setup migration")
+end)
+test("key setup introduction upgrade waits until combat ends", function()
+    local saved = {introductionSeen = true}
+    local ns, state = setup(saved, nil, true, false)
+    assert(not ns.panel, "do not open setup during login combat")
+    eq(saved.introductionVersion, nil, "pending introduction must not count as seen")
+    state.locked = false
+    ns:OnEvent("PLAYER_REGEN_ENABLED")
+    eq(ns.Menu.current, "intro", "show missing-key setup after combat")
+    eq(saved.introductionVersion, ns.INTRODUCTION_VERSION)
+    ns.panel:Hide()
+    ns:OnEvent("PLAYER_REGEN_ENABLED")
+    eq(ns.panel:IsShown(), false, "combat events must not reopen dismissed setup")
+    eq(#state.actions, 0)
+end)
+test("key setup introduction first use explains the missing key", function()
+    local ns, state = setup(nil, nil, false, false)
+    eq(ns.Menu.current, "intro")
+    assert(ns.Menu.introBindingStatus, "introduction must show the actual binding status")
+    eq(ns.Menu.introBindingStatus.text, "Keine Buff-Taste belegt – bitte jetzt einrichten!")
+    eq(ns.Menu.introBinding.label.text, "Jetzt Taste einrichten")
+    eq(ns.Menu.introDone.label.text, "Später einrichten")
+    eq(#state.actions, 0)
+end)
 
 test("introduction opens once per character and can be replayed", function()
     local ns, state = setup()
@@ -1103,6 +1148,102 @@ test("priority_global_recovery_clears_failed_class_reset_feedback", function()
     assert(not ns.Menu.priorityStatus:GetText():find("nicht übernommen", 1, true))
     eq(ns:Decision().ready, true)
     eq(#state.actions, 0)
+end)
+
+-- Preview errors are actionable without changing any protected combat state.
+test("guidance_missing_binding_in_combat_is_not_reported_ready", function()
+    local ns, state = setup()
+    state.kingsKnown = true; ns:RefreshCombatAction()
+    _G.GetBindingKey = function() return nil end
+    state.locked = true
+    local writes, reads = state.attributeWrites, state.reads
+    ns:Refresh()
+    eq(ns.decision.ready, false)
+    eq(ns.decision.code, "NO_BINDING")
+    assert(ns.decision.text:find("Nach dem Kampf", 1, true))
+    eq(state.attributeWrites, writes); eq(state.reads, reads)
+end)
+test("guidance_missing_binding_offers_direct_setup_command", function()
+    local ns = setup()
+    _G.GetBindingKey = function() return nil end
+    assert(ns:Decision().text:find("/fmb bind", 1, true), "missing binding needs direct setup command")
+end)
+test("guidance_context_failure_has_recovery_without_raw_error", function()
+    local ns, state = setup()
+    ns.API.ReadContext = function() error("PRIVATE_SENTINEL") end
+    ns:Command("status")
+    eq(ns.decision.code, "CONTEXT_ERROR")
+    assert(ns.decision.text:find("/reload", 1, true), "context failure needs recovery before diagnosis")
+    assert(not table.concat(state.logs, " "):find("PRIVATE_SENTINEL", 1, true))
+end)
+
+-- The native hardware click casts exactly one selected action; healing never
+-- enters blessing whisper/statistics machinery and never changes combat routing.
+local function enableHealing(state)
+    state.context.target.health, state.context.target.maxHealth = 49, 100
+    state.context.playerSpeed = 0
+    state.context.target.level = 30
+    state.context.heals = {{spellID = 19750, spellName = "Lichtblitz", family = "flash",
+        learnedLevel = 20, known = true, inRange = true, usable = true}}
+end
+test("healing_key_casts_heal_without_starting_blessing_whisper", function()
+    local begins = 0
+    local ns, state = setup(nil, {Whisper = {Begin = function() begins = begins+1 end}})
+    enableHealing(state); ns:Refresh()
+    eq(ns.decision.action, "heal"); eq(#state.actions, 0, "preview never casts")
+    click(state)
+    eq(#state.actions, 1); eq(state.actions[1].spellID, 19750); eq(state.actions[1].unit, "mouseover")
+    eq(begins, 0, "heals must bypass blessing greetings and their stats")
+end)
+test("healing_key_rereads_health_and_movement_at_key_release", function()
+    local ns, state = setup(); enableHealing(state); ns:Refresh(); eq(ns.decision.action, "heal")
+    state.context.target.health = 50; click(state); eq(state.actions[1].spellID, 19834)
+    state.context.target.health, state.context.playerSpeed = 49, 1
+    click(state); eq(state.actions[2].spellID, 19834)
+end)
+test("healing_combat_keeps_fixed_kings_without_context_reads", function()
+    local ns, state = setup(); enableHealing(state); ns:Refresh(); eq(ns.decision.action, "heal")
+    state.kingsKnown = true; ns:RefreshCombatAction(); state.locked = true
+    local reads, writes = state.reads, state.attributeWrites
+    click(state); eq(state.actions[1].spellID, 20217)
+    eq(state.reads, reads); eq(state.attributeWrites, writes)
+end)
+test("healing_failure_names_healing_and_stays_rate_limited", function()
+    local ns, state = setup(); enableHealing(state); click(state)
+    eq(state.actions[1].spellID, 19750)
+    ns:OnEvent("UNIT_SPELLCAST_FAILED", "player", "ignored", 19750)
+    local notice = state.notices[#state.notices]
+    assert(notice and notice:find("Heilung", 1, true), "healing failure must not claim a blessing failed")
+    local count = #state.notices
+    click(state); ns:OnEvent("UNIT_SPELLCAST_FAILED", "player", "ignored", 19750)
+    eq(#state.notices, count)
+end)
+
+test("auto_thanks_default_enabled_and_command_can_disable", function()
+    local ns = setup()
+    eq(ns.db.autoThanks, true, "Automatic thanks must be enabled by default")
+    ns:Command("thanks off"); eq(ns.db.autoThanks, false)
+    ns:Command("thanks on"); eq(ns.db.autoThanks, true)
+end)
+
+test("auto_thanks_lifecycle_checks_only_player_auras_and_resets_on_world_entry", function()
+    local checks, resets, ticks = 0, 0, 0
+    local observer = {Check = function() checks = checks + 1 end,
+        Reset = function() resets = resets + 1 end, Tick = function() ticks = ticks + 1 end}
+    local ns, state = setup(nil, {AutoThanks = observer})
+    eq(checks, 1); eq(resets, 1)
+    ns:OnEvent("UNIT_AURA", "target"); eq(checks, 1)
+    ns:OnEvent("UNIT_AURA", "player"); eq(checks, 2)
+    ns:OnEvent("PLAYER_ENTERING_WORLD"); eq(checks, 3); eq(resets, 2)
+    local actions, writes = #state.actions, state.attributeWrites
+    ns:Tick(0.25); eq(ticks, 1); eq(#state.actions, actions); eq(state.attributeWrites, writes)
+    ns:Command("thanks off"); eq(resets, 3); eq(ns.db.autoThanks, false)
+end)
+
+test("mage_commands_accept_its_buffs_and_refuse_foreign_family", function()
+    local ns,state=setup(); state.context.playerClass="MAGE"
+    ns:Command("intellect"); eq(ns.db.mode,"intellect")
+    ns:Command("might"); eq(ns.db.mode,"intellect","foreign mode must not replace Mage setting")
 end)
 
 local count, failures = 0, 0

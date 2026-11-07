@@ -77,7 +77,7 @@ end
 
 function tests.unsupported_player_and_mode_are_rejected()
     local input = context()
-    input.playerClass = "MAGE"
+    input.playerClass = "WARRIOR"
     blocked(input, "UNSUPPORTED_CLASS")
     input = context()
     input.mode = "guess"
@@ -602,6 +602,125 @@ function tests.get_priorities_rejects_invalid_class_and_entire_invalid_config()
 end
 
 -- A named filter makes the exact first red test reproducible without hiding failures.
+-- Error guidance must pair the observed reason with a concrete next action.
+-- A generic usability flag cannot prove mana loss, cooldown or line of sight.
+function tests.guidance_range_names_moving_closer()
+    local input = context(); input.spells[2].inRange = false
+    local result = Core.Decide(input)
+    equal(result.code, "OUT_OF_RANGE")
+    assert(result.text:find("näher", 1, true), "range failure must explain moving closer")
+end
+function tests.guidance_missing_spell_points_to_learning_or_mode()
+    local input = context(); input.mode = "kings"; input.spells = {}
+    local result = Core.Decide(input)
+    equal(result.code, "NO_KNOWN_SPELL")
+    assert(result.text:find("/fmb auto", 1, true), "missing spell must offer a learned automatic selection")
+    assert(result.text:find("lernen", 1, true), "missing spell must explain learning it")
+end
+function tests.guidance_dead_target_offers_living_player()
+    local input = context(); input.target.dead = true
+    local result = Core.Decide(input)
+    equal(result.code, "TARGET_DEAD")
+    assert(result.text:find("lebenden", 1, true), "dead target must explain selecting a living player")
+end
+function tests.guidance_unknown_aura_offers_reload_if_persistent()
+    local input = context(); input.auraState = "unknown"
+    local result = Core.Decide(input)
+    equal(result.code, "AURA_UNKNOWN")
+    assert(result.text:find("/reload", 1, true), "persistent unavailable data needs a recovery step")
+end
+function tests.guidance_unusable_does_not_invent_mana_cause()
+    local input = context(); input.spells[2].usable = false
+    local result = Core.Decide(input)
+    equal(result.code, "NOT_USABLE")
+    assert(result.text:find("WoW", 1, true), "native usability reason must remain authoritative")
+    assert(not result.text:find("wegen fehlenden Manas", 1, true), "generic flag must not suggest an unobserved cause")
+end
+function tests.guidance_own_blessing_names_no_action_needed()
+    local input = context(); input.hasBlessing = true
+    input.blessings = {{family = "might", sourceIsPlayer = true, spellID = 19740}}
+    local result = Core.Decide(input)
+    equal(result.code, "OWN_BLESSING_PRESERVED")
+    assert(result.text:find("nötig", 1, true), "intentional preservation should not look like a broken action")
+end
+
+-- Healing is a deliberate OOC choice on the same key, before blessing policy.
+local function healingContext()
+    local input = context()
+    input.target.health, input.target.maxHealth, input.target.level = 49, 100, 30
+    input.playerSpeed = 0
+    input.heals = {spell(19750, "flash", 20), spell(19939, "flash", 26),
+        spell(635, "holy_light", 1), spell(639, "holy_light", 6)}
+    return input
+end
+function tests.healing_under_half_prefers_highest_eligible_flash()
+    local result = Core.Decide(healingContext())
+    equal(result.action, "heal"); equal(result.code, "READY_HEAL")
+    equal(result.spellID, 19939)
+end
+function tests.healing_exact_half_and_higher_keep_blessing()
+    local input = healingContext()
+    equal(Core.Decide(input).action, "heal", "prove healing branch is exercised")
+    for _, health in ipairs({50, 51, 100}) do
+        input.target.health = health
+        equal(Core.Decide(input).spellID, 103, "threshold is strictly below 50 percent")
+    end
+end
+function tests.healing_moving_or_unknown_speed_keeps_safe_buff()
+    local input = healingContext(); equal(Core.Decide(input).action, "heal")
+    for _, speed in ipairs({1, -1, math.huge, 0/0, "0", false}) do
+        input.playerSpeed = speed
+        equal(Core.Decide(input).spellID, 103)
+    end
+    input.playerSpeed = nil; equal(Core.Decide(input).spellID, 103)
+end
+function tests.healing_invalid_health_never_enables_heal()
+    local input = healingContext(); equal(Core.Decide(input).action, "heal")
+    for _, pair in ipairs({{0,100},{-1,100},{49,0},{49,-1},{49,math.huge},
+        {math.huge,100},{0/0,100},{"49",100},{49,"100"},{101,100}}) do
+        input.target.health, input.target.maxHealth = pair[1],pair[2]
+        equal(Core.Decide(input).spellID, 103)
+    end
+    input.target.health = nil; equal(Core.Decide(input).spellID, 103)
+end
+function tests.healing_falls_back_to_holy_light_when_flash_unusable()
+    local input = healingContext()
+    input.heals[2].usable = false
+    equal(Core.Decide(input).spellID, 639, "do not downrank flash to bypass its unusable highest rank")
+    input.heals[2].usable = true; input.heals[2].inRange = false
+    equal(Core.Decide(input).spellID, 639)
+    input.heals = {spell(639, "holy_light", 6)}
+    equal(Core.Decide(input).spellID, 639)
+end
+function tests.healing_no_usable_learned_heal_keeps_blessing()
+    local input = healingContext(); equal(Core.Decide(input).action, "heal")
+    input.heals[2].usable, input.heals[4].usable = false, false
+    equal(Core.Decide(input).spellID, 103)
+    input.heals = {}; equal(Core.Decide(input).spellID, 103)
+    input.heals = nil; equal(Core.Decide(input).spellID, 103)
+end
+function tests.healing_precedes_aura_own_blessing_and_disabled_class()
+    local input = healingContext()
+    input.auraState, input.hasBlessing = "unknown", nil
+    input.classPriorities = {WARRIOR = {}}
+    equal(Core.Decide(input).action, "heal")
+    input.auraState, input.hasBlessing = "ready", true
+    input.blessings = {{family = "might", spellID = 19740, sourceIsPlayer = true}}
+    equal(Core.Decide(input).action, "heal")
+end
+function tests.healing_highest_learned_rank_heals_level_one_and_rejects_unsafe_target()
+    local input = healingContext(); input.target.level = 1
+    equal(Core.Decide(input).spellID, 19939)
+    input.target.isSelf = true; blocked(input, "SELF_TARGET")
+    input.target.isSelf, input.target.dead = false, true; blocked(input, "TARGET_DEAD")
+    input.target.dead, input.playerCombat = false, true; blocked(input, "PLAYER_IN_COMBAT")
+end
+function tests.healing_malformed_spell_data_keeps_blessing()
+    local input = healingContext(); equal(Core.Decide(input).action, "heal")
+    input.heals[2].usable = "true"; equal(Core.Decide(input).spellID, 103)
+    input.heals = {[2] = spell(19750, "flash", 20)}; equal(Core.Decide(input).spellID, 103)
+end
+
 local names = {}
 for name in pairs(tests) do
     if not arg[1] or arg[1] == name then names[#names + 1] = name end

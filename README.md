@@ -6,20 +6,52 @@
 
 **A useful blessing. A personal greeting. A quieter chat.**
 
-Choose a learned Paladin blessing for the friendly player under your mouse.
-Other classes can install Forever Mouseover Buff simply to decline its automatic
-greetings.
+Choose a learned class buff for the friendly player under your mouse. Paladins,
+Mages, Priests, Druids, Warlocks and Shamans have direct buff profiles. Every
+class can receive greetings and use optional automatic thanks.
 
-**0.9.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.0 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 The interface and greetings are primarily German. Class priorities and the native
 Sanctum menu have automated behavior and offline layout coverage. Live gameplay
 and receipt of greetings by another player still need in-game acceptance.
 
-## 🛡️ What it does
+## Class buffs (0.10.0 Beta)
+
+| Caster | Auto, in priority order | Explicit additional choices |
+| --- | --- | --- |
+| Paladin | Existing target-class Might/Wisdom/Kings priorities | Might, Wisdom, Kings |
+| Mage | Arcane Intellect; skips Warriors/Rogues | Dampen Magic, Amplify Magic |
+| Priest | Fortitude → Divine Spirit → Shadow Protection | Each family individually |
+| Druid | Mark of the Wild → Thorns | Each family individually |
+| Warlock | Unending Breath → Detect Invisibility | Each family individually |
+| Shaman | Water Breathing | Water Walking |
+
+Choose a learned spell in **Buffs & Taste**. Intelligence and Divine Spirit are
+skipped for Warriors/Rogues in Auto. Existing equivalent buffs, including readable
+Prayer/Gift/Brilliance equivalents, are retained. Other classes may add a second
+missing family without the Paladin rule that preserves your one existing blessing.
+Dampen/Amplify Magic alter incoming healing; Water Walking changes movement.
+These utilities require an explicit choice. Shaman utility buffs consume native
+reagents. FMB checks the client's spell usability and mana result; **it does not
+independently count reagents**. WoW may reject a cast for missing items.
+
+Only actual learned spellbook slots/ranks are used, with fresh range/usability
+checks. Rank eligibility conservatively requires learned level ≤ recipient level;
+this is an addon safety rule, **not a claim about WoW's minimum buff level**.
+Rank choice may therefore be more restrictive than manual casting. Automatic
+healing and fixed combat Kings remain Paladin features; other class casts are
+blocked during the caster's combat. No resurrection, group/reagent buffs, party
+shouts, totems, aspects, temporary cooldown buffs, pet/weapon or self buffs are
+cast by this profile. New class buffs do not generate Paladin scores or exports.
+
+## 🛡️ Paladin features
 
 - **Mouseover blessings:** outside your own combat, choose a useful learned
   Blessing of Might, Wisdom or Kings from the supported class presets.
+- **Heal with the same key:** outside your own combat, while standing still,
+  a friendly mouseover below 50% health selects learned, usable Flash of Light,
+  or learned, usable Holy Light as fallback. Healing sends no greeting or buff score.
 - **Respect existing buffs:** selection uses readable target information and
   preserves existing blessings. When essential information is unclear or
   protected, it stops with a reason.
@@ -32,8 +64,10 @@ and receipt of greetings by another player still need in-game acceptance.
   available.
 
 **Every cast requires a real keypress.** Hovering alone never casts a spell.
-Buff selection and statistics currently support **Paladins only**. Receiver-only
-use works for **every class**; the other greeting styles do not add their spells.
+Direct buffs support **six classes**. Warriors, Hunters and Rogues receive a clear
+explanation: their group, self or weapon actions are outside this single-player
+mouseover workflow. Statistics, outgoing blessing greetings and the current
+ranking service remain **Paladin-only**.
 
 ![Hover a player, press and release a key, cast a blessing. Greetings are optional.](release/assets/how-it-works.png)
 
@@ -44,25 +78,46 @@ use works for **every class**; the other greeting styles do not add their spells
    `ForeverMouseoverBuff/ForeverMouseoverBuff.toc`.
 2. Restart WoW after first installation. An update normally needs `/reload`.
 3. Follow the short introduction. `/fmb` opens the controls later.
-4. Paladins: choose **Taste einrichten** in the addon, or enter `/fmb bind`,
+4. With a supported buff class, choose **Taste einrichten** in the addon, or enter `/fmb bind`,
    and assign a free key. Hover a friendly player, then press and release it.
 5. Only want to decline greetings? Enter `/fmb receive off`. No buff binding is
    needed, and your character can be any class.
 
-Use `/fmb auto` for automatic selection outside combat, or choose `/fmb might`,
-`/fmb wisdom` or `/fmb kings`. `/fmb on` and `/fmb off` control buff functionality.
+Use `/fmb auto` for automatic selection outside combat, or choose a class spell
+in **Buffs & Taste**. Paladins can still use `/fmb might`, `/fmb wisdom` or `/fmb kings`. `/fmb on` and `/fmb off` control buff functionality.
 
 Opening feedback hides the main menu. Closing or Escape returns to the previous
 page. Standalone `/fmb feedback` closes without opening a previously closed menu.
 Only one FMB window is visible at a time.
 
+## Paladin healing and buffing with one key (0.10.0)
+
+Keep your existing FMB key. Outside your own combat, stand still and hover a
+friendly unit with **strictly less than 50% health**, then press the key to
+attempt a heal. A learned, usable **Flash of Light** takes priority; otherwise
+use learned, usable **Holy Light**. The selected spell must also be in range.
+WoW can still prevent a cast, for example when line of sight is blocked.
+Each heal requires your deliberate keypress.
+
+At exactly 50% or more health, or while you are moving, the key follows the usual
+blessing selection instead. During your own combat it keeps the fixed learned
+Kings action. Healing does not send buff greetings and does not increase buff
+statistics or ranking counters. Existing key setup, blessing preferences and
+status guidance remain available.
+
 ## A short introduction and your own buff key
 
-The introduction appears automatically once per character after installing or
-updating to this version. Open it again with `/fmb intro`. It explains the
-mouseover action, combat behavior and optional greetings without changing your
-existing preferences. Closing it skips the introduction; ordinary later logins
-keep the menu closed. You can return to it at any time.
+The introduction appears automatically on each character's first login. Starting
+with 0.9.1, returning users without a buff key see the clearer setup once even if
+they already saw the earlier introduction. Existing bindings are preserved.
+Automatic opening waits until combat ends when logging in during combat.
+
+**“Keine Buff-Taste belegt – bitte jetzt einrichten!”** states what is missing:
+click **Jetzt Taste einrichten** and choose your own free key. Once assigned,
+the introduction shows the actual key and **Taste ändern**. A buff requires
+a deliberate key press. Choose **Später einrichten** or close the window to skip;
+ordinary later logins keep the menu closed. Use `/fmb intro` to reopen it at any
+time. Setup preserves preferences and only assigns a key after deliberate input.
 
 Open `/fmb bind` or **Buffs & Taste → Taste wählen**. Start key capture and
 press a free keyboard key, optionally with Alt, Ctrl, Shift or Cmd on a Mac.
@@ -87,7 +142,7 @@ The usual **Key Bindings → Forever Mouseover Buff** entry remains available.
 
 *Preview from the addon code · German interface; not an in-game screenshot.*
 
-## Class priorities outside combat
+## Paladin class priorities outside combat
 
 Open `/fmb priorities` (or **Klassen-Priorität** in the menu). Choose a recipient
 class, enable the blessings you want and move them with **Hoch** / **Runter**.
@@ -157,7 +212,7 @@ workflow. The event export remains readable. No recipients or chat contents are
 exported. The addon makes no web requests, and **no public ranking service is
 provided**. Buffing requires neither companion nor service.
 
-## 🎯 Outside-combat selection
+## 🎯 Paladin outside-combat selection
 
 | Friendly target | First choice | Alternative |
 | --- | --- | --- |
@@ -247,6 +302,8 @@ environment. There are no addon or Python runtime dependencies.
 python3 -m venv .ci-tools
 .ci-tools/bin/python -m pip install PyYAML==6.0.3
 .ci-tools/bin/python -m unittest discover -s tests -p test_issue_templates.py -v
+lua5.1 tests/test_classes.lua
+lua5.1 tests/test_api.lua six_classes_read_actual_learned_ranks_and_equivalent_auras
 LUA_BIN=lua5.1 sh scripts/check-portable.sh
 python3 -m unittest discover -s tests -p test_release_package.py -v
 python3 -m unittest discover -s companion/tests -v
@@ -255,7 +312,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.9.0 --output dist/review-0.9.0
+python3 scripts/prepare-release.py --version 0.10.0 --output dist/review-0.10.0
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party
@@ -275,3 +332,36 @@ Original project code: [MIT](LICENSE). The Feberdin knight is the shared author
 identity; see the [brand guide](BRANDING.md).
 WoW, spell names and trademarks remain with their respective owners. This is an
 independent addon and not an official Blizzard or CurseForge product.
+
+### Checking introduction and key setup
+
+Use `/fmb intro` to see the current key status or `/fmb bind` to start capture
+directly. An introduction deferred at login opens after combat ends. `/fmb status`
+shows the installed version and binding. `/fmb debug on` enables the existing
+local diagnostic codes; `/fmb debug off` disables them. No new diagnostic code
+records key values. If the introduction does not appear, check that the addon is
+enabled for this character and `/fmb status` reports version 0.10.0.
+
+### Actionable status guidance (0.9.2)
+
+Open **Buffs & Taste** or run `/fmb status` for the current cause and next step.
+No key: `/fmb bind` (after combat). Out of range: move closer. No learned blessing:
+learn it or select `/fmb auto`. Dead target: choose a living friendly player.
+Missing data: re-hover, wait briefly, then `/reload` if it persists; inspect
+`/fmb diag` and temporarily enable `/fmb debug on` for fixed local codes. Turn
+debug off afterwards. An existing own blessing is preserved intentionally.
+
+WoW remains authoritative for generic spell usability and combat cast failures;
+the addon does not guess mana loss, cooldown or line of sight. Preview updates
+do not send chat messages. The status card also detects missing keys in combat
+without reading target data or modifying protected buttons.
+
+### Local automatic buff thanks (2026-11-07)
+
+`/fmb thanks on|off` (default ON), also available in the greetings settings,
+requests a named native THANK emote for readable friendly-player classic buffs.
+No target, attack, spell or binding changes are made. Requests are bundled for
+two seconds, limited to once per caster per minute and once globally per five
+seconds. Unknown/restricted aura or caster data is skipped. In-game acceptance
+is pending. Use `/reload`, inspect `/fmb status`, disable with `/fmb thanks off`.
+[Checks, backup and rollback](docs/auto-thanks-2026-11-07/REPORT.md).

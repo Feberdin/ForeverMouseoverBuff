@@ -36,6 +36,17 @@ local function initialize(f)
     return f.api.Initialize(f.db, "0.7.2")
 end
 
+-- A ready heal is a known public decision, not malformed private diagnostic input.
+function tests.ready_heal_is_retained_as_an_informational_core_decision()
+    local f = fixture(); assert(initialize(f))
+    assert(f.api.Record("READY_HEAL"))
+    local event = f.api.Snapshot().events[#f.api.Snapshot().events]
+    equal(event.code, "READY_HEAL", "ready healing must not be rewritten as DIAGNOSTIC_INVALID")
+    equal(event.severity, "INFO"); equal(event.origin, "CORE")
+    f.api.SetFallback("READY_HEAL")
+    equal(f.api.Snapshot().fallbackReason, "READY_HEAL")
+end
+
 function tests.public_events_have_sequence_origin_severity_and_optional_server_time()
     local f = fixture(); assert(initialize(f))
     assert(f.api.Record("STATS_INTEGRITY_FAILED"))

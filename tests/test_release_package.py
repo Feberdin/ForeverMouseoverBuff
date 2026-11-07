@@ -87,6 +87,11 @@ class ReleaseTests(unittest.TestCase):
             json.loads((self.output / "manifest.json").read_text()), result
         )
 
+    def test_auto_thanks_and_existing_attempt_trace_ship_in_addon(self):
+        for name in ("AutoThanks.lua", "AttemptTrace.lua"):
+            self.assertIn(name, release.ADDON_NAMES)
+        self.assertIn("test_auto_thanks.lua", release.PORTABLE_TESTS)
+
     def test_existing_output_is_preserved(self):
         self.output.mkdir()
         marker = self.output / "keep"
@@ -154,6 +159,42 @@ class ReleaseTests(unittest.TestCase):
                     .splitlines()
                 )
                 self.assertLess(lines.index("Diagnostics.lua"), lines.index("App.lua"))
+
+    def test_shared_diagnostics_ships_before_core_in_both_manifests(self):
+        # This module is a real TOC dependency, independent of the package list.
+        # Reproduce the missing-allowlist bug rather than deriving the expectation
+        # from ADDON_NAMES, which previously hid the packaging mismatch.
+        module = self.root / "src/ForeverMouseoverBuff/FeberdinDiagnostics.lua"
+        module.write_text("-- synthetic shared diagnostics module\n", encoding="utf-8")
+        for name in ("ForeverMouseoverBuff.toc", "ForeverMouseoverBuff_Camelot.toc"):
+            toc = self.root / "src/ForeverMouseoverBuff" / name
+            lines = [
+                line
+                for line in toc.read_text().splitlines()
+                if line != "FeberdinDiagnostics.lua"
+            ]
+            lines.insert(lines.index("Core.lua"), "FeberdinDiagnostics.lua")
+            toc.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        result = self.prepare()
+        self.assertIn(
+            "src/ForeverMouseoverBuff/FeberdinDiagnostics.lua", result["source_files"]
+        )
+        with zipfile.ZipFile(self.output / "ForeverMouseoverBuff-0.7.0.zip") as archive:
+            self.assertEqual(
+                archive.read("ForeverMouseoverBuff/FeberdinDiagnostics.lua"),
+                module.read_bytes(),
+            )
+            for name in (
+                "ForeverMouseoverBuff.toc",
+                "ForeverMouseoverBuff_Camelot.toc",
+            ):
+                lines = (
+                    archive.read("ForeverMouseoverBuff/" + name).decode().splitlines()
+                )
+                self.assertLess(
+                    lines.index("FeberdinDiagnostics.lua"), lines.index("Core.lua")
+                )
 
     def test_local_diagnostic_reader_ships_only_in_source(self):
         result = self.prepare()
@@ -296,6 +337,28 @@ class ReleaseTests(unittest.TestCase):
             for name in names:
                 self.assertIn("release/assets/" + name, result["source_files"])
                 self.assertNotIn("ForeverMouseoverBuff/" + name, addon.namelist())
+
+
+class ReleaseWorkflowTests(unittest.TestCase):
+    def test_ci_package_command_uses_current_manifest_version(self):
+        # Validate both the checked-in workflow and its exported source template.
+        # A fixed older --version makes an otherwise valid release fail in CI.
+        project = Path(__file__).resolve().parents[1]
+        toc = (
+            project / "src/ForeverMouseoverBuff/ForeverMouseoverBuff.toc"
+        ).read_text()
+        version = next(
+            line.split(":", 1)[1].strip()
+            for line in toc.splitlines()
+            if line.startswith("## Version:")
+        )
+        for name in (".github/workflows/ci.yml", "release/.github/workflows/ci.yml"):
+            with self.subTest(workflow=name):
+                self.assertIn(
+                    f"--version {version} --output dist/ci-{version}",
+                    (project / name).read_text(),
+                    "CI packaging must validate the current manifest version.",
+                )
 
 
 if __name__ == "__main__":

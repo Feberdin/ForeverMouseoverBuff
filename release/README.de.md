@@ -6,22 +6,57 @@
 
 **Ein passender Segen. Ein persönlicher Gruß. Ein ruhigerer Chat.**
 
-Wähle einen gelernten Paladinsegen für den befreundeten Spieler unter deiner
-Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
-um seine automatischen Grüße abzulehnen.
+Wähle einen gelernten Klassenbuff für den befreundeten Spieler unter deiner
+Maus. Paladin, Magier, Priester, Druide, Hexenmeister und Schamane haben eigene
+Buffprofile. Alle Klassen können Grüße empfangen und automatisch danken.
 
-**0.9.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.0 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Oberfläche und Grüße sind überwiegend deutsch. Klassenprioritäten und das native
 Sanctum-Menü sind automatisiert und im nachgebildeten Layout geprüft. Die
 Ingame-Abnahme und der tatsächliche Grußempfang bei einem anderen Spieler stehen
 noch aus.
 
-## 🛡️ Was das Addon kann
+## Klassenbuffs (0.10.0 Beta)
+
+| Deine Klasse | Auto in dieser Reihenfolge | Zusätzlich bewusst wählbar |
+| --- | --- | --- |
+| Paladin | Bestehende Zielklassen-Prioritäten für Macht/Weisheit/Könige | Jeder Segen einzeln |
+| Magier | Arkane Intelligenz; überspringt Krieger/Schurken | Magie dämpfen, Magie verstärken |
+| Priester | Seelenstärke → Willenskraft → Schattenschutz | Jede Bufffamilie einzeln |
+| Druide | Mal der Wildnis → Dornen | Jede Bufffamilie einzeln |
+| Hexenmeister | Unterwasseratmung → Unsichtbarkeit entdecken | Jede Bufffamilie einzeln |
+| Schamane | Wasseratmung | Wasserwandeln |
+
+Wähle den gewünschten gelernten Zauber unter **Buffs & Taste**. Intelligenz und
+Willenskraft werden bei Kriegern/Schurken in Auto ausgelassen. Gleichartige Buffs
+bleiben erhalten, einschließlich lesbarer Gebets-, Gaben- und Brillanz-Varianten.
+Andere Klassen dürfen eine zweite fehlende Bufffamilie ergänzen; nur Paladine
+behalten ihre besondere Regel zum Erhalt des eigenen bestehenden Segens.
+Magie dämpfen/verstärken verändert auch eingehende Heilung; Wasserwandeln verändert
+die Bewegung. Diese Zauber musst du bewusst auswählen. Schamanenbuffs verbrauchen
+Reagenzien. FMB prüft WoWs Zaubernutzbarkeit und Manaauskunft, **zählt Reagenzien
+aber nicht selbst**. Fehlende Gegenstände können erst beim Zaubern gemeldet werden.
+
+Es werden nur tatsächlich gelernte Zauberbuchränge und aktuelle Reichweiten-/
+Nutzbarkeitsdaten verwendet. Vorsichtig gilt: Lernstufe des Rangs ≤ Zielstufe.
+Das ist eine Addon-Sicherheitsregel und **keine Aussage über WoWs Mindestzielstufe**;
+manuell können eventuell höhere Ränge möglich sein. Automatische Heilung und feste
+Könige im Kampf bleiben Paladin-Funktionen. Andere Klassen buffen nur außerhalb
+des eigenen Kampfes. Wiederbelebungen, Gruppenbuffs, Rufe, Totems, Aspekte,
+kurzzeitige Abklingzeitbuffs, Begleiter-, Waffen- und Eigenbuffs gehören nicht zu
+diesem Ablauf. Neue Klassenbuffs erzeugen keine Paladin-Zähler oder Exporte.
+
+## 🛡️ Paladin-Funktionen
 
 - **Segen per Mouseover:** Außerhalb deines eigenen Kampfes wählt es anhand der
   unterstützten Klassenvorgaben einen passenden gelernten Segen der Macht,
   Weisheit oder Könige.
+- **Mit derselben Taste heilen:** Außerhalb deines eigenen Kampfes und im
+  Stillstand wird für ein freundliches Mouseover-Ziel mit weniger als 50% Leben
+  ein gelernter, nutzbarer Lichtblitz gewählt, sonst ein gelernter, nutzbarer
+  Heiliges-Licht-Zauber. Eine Heilung sendet keinen
+  Buff-Gruß und zählt nicht zur Buffstatistik oder Rangliste.
 - **Vorhandene Buffs berücksichtigen:** Die Auswahl verwendet lesbare
   Zielinformationen und erhält bestehende Segen. Sind wichtige Angaben unklar
   oder geschützt, hält sie mit einer verständlichen Begründung an.
@@ -35,9 +70,10 @@ noch aus.
   dem Link zum tatsächlich gewirkten Zauber verschickt werden.
 
 **Jeder Zauber benötigt einen echten Tastendruck.** Bloßes Drüberfahren mit der
-Maus zaubert nichts. Buffauswahl und Statistik unterstützen derzeit
-**ausschließlich Paladine**. Der reine Empfangsmodus funktioniert mit **jeder
-Klasse**; die vorbereiteten Grußstile anderer Klassen ergänzen keine Zauber.
+Maus zaubert nichts. Direkte Buffs unterstützen **sechs Klassen**. Krieger,
+Jäger und Schurken erhalten eine Erklärung ihrer Klassengrenzen. Gruppen-,
+Waffen- und Eigenbuffs bleiben bei der normalen WoW-Bedienung. Statistik,
+gesendete Segensgrüße und der bestehende Rankingdienst bleiben **Paladin-Funktionen**.
 
 ## 🚀 Schnell eingerichtet
 
@@ -47,28 +83,52 @@ Klasse**; die vorbereiteten Grußstile anderer Klassen ergänzen keine Zauber.
 2. Starte WoW nach der ersten Installation neu. Bei einem Update reicht
    normalerweise `/reload`.
 3. Folge der kurzen Einführung. Mit `/fmb` öffnest du später die Einstellungen.
-4. Als Paladin wählst du im Addon **Taste einrichten** oder gibst `/fmb bind` ein
+4. Mit einer unterstützten Buffklasse wählst du im Addon **Taste einrichten** oder gibst `/fmb bind` ein
    und vergibst eine freie Taste. Fahre über einen freundlichen Spieler, drücke
    die Taste und lasse sie wieder los.
 5. Du möchtest nur die Grüße abschalten? Gib `/fmb receive off` ein. Dafür
    brauchst du weder einen Paladin noch eine Buff-Taste.
 
 `/fmb auto` aktiviert die automatische Auswahl außerhalb des Kampfes. Mit
-`/fmb might`, `/fmb wisdom` oder `/fmb kings` wählst du einen festen Modus.
+einem Klassenbuff unter **Buffs & Taste** wählst du einen festen Modus.
+Paladine können weiterhin `/fmb might`, `/fmb wisdom` und `/fmb kings` nutzen.
 `/fmb on` und `/fmb off` schalten die Bufffunktion ein oder aus.
 
 Beim Öffnen von Feedback wird das Hauptmenü ausgeblendet. Schließen oder Escape
 führt zur bisherigen Seite zurück. Direkt geöffnetes Feedback (`/fmb feedback`)
 schließt wieder ohne Hauptmenü, wenn es vorher nicht geöffnet war.
 
+## Paladin: Mit einer Taste heilen und buffen (0.10.0)
+
+Behalte deine bisherige FMB-Taste. Stehe außerhalb deines eigenen Kampfes still
+und fahre mit der Maus über ein freundliches Ziel mit **strikt weniger als 50%
+Leben**. Dein bewusster Tastendruck versucht dann eine Heilung: Ein gelernter,
+nutzbarer **Lichtblitz** hat Vorrang; andernfalls wird gelerntes, nutzbares
+**Heiliges Licht** gewählt. Der Zauber muss auch in Reichweite sein. WoW kann
+den Zauber weiterhin verhindern, etwa bei blockierter Sichtlinie.
+
+Bei genau 50% oder mehr Leben sowie während deiner Bewegung bleibt die übliche
+Segenauswahl aktiv. Im eigenen Kampf liegt weiterhin der fest vorbereitete
+Segen der Könige auf der Taste. Heilungen senden keine Buff-Grüße und erhöhen
+weder Buffstatistik noch Ranglistenzähler. Tasteneinrichtung, Segenvorgaben und
+verständliche Statushinweise bleiben verfügbar.
+
 ## Kurze Einführung und deine eigene Buff-Taste
 
-Die Einführung erscheint nach Installation oder Update auf diese Version einmal
-pro Charakter automatisch. Mit `/fmb intro` kannst du sie erneut öffnen. Sie
-erklärt Mouseover, das Verhalten im Kampf und die optionalen Grüße, ohne deine
-bisherigen Einstellungen zu ändern. Schließen überspringt die Einführung; bei
-späteren normalen Logins bleibt das Menü geschlossen. Du kannst jederzeit zur
-Einführung zurückkehren.
+Die Einführung erscheint beim ersten Start pro Charakter automatisch. Ab 0.9.1
+sehen auch bisherige Nutzer ohne Buff-Taste die verbesserte Einführung einmal,
+selbst wenn die frühere Einführung schon als gesehen gespeichert war. Bereits
+belegte Tasten bleiben erhalten. Bei einem Start im Kampf wartet die automatische
+Einführung bis zum Kampfende.
+
+**„Keine Buff-Taste belegt – bitte jetzt einrichten!“** zeigt dir direkt, was noch
+fehlt: Klicke auf **Jetzt Taste einrichten** und drücke eine freie eigene Taste.
+Danach zeigt die Einführung deine tatsächliche Belegung und **Taste ändern** an.
+Ohne Taste kannst du nicht buffen; bloßes Mouseover löst keinen Zauber aus.
+Mit **Später einrichten** oder dem Schließen überspringst du die Einführung
+bewusst; sie erscheint bei späteren Logins nicht immer wieder. Mit `/fmb intro`
+öffnest du sie jederzeit erneut. Einstellungen bleiben erhalten; ein Tastendruck
+auf eigene Initiative ist für jede Zuweisung erforderlich.
 
 Öffne `/fmb bind` oder **Buffs & Taste → Taste wählen**. Starte die
 Tastenerfassung und drücke eine freie Tastaturtaste, bei Bedarf zusammen mit Alt,
@@ -93,7 +153,7 @@ Zauber aus. **Tastaturbelegung → Forever Mouseover Buff** bleibt ebenfalls nut
 
 *Vorschau aus dem Addon-Code · deutsche Oberfläche; keine Ingame-Aufnahme.*
 
-## Prioritäten je Zielklasse
+## Paladin-Prioritäten je Zielklasse
 
 Öffne `/fmb priorities` oder im Menü **Klassen-Priorität**. Wähle die Klasse des
 Empfängers, schalte die gewünschten Segen ein und ordne sie mit **Hoch** und
@@ -234,3 +294,39 @@ CurseForge; Spielnamen und Marken verbleiben bei ihren jeweiligen Inhabern.
 
 Quellcode: [Feberdin/ForeverMouseoverBuff](https://github.com/Feberdin/ForeverMouseoverBuff).
 Fehlerberichte: [GitHub Issues](https://github.com/Feberdin/ForeverMouseoverBuff/issues).
+
+### Einführung oder Tastenhinweis prüfen
+
+Mit `/fmb intro` siehst du den aktuellen Tastenstatus; `/fmb bind` startet die
+Tastenwahl direkt. Bei Kampfende wird eine automatisch vorgemerkte Einführung
+geöffnet. `/fmb status` nennt Version und Belegung; `/fmb debug on` aktiviert
+die vorhandenen lokalen Diagnosecodes, `/fmb debug off` schaltet sie aus.
+Keine Tastenwerte werden zusätzlich in Diagnosecodes protokolliert. Wenn keine
+Einführung erscheint, prüfe, ob das Addon im Charakterbildschirm aktiviert ist
+und ob `/fmb status` Version 0.10.0 nennt.
+
+### Verständliche Statushinweise (0.9.2)
+
+Unter **Buffs & Taste** oder mit `/fmb status` stehen Ursache und nächster Schritt.
+Keine Taste: nach dem Kampf `/fmb bind`. Außer Reichweite: näher herangehen.
+Segen nicht gelernt: lernen oder `/fmb auto` wählen. Totes Ziel: einen lebenden
+freundlichen Spieler wählen. Fehlende Daten: Maus neu aufs Ziel halten, kurz
+warten und bei Dauerproblemen `/reload`; danach `/fmb diag` prüfen.
+`/fmb debug on` protokolliert feste lokale Codes; anschließend wieder ausschalten.
+Ein eigener vorhandener Segen bleibt absichtlich erhalten.
+
+Bei allgemeiner Nichtnutzbarkeit und fehlgeschlagenen Kampfzaubern zählt die
+WoW-Meldung. Mana, Abklingzeit oder Sichtlinie werden nicht als Ursache geraten.
+Die Vorschau erzeugt keine Chatmeldungen. Fehlende Tasten werden auch im Kampf
+erkannt, ohne Zieldaten zu lesen oder geschützte Schaltflächen zu ändern.
+
+### Lokale Erweiterung: automatisch danken (07.11.2026)
+
+Unter **Grüße → Automatisch für Buffs danken** oder `/fmb thanks on|off`
+(Standard AN) bedankt sich das Addon mit dem nativen `/danke` beim lesbaren
+Buffgeber. Es wechselt kein Ziel und ruft keine Angriffs-/Zauberfunktion auf.
+Klassische Buffs werden zwei Sekunden gebündelt, je Spieler höchstens einmal
+pro Minute und insgesamt höchstens einmal alle fünf Sekunden bedankt. Unbekannte
+oder geschützte Aura-/Spielerdaten werden ausgelassen; Ingame-Abnahme steht aus.
+Start: `/reload`, Status: `/fmb status`, sofort aus: `/fmb thanks off`.
+[Tests, Backup und Rücknahme](docs/auto-thanks-2026-11-07/REPORT.md).

@@ -1,197 +1,24 @@
-# ✨ Forever Mouseover Buff
+# Forever Mouseover Buff
 
-![Forever Mouseover Buff — 0.9.0 Beta](https://raw.githubusercontent.com/Feberdin/ForeverMouseoverBuff/v0.9.0/release/assets/launch-hero-0.9.0.png)
+**0.10.0 Beta · WoW Forever 1.60.1 · Interface 16001**
 
-**Ein passender Segen. Ein persönlicher Gruß. Ein ruhigerer Chat.**
+Fahre mit der Maus über einen freundlichen Spieler und drücke deine eingerichtete Taste, um einen passenden erlernten Buff zu wirken.
 
-Wähle einen gelernten Paladinsegen für den befreundeten Spieler unter deiner
-Maus. Andere Klassen können Forever Mouseover Buff einfach installieren,
-um seine automatischen Grüße abzulehnen.
+- Direkte Buffs für Paladin, Priester, Druide, Magier, Hexenmeister und Schamane.
+- Auswahl und Prioritäten richten sich nach deiner Klasse und den erlernten Zaubern.
+- Situationsabhängige Hilfszauber werden bewusst ausgewählt.
+- Persönliche Grüße und eine optionale automatische Danke-Geste für empfangene Buffs.
+- Empfänger können automatische Grüße ablehnen. Diese Einstellung steht allen Klassen offen.
+- Klassen ohne geeigneten direkten Spielerbuff erhalten eine Erklärung.
 
-**0.9.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+## Start
 
-Oberfläche und Grüße sind überwiegend deutsch. Klassenprioritäten und das native
-Sanctum-Menü sind automatisiert und im nachgebildeten Layout geprüft. Die
-Ingame-Abnahme und der tatsächliche Grußempfang bei einem anderen Spieler stehen
-noch aus.
+Nach der Installation `/fmb` eingeben und unter **Buffs & Taste** eine freie Taste einrichten. Neue Addoninstallation: WoW vollständig neu starten; bei einem Update außerhalb des Kampfes `/reload` verwenden.
 
-## 🛡️ Was das Addon kann
+Zaubern erfolgt nur durch eine bewusste Tasteneingabe. Das Menü erklärt Einschränkungen durch Kampf, fehlende Zauber oder Ressourcen. Die Beta ist offline getestet; echte Zauberausführung und Klassenwechsel müssen im Spiel geprüft werden.
 
-- **Segen per Mouseover:** Außerhalb deines eigenen Kampfes wählt es anhand der
-  unterstützten Klassenvorgaben einen passenden gelernten Segen der Macht,
-  Weisheit oder Könige.
-- **Vorhandene Buffs berücksichtigen:** Die Auswahl verwendet lesbare
-  Zielinformationen und erhält bestehende Segen. Sind wichtige Angaben unklar
-  oder geschützt, hält sie mit einer verständlichen Begründung an.
-- **Taste im Kampf:** Sobald gelernt, liegt Segen der Könige im eigenen Kampf
-  fest auf derselben Mouseover-Taste. Dabei findet keine dynamische Auswahl statt.
-- **Rückmeldung erhalten:** Ein gesperrter Versuch wird kurz erklärt und auf
-  Wunsch mit einem Ton gemeldet. Ein eigener Hinweiston erinnert an einen
-  beobachteten natürlichen Siegelablauf.
-- **Persönliche Grüße senden:** Nach einem bestätigten FMB-Buff kann ein
-  wechselnder Gruß mit passender Klassen-/Volkssprache und, soweit verfügbar,
-  dem Link zum tatsächlich gewirkten Zauber verschickt werden.
+## Diagnose
 
-**Jeder Zauber benötigt einen echten Tastendruck.** Bloßes Drüberfahren mit der
-Maus zaubert nichts. Buffauswahl und Statistik unterstützen derzeit
-**ausschließlich Paladine**. Der reine Empfangsmodus funktioniert mit **jeder
-Klasse**; die vorbereiteten Grußstile anderer Klassen ergänzen keine Zauber.
+`/fmb status`, `/fmb diag` und vorübergehend `/fmb debug on` helfen bei Problemen; anschließend `/fmb debug off`.
 
-## 🚀 Schnell eingerichtet
-
-1. Installiere das Addon im aktiven Forever-Ordner `Interface/AddOns`. Bei einer
-   manuellen ZIP-Installation muss dort
-   `ForeverMouseoverBuff/ForeverMouseoverBuff.toc` liegen.
-2. Starte WoW nach der ersten Installation neu. Bei einem Update reicht
-   normalerweise `/reload`.
-3. Folge der kurzen Einführung. Mit `/fmb` öffnest du später die Einstellungen.
-4. Als Paladin wählst du im Addon **Taste einrichten** oder gibst `/fmb bind` ein
-   und vergibst eine freie Taste. Fahre über einen freundlichen Spieler, drücke
-   die Taste und lasse sie wieder los.
-5. Du möchtest nur die Grüße abschalten? Gib `/fmb receive off` ein. Dafür
-   brauchst du weder einen Paladin noch eine Buff-Taste.
-
-`/fmb auto` aktiviert die automatische Auswahl außerhalb des Kampfes. Mit
-`/fmb might`, `/fmb wisdom` oder `/fmb kings` wählst du einen festen Modus.
-`/fmb on` und `/fmb off` schalten die Bufffunktion ein oder aus.
-
-## Kurze Einführung und deine eigene Buff-Taste
-
-Die Einführung erscheint nach Installation oder Update auf diese Version einmal
-pro Charakter automatisch. Mit `/fmb intro` kannst du sie erneut öffnen. Sie
-erklärt Mouseover, das Verhalten im Kampf und die optionalen Grüße, ohne deine
-bisherigen Einstellungen zu ändern. Schließen überspringt die Einführung; bei
-späteren normalen Logins bleibt das Menü geschlossen. Du kannst jederzeit zur
-Einführung zurückkehren.
-
-Öffne `/fmb bind` oder **Buffs & Taste → Taste wählen**. Starte die
-Tastenerfassung und drücke eine freie Tastaturtaste, bei Bedarf zusammen mit Alt,
-Strg, Umschalt oder Cmd auf dem Mac. Auch die mittlere Maustaste, Maustaste 4/5
-und das Mausrad sind möglich. Linke und rechte Maustaste bleiben für die normale
-Bedienung frei.
-Gespeichert wird im aktuell aktiven WoW-Belegungssatz: accountweit oder nur für
-diesen Charakter. Eine neue freie Taste ersetzt die bisherigen FMB-Tasten.
-Wählst du eine bereits FMB zugewiesene Taste, bleibt deren Belegung unverändert.
-
-Eine schon anderweitig belegte Taste wird mit einer Erklärung abgelehnt. Wähle
-eine freie Kombination oder gib die Taste bewusst in WoWs Tastaturbelegung frei.
-Escape, Fensterschließen oder Kampfbeginn bricht die Erfassung ab. Änderungen sind
-nur außerhalb des Kampfes möglich. Das Entfernen der Buff-Belegung betrifft nur
-FMB-Tasten. Es wird keine Taste automatisch vergeben; die Einrichtung löst keinen
-Zauber aus. **Tastaturbelegung → Forever Mouseover Buff** bleibt ebenfalls nutzbar.
-
-
-![Introduction](https://raw.githubusercontent.com/Feberdin/ForeverMouseoverBuff/v0.9.0/release/assets/launch-intro-0.9.0.png)
-
-![Buff key setup](https://raw.githubusercontent.com/Feberdin/ForeverMouseoverBuff/v0.9.0/release/assets/launch-keybinding-0.9.0.png)
-
-*Vorschau aus dem Addon-Code · deutsche Oberfläche; keine Ingame-Aufnahme.*
-
-## Prioritäten je Zielklasse
-
-Öffne `/fmb priorities` oder im Menü **Klassen-Priorität**. Wähle die Klasse des
-Empfängers, schalte die gewünschten Segen ein und ordne sie mit **Hoch** und
-**Runter**. Gewählt wird der erste aktive, fehlende, gelernte und zur Zielstufe
-passende Segen. Sind alle drei ausgeschaltet, wird diese Klasse im Automodus
-übersprungen. **Standard wiederherstellen** setzt nur die gewählte Klasse zurück.
-Die Einstellungen werden pro eigenem Charakter bei Reload oder Logout gespeichert.
-
-Für Druiden gilt standardmäßig **Könige → Weisheit → Macht**. Hat ein Druide
-Könige und Weisheit von anderen Paladinen, kannst du Macht ergänzen. Bereits
-vorhandene gleichartige Segen bleiben unabhängig vom Rang erhalten. Auch dein
-eigener Macht-, Weisheit- oder Könige-Segen bleibt stehen, selbst wenn du ihn aus
-der Liste entfernst. So ersetzt wiederholtes Drücken nicht ständig deinen eigenen
-Segen. Die Liste wählt einen passenden Segen; sie ermöglicht keine drei gleichzeitigen
-Segen desselben Paladins. Für einen bewussten Wechsel bleibt der feste Modus verfügbar.
-
-Die Reihenfolge gilt ausschließlich bei **Auto außerhalb des Kampfes**. Im Kampf
-bleibt die Taste auf gelerntem Könige; feste Modi ignorieren die Klassenliste.
-Einstellungen lösen keinen Zauber aus. Unklare Auren sperren weiterhin die Auswahl.
-`INVALID_PRIORITIES` meldet ungültige gespeicherte Prioritäten: Liste im Menü
-korrigieren oder mit `/fmb priorities reset` bewusst **alle** Klassen zurücksetzen.
-`CLASS_DISABLED` bedeutet: Alle Segen für die aktuelle Zielklasse sind ausgeschaltet.
-
-## 💬 Drei unabhängige Nachrichtenschalter
-
-| Dein Wunsch | Befehl | Das wird geändert |
-| --- | --- | --- |
-| Keine eigenen Grüße versenden | `/fmb whisper off` | Deine ausgehenden automatischen Grüße |
-| Keine FMB-Grüße empfangen | `/fmb receive off` | Automatische Grüße an dich |
-| Eigene Grüße in Chat und WIM verbergen | `/fmb outgoing off` | Deine Anzeige, Popups und WIM-Töne |
-
-Unter **Grüße & Chat** gibt es getrennte Schalter für **Automatische Grüße
-senden** und **Eigene Grüße verbergen**. Beide stehen standardmäßig auf **AN**:
-Der Empfänger bekommt deinen Gruß, deine eigene Kopie bleibt in Chat und WIM
-verborgen. Schalte den Versand aus, um keine automatischen Nachrichten mehr zu
-senden; Buffen funktioniert weiter. Bereits bewusst gesetzte Einstellungen
-bleiben erhalten. `/fmb outgoing on` zeigt eigene Kopien wieder an.
-
-Verborgene automatische Grüße öffnen kein WIM-Fenster, lösen dort keinen Ton aus
-und landen nicht im WIM-Verlauf. Persönliche Whisper bleiben unverändert. WIM ist
-optional. Gefiltert werden ausschließlich kürzlich gesendete automatische Grüße
-an den exakt passenden Empfänger. Der Empfangsschalter erkennt kompatible,
-markierte FMB-Grüße; andere Addons oder ältere unmarkierte Nachrichten werden
-nicht pauschal gefiltert.
-
-## 🔔 Töne nach deinem Geschmack
-
-- `/fmb sound on` beziehungsweise `/fmb sound off`: Ton bei gesperrten Buffversuchen.
-- `/fmb soundtest`: den eingeschalteten Hinweiston prüfen.
-- `/fmb seal on` beziehungsweise `/fmb seal off`: separate Siegelerinnerung.
-
-Der Siegelton folgt einem beobachteten natürlichen Ablauf. Er ertönt nicht schon
-deshalb, weil beim Einloggen kein Siegel aktiv ist.
-
-## 📊 Lokale Statistik und freiwillige Rankingtests
-
-`/fmb stats` zeigt lokale, unbestätigte Zähler erfolgreicher FMB-Buffs. Version
-0.7.1 speichert die zwanzig unterstützten Zauberzähler als Binärdaten in Base64
-mit einer SHA-256-Prüfsumme. Gültige ältere Zähler werden automatisch übernommen.
-Beschädigte oder unlesbare Datensätze bleiben unverändert erhalten; die Statistik
-pausiert, während Buffen weiterhin möglich ist.
-
-**Das ist eine Kodierung mit Fehlerprüfung, keine Verschlüsselung oder
-Manipulationssicherheit.** Wer die Dateien kontrolliert, kann auch neue Daten
-mit passender Prüfsumme erstellen. Die Zähler bleiben selbst gemeldete
-Community-Daten und beweisen keine echten Zaubervorgänge.
-
-Der Rankingexport ist **standardmäßig aus**. `/fmb ranking on` sammelt freiwillig
-Exportereignisse; `/fmb ranking help` erklärt den separaten Companion und den
-lokalen Testablauf. Die Ereignisdatei bleibt lesbar. Empfänger und Chattexte
-werden nicht exportiert. Das Addon baut keine Webverbindung auf, und es gibt
-**keinen bereitgestellten öffentlichen Rankingdienst**. Companion und lokaler
-Dienst sind zum Buffen nicht erforderlich.
-
-## 🧭 Lokales Diagnoseprotokoll
-
-`/fmb diag` zeigt den Diagnosestatus und die letzten fünf Ereignisse. Das begrenzte
-lokale Protokoll enthält feste Codes, Schweregrad, Modul, soweit verfügbar öffentliche
-Zeitstempel, Versuchs-/Erfolgs-/Fehlerzähler und einen kleinen Einstellungs- und
-Clientstand. Spielernamen, GUIDs, Whispertexte und rohe API-Fehler werden nicht erfasst.
-Das Protokoll arbeitet ohne Chatspam; `/fmb debug on` ergänzt nur die lokale Chatausgabe.
-
-WoW schreibt die SavedVariables bei `/reload` oder beim Ausloggen auf die Festplatte.
-Ein separater lokaler Leser kann diesen Stand ohne Rankingdienst und ohne Upload
-prüfen. Er liest keinen Live-Spielzustand aus. Ein alter Dateistand ist keine aktuelle
-Funktionsprüfung.
-
-## ❓ Häufige Fragen
-
-**Kann ich jemanden buffen, der gerade kämpft?**  
-Ja, der Kampfstatus des Ziels allein verhindert es nicht. Die Auswahl braucht
-weiterhin verwendbare Zielinformationen. Dein eigener Kampf stellt die Taste
-auf den gelernten Segen der Könige um.
-
-**Was hilft bei einer Fehlermeldung?**  
-Nutze `/fmb status`, `/fmb help` und vorübergehend `/fmb debug on`. Nenne im Fehlerbericht Addonversion, Clientbuild, Schritte zum
-Nachstellen und den festen Diagnosecode. Danach schaltest du mit `/fmb debug off` zurück.
-Teile keine vollständigen SavedVariables, privaten Whisper, Tokens oder
-Zugangssicherungen. Sichere beschädigte Statistikdaten vor einem
-Wiederherstellungsversuch; setze sie nicht nur zum Verbergen des Fehlers zurück.
-
----
-
-Ein eigenständiges **MIT-Projekt**, ohne Verbindung zu Blizzard oder CurseForge.
-WoW-Namen und Marken gehören ihren jeweiligen Rechteinhabern.
-
-Quellcode und Fehlerberichte: [GitHub](https://github.com/Feberdin/ForeverMouseoverBuff) · [Issues](https://github.com/Feberdin/ForeverMouseoverBuff/issues).
+Quellcode, Anleitungen und Fehlermeldungen: [GitHub](https://github.com/Feberdin/ForeverMouseoverBuff).

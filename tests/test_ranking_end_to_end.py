@@ -42,7 +42,7 @@ local addon, stamp, mode = arg[1], tonumber(arg[2]), arg[3]
 issecretvalue = function() return false end
 canaccesstable = function() return true end
 GetServerTime = function() return stamp end
-local ns = {db = {}, Log = function() end}
+local ns = {db = {}, API = {PlayerClass = function() return "PALADIN" end}, Log = function() end}
 for _, file in ipairs({"Hash.lua", "CounterCodec.lua", "Stats.lua"}) do
     assert(loadfile(addon .. "/" .. file))("ForeverMouseoverBuff", ns)
 end

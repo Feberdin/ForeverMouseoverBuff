@@ -86,6 +86,17 @@ local function state()
     if not readable(db) then clear(nil, "RANKING_DATABASE_UNAVAILABLE"); return nil end
     local enabled = rawget(db, "rankingEnabled")
     if not public(enabled) or enabled ~= true then clear(db); return db, nil end
+    -- Schema 1 is explicitly a Paladin blessing contract. Refuse a stale enabled
+    -- preference on another class rather than mislabelling its casterClass.
+    if enabled == true then
+        local getter = ns.API and ns.API.PlayerClass
+        local ok, class
+        if type(getter) == "function" then ok, class = pcall(getter) end
+        if not ok or not public(class) or class ~= "PALADIN" then
+            clear(db, "RANKING_CLASS_UNSUPPORTED")
+            return nil
+        end
+    end
     local sequence = rawget(db, "rankingSequence")
     if public(sequence) and sequence == nil then sequence = 0 end
     if not integer(sequence, 0, MAX_SEQUENCE) then clear(db, "RANKING_SEQUENCE_INVALID"); return nil end

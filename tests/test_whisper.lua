@@ -735,6 +735,7 @@ end
 
 function tests.real_export_receives_only_correlated_successes_and_off_clears_queue()
     local f = fixture(); loadRealStatsAndLink(f)
+    f.ns.API = {PlayerClass = function() return "PALADIN" end}
     f.env.GetServerTime = function() return 1791734400 end
     local path = "src/ForeverMouseoverBuff/RankingExport.lua"
     local chunk

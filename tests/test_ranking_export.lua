@@ -9,7 +9,7 @@ local function equal(actual, expected, context)
     if actual ~= expected then error(context or "unexpected export value", 2) end
 end
 local function fixture()
-    local f = {time = 1791763200, clockCalls = 0, logs = {}}
+    local f = {class = "PALADIN", time = 1791763200, clockCalls = 0, logs = {}}
     f.secret = setmetatable({}, {__tostring = function() error("secret printed") end})
     f.opaque = setmetatable({}, {__index = function() error("opaque read") end})
     local env = setmetatable({}, {__index = _G})
@@ -20,7 +20,7 @@ local function fixture()
     env.UnitName = function() error("no identity API allowed") end
     env.UnitGUID, env.UnitClass = env.UnitName, env.UnitName
     env.C_ChatInfo = {SendAddonMessage = function() error("no network allowed") end}
-    f.ns = {db = {}, Log = function(_, code) f.logs[#f.logs + 1] = code end}
+    f.ns = {API = {PlayerClass = function() return f.class end}, db = {}, Log = function(_, code) f.logs[#f.logs + 1] = code end}
     function f:reload()
         local path = "src/ForeverMouseoverBuff/RankingExport.lua"
         local chunk
@@ -209,6 +209,16 @@ function tests.unknown_saved_fields_are_not_serialized_or_traversed()
     equal(f.api.Initialize(), true)
     equal(f.ns.db.rankingQueue[1].recipient, nil); equal(f.ns.db.rankingQueue[1].token, nil)
     equal(f.env.ForeverMouseoverBuffRankingExport:find("token", 1, true), nil)
+end
+
+function tests.non_paladin_cannot_enable_or_resume_paladin_export()
+    local f=fixture(); f.class="MAGE"
+    equal(f.api.SetEnabled(true),false,"Mage cannot claim Paladin export")
+    equal(f.ns.db.rankingEnabled,false)
+    f.ns.db.rankingEnabled=true
+    equal(f.api.Initialize(),false,"stale enabled export must be disabled")
+    equal(f.env.ForeverMouseoverBuffRankingExport,disabled)
+    equal(f.api.Record(19740),false)
 end
 
 local names, requested = {}, arg and arg[1]
