@@ -12,6 +12,7 @@
 # Purpose: selection, API boundary, greeting catalog, recipient preferences, chat display, confirmed whispers, lifecycle/UI. Debug: /fmb status.
 FeberdinDiagnostics.lua
 Core.lua
+Locale.lua
 API.lua
 Hash.lua
 CounterCodec.lua

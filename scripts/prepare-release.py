@@ -24,6 +24,7 @@ LOG = logging.getLogger("fmb.release")
 ADDON_NAMES = (
     "FeberdinDiagnostics.lua",
     "Core.lua",
+    "Locale.lua",
     "API.lua",
     "Hash.lua",
     "CounterCodec.lua",
@@ -52,6 +53,7 @@ ADDON_NAMES = (
     "Media/FeberdinKnight.tga",
 )
 PORTABLE_TESTS = (
+    "test_locale.lua",
     "test_core.lua",
     "test_classes.lua",
     "test_api.lua",

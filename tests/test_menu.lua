@@ -19,6 +19,7 @@ local function setup(classToken)
     -- selected state and child geometry must not depend on a second theme fake.
     assert(loadfile("src/ForeverMouseoverBuff/Theme.lua"))("ForeverMouseoverBuff", ns)
     assert(loadfile("src/ForeverMouseoverBuff/Core.lua"))("ForeverMouseoverBuff", ns)
+    assert(loadfile("src/ForeverMouseoverBuff/Locale.lua"))("ForeverMouseoverBuff", ns)
     -- Loading the real old App preserves a meaningful preimplementation failure:
     -- the opening panel is 460 pixels wide rather than the approved 840-pixel menu.
     assert(loadfile("src/ForeverMouseoverBuff/App.lua"))("ForeverMouseoverBuff", ns)
@@ -639,6 +640,70 @@ test("mage_menu_exposes_only_its_direct_buffs_and_explains_combat", function()
     eq(ns.Menu.modeButtons.might,nil,"No Paladin selector on Mage")
     assert(textContains(state,"Intelligenz"),"class spell labels visible")
     assert(ns.Menu.combat.text:find("gesperrt",1,true),"Mage combat is blocked")
+end)
+
+-- The language switch sits on the title row and never reloads by itself.
+test("header language switch offers Auto, DE and EN and marks the saved setting", function()
+    local ns = setup()
+    local buttons = ns.Menu.languageButtons
+    eq(buttons.auto:GetText(), "Auto"); eq(buttons.de:GetText(), "DE"); eq(buttons.en:GetText(), "EN")
+    eq(buttons.auto.selected, true, "auto is selected by default")
+    eq(buttons.en.selected, false, "en not selected by default")
+    ns.db.language = "en"; ns.Menu.Refresh()
+    eq(buttons.en.selected, true, "en selected after saving en")
+    eq(buttons.auto.selected, false, "auto deselected after saving en")
+end)
+test("header language switch sends the lang command", function()
+    local ns, state = setup()
+    ns.Menu.languageButtons.en:Click()
+    eq(state.commands[#state.commands], "lang en")
+    ns.Menu.languageButtons.auto:Click()
+    eq(state.commands[#state.commands], "lang auto")
+end)
+test("header language switch stays on the title row clear of title and knight", function()
+    local ns = setup()
+    local rightEdge, leftEdge = 0, math.huge
+    for _, button in pairs(ns.Menu.languageButtons) do
+        local x, y = button.points[1][4], -button.points[1][5]
+        eq(y, 46, "switch sits on the title row")
+        rightEdge = math.max(rightEdge, x + button.width); leftEdge = math.min(leftEdge, x)
+    end
+    assert(rightEdge <= 724, "switch must end before the knight icon at 734, ends at " .. rightEdge)
+    local reload = ns.Menu.reloadButton
+    local reloadX = reload.points[1][4]
+    eq(-reload.points[1][5], 46, "reload button shares the title row")
+    assert(reloadX + reload.width < leftEdge, "reload button sits left of the switch")
+    assert(reloadX >= 330, "reload button stays clear of the title text, starts at " .. reloadX)
+end)
+test("reload button appears only when the effective language differs from the built one", function()
+    local ns = setup()
+    local reload = ns.Menu.reloadButton
+    eq(reload:IsShown(), false, "hidden on a fresh window")
+    eq(ns.Menu.ReloadPending(), false, "nothing pending on a fresh window")
+    ns.db.language = "en"; ns.Menu.Refresh()
+    eq(reload:IsShown(), true, "English differs from the German build")
+    eq(ns.Menu.ReloadPending(), true, "pending after switching to English")
+    ns.db.language = "de"; ns.Menu.Refresh()
+    eq(reload:IsShown(), false, "manual German equals the build")
+    ns.db.language = nil; ns.Menu.Refresh()
+    eq(reload:IsShown(), false, "auto resolves to German again")
+end)
+test("reload button is disabled in combat and reloads only while pending", function()
+    local ns = setup()
+    local reloads = 0
+    _G.ReloadUI = function() reloads = reloads + 1 end
+    local reload = ns.Menu.reloadButton
+    reload:Click(); eq(reloads, 0, "nothing pending, nothing reloads")
+    ns.db.language = "en"
+    local locked = true
+    ns.API.Locked = function() return locked end
+    ns.Menu.Refresh()
+    eq(reload:IsEnabled(), false, "combat disables the button")
+    reload:Click(); eq(reloads, 0, "disabled button does not reload")
+    locked = false; ns.Menu.Refresh()
+    eq(reload:IsEnabled(), true, "outside combat the button is enabled")
+    reload:Click(); eq(reloads, 1, "deliberate click reloads once")
+    _G.ReloadUI = nil
 end)
 
 local count = 0

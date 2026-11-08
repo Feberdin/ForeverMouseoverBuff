@@ -349,6 +349,29 @@ end
 
 -- Construction is lazy: no hidden UI work during login or spell processing.
 -- Pages reuse ordinary frames; opening or selecting a tab cannot arm a spell.
+-- The language switch sits on the title row, so a player who cannot read the
+-- interface finds it on every page. Its labels are language-neutral on purpose.
+-- Menu texts are set once at build time; the reload button appears only while
+-- the effective language differs from the one this window was built with.
+function Menu.ReloadPending()
+    return Menu.builtLanguage ~= nil and ns.Locale ~= nil and ns.Locale.Effective() ~= Menu.builtLanguage
+end
+local function buildLanguage(panel)
+    Menu.languageButtons = {}
+    if not ns.Locale then return end
+    local x = 578
+    for _, option in ipairs(ns.Locale.Options()) do
+        local value, width = option.value, option.value == "auto" and 54 or 42
+        Menu.languageButtons[value] = ns.Theme.Button(panel, option.label, x, 46, width, 24,
+            function() ns:Command("lang " .. value) end)
+        x = x + width + 4
+    end
+    Menu.builtLanguage = ns.Locale.Effective()
+    Menu.reloadButton = ns.Theme.Button(panel, "Neu laden", 472, 46, 100, 24, function()
+        if Menu.ReloadPending() and not ns.API.Locked() and type(ReloadUI) == "function" then ReloadUI() end
+    end)
+    Menu.reloadButton:Hide()
+end
 local function build()
     local theme = ns.Theme
     local panel = theme.Window("ForeverMouseoverBuffPanel", "", 840, 620)
@@ -360,6 +383,7 @@ local function build()
     text(panel, "Ein Segen. Ein Gruß. Gemeinsam durch Azeroth.", 108, 89, 580, 23, 12, theme.colors.muted)
     theme.Icon(panel, theme.Path("FeberdinKnight"), 734, 27, 50, 50)
     text(panel, "FEBERDIN", 720, 83, 78, 18, 10, theme.colors.gold)
+    buildLanguage(panel)
     theme.Rect(panel, 20, 118, 798, 1, theme.colors.edge)
     theme.Rect(panel, 208, 138, 1, 410, theme.colors.edge)
     for index, view in ipairs(views) do
@@ -436,6 +460,14 @@ function Menu.Refresh()
     enable(ns.rankingButton, paladin())
     enable(ns.uploadHelpButton, paladin())
     local locked = ns.API.Locked()
+    if ns.Locale and Menu.languageButtons then
+        local setting = ns.Locale.Setting()
+        for value, button in pairs(Menu.languageButtons) do button:SetSelected(value == setting) end
+    end
+    if Menu.reloadButton then
+        if Menu.ReloadPending() then Menu.reloadButton:Show() else Menu.reloadButton:Hide() end
+        enable(Menu.reloadButton, not locked)
+    end
     enable(Menu.bindingChoose, not locked)
     -- Native UPDATE_BINDINGS refreshes this status too, so external WoW changes
     -- and deliberate key setup never leave the introduction claiming readiness.

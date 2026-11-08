@@ -550,6 +550,7 @@ function ns:Help()
         say("Auto erhält gleichartige vorhandene Buffs. Magie dämpfen/verstärken und Wasserwandeln nur bewusst auswählen: Sie verändern Heilung bzw. Bewegung. Schamanen brauchen Reagenzien; WoW zeigt fehlende Gegenstände beim Zaubern.")
         say("Heilung, feste Könige im Kampf, Segensgrüße, Zähler und Ranking-Export gehören zum Paladin-Modul. Gruppen-/Eigenbuffs bei Krieger, Jäger und Schurke direkt über WoW nutzen.")
         say("/fmb debug on, /fmb status und /fmb diag zeigen lokale technische Codes. Danach /fmb debug off.")
+        say("/fmb lang auto | de | en wählt die Sprache von Menü und Chat; Auto folgt dem WoW-Client. Menütexte wechseln nach /reload.")
         return
     end
     say("/fmb intro zeigt die kurze Einführung. /fmb bind öffnet die Tastenwahl; Escape bricht ab. Belegte Tasten bleiben geschützt.")
@@ -569,6 +570,7 @@ function ns:Help()
     say("/fmb feedback: Fehler, Wünsche oder Features mit Vorschau für GitHub vorbereiten. Technische Angaben sind freiwillig. Link markieren, mit Cmd/Strg+C kopieren und im Browser prüfen und absenden.")
     say("/fmb thanks on | off: Automatisch per /danke für neue fremde Buffs bedanken (Standard AN). Namensgerichtet ohne Zielwechsel, mit Spam-Sperre. Unlesbare oder unbekannte Buffs werden ausgelassen.")
     say("Siegel-Ablauf: ein kurzer Ton nach beobachtetem natürlichem Ende. /fmb seal on | off schaltet ihn unabhängig vom Buff-Hinweiston.")
+    say("/fmb lang auto | de | en wählt die Sprache von Menü und Chat; Auto folgt dem WoW-Client. Menütexte wechseln nach /reload.")
 end
 
 function ns:Diagnostics()
@@ -613,6 +615,22 @@ function ns:DiagnosticReport()
     return table.concat(lines, "\n")
 end
 
+-- The language line names the saved setting and what it resolves to. Chat and
+-- greetings follow it immediately; menu texts are built once, hence the hint.
+local languageNames = {de = "Deutsch", en = "English"}
+function ns:LanguageStatus()
+    local setting, effective = self.Locale.Setting(), self.Locale.Effective()
+    local line
+    if setting == "auto" then
+        line = "Sprache: Automatisch (" .. languageNames[effective] .. ", folgt dem WoW-Client). /fmb lang de | en legt sie fest."
+    else
+        line = "Sprache: " .. languageNames[effective] .. ". /fmb lang auto folgt wieder dem WoW-Client."
+    end
+    if self.Menu and type(self.Menu.ReloadPending) == "function" and self.Menu.ReloadPending() then
+        line = line .. " Menütexte wechseln nach /reload."
+    end
+    return line
+end
 function ns:Command(command)
     if not self.initialized then self:Initialize() end
     command = (safeString(command) or ""):match("^%s*(.-)%s*$"):lower()
@@ -699,6 +717,17 @@ function ns:Command(command)
         if type(self.ShowFeedbackPanel) == "function" then self:ShowFeedbackPanel(command:match("^feedback (%a+)$"))
         else say("Feedback-Menü fehlt. Vollständiges Addonpaket installieren und /reload ausführen.") end
         return
+    elseif command == "lang" or command:match("^lang %a+$") then
+        if not self.Locale then
+            say("Sprachmodul fehlt. Vollständiges Addonpaket installieren und /reload ausführen."); return
+        end
+        local value = command:match("^lang (%a+)$")
+        if value and not self.Locale.Set(value) then
+            say("Unbekannte Sprache. /fmb lang auto | de | en wählt die Sprache."); return
+        end
+        say(self:LanguageStatus())
+        self:Refresh()
+        return
     elseif command == "diag" then say(self:DiagnosticReport()); return
     elseif command == "help" then self:Help(); return
     elseif command == "status" then self:Refresh(); say(self:Diagnostics()); return
@@ -721,6 +750,7 @@ function ns:Initialize()
     if type(self.db.receiveWhispers) ~= "boolean" then self.db.receiveWhispers = true end
     if type(self.db.showOutgoingWhispers) ~= "boolean" then self.db.showOutgoingWhispers = false end
     if self.db.classPriorities == nil then self.db.classPriorities = {} end
+    if self.Locale then self.Locale.Initialize() end
     self.db.schema = 9
     self:InitializeDiagnostics()
     self:CaptureDiagnosticClient()
