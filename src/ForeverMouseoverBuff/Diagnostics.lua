@@ -65,6 +65,7 @@ local catalog = {
     ["INVALID_PRIORITIES"] = {severity = "WARN", origin = "CORE"},
     ["INVALID_SPELL_DATA"] = {severity = "INFO", origin = "CORE"},
     ["IN_VEHICLE"] = {severity = "INFO", origin = "CORE"},
+    ["LOCALE_CLIENT_UNKNOWN"] = {severity = "WARN", origin = "APP"},
     ["MACRO_API_UNAVAILABLE"] = {severity = "ERROR", origin = "APP"},
     ["MOUNTED"] = {severity = "INFO", origin = "CORE"},
     ["NOT_FRIENDLY"] = {severity = "INFO", origin = "CORE"},

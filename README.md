@@ -185,6 +185,14 @@ matches only recently sent automatic messages and their exact recipient; the
 receiver switch recognizes compatible, marked FMB greetings, rather than every
 addon or older unmarked message.
 
+## 🌐 Language
+
+- `Auto | DE | EN` on the menu title row, or `/fmb lang auto | de | en`. Auto
+  follows the WoW client language. Chat follows the setting immediately; menu
+  texts change after `/reload`, and a "Neu laden" button appears next to the
+  switch while that is pending (outside combat only).
+- The addon's texts are German in this version; the switch prepares the
+  English interface.
 ## 🔔 Sounds you control
 
 - `/fmb sound on` or `/fmb sound off`: feedback for blocked buff attempts.

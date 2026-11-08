@@ -199,6 +199,14 @@ an den exakt passenden Empfänger. Der Empfangsschalter erkennt kompatible,
 markierte FMB-Grüße; andere Addons oder ältere unmarkierte Nachrichten werden
 nicht pauschal gefiltert.
 
+## 🌐 Sprache
+
+- `Auto | DE | EN` in der Titelzeile des Menüs oder `/fmb lang auto | de | en`.
+  Auto folgt der Sprache des WoW-Clients. Chat folgt der Einstellung sofort;
+  Menütexte wechseln nach `/reload`. Solange das aussteht, erscheint neben dem
+  Schalter ein „Neu laden“-Knopf (nur außerhalb des Kampfes).
+- Die Texte des Addons sind in dieser Version deutsch; der Schalter bereitet
+  die englische Oberfläche vor.
 ## 🔔 Töne nach deinem Geschmack
 
 - `/fmb sound on` beziehungsweise `/fmb sound off`: Ton bei gesperrten Buffversuchen.

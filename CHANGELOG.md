@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — Language setting
+
+- Add a per-character language setting with an `Auto | DE | EN` switch on the
+  menu title row and `/fmb lang auto | de | en`. Auto follows the WoW client;
+  German clients behave exactly as before. Chat follows the setting at once.
+  Menu texts are built once, so a "Neu laden" button appears next to the
+  switch only while the window was built in another language, outside combat.
+- Add a locale layer (`Locale.lua`): German strings stay the keys, a validated
+  English table can override them. No English texts ship in this change yet.
+- Add the diagnostic code `LOCALE_CLIENT_UNKNOWN`: an unknown client locale
+  resolves to German and is logged once per session.
+- Add `tests/test_locale.lua` plus language regressions in the app and menu
+  suites, observed failing before the change.
+
 ## 0.9.3 Beta — Heal and buff with the same key
 
 - Outside your own combat, a deliberate FMB keypress heals a friendly mouseover

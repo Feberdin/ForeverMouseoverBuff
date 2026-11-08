@@ -146,6 +146,7 @@ local function setup(saved, modules, initialCombat, bindingKey)
     }}
     for name, module in pairs(modules or {}) do ns[name] = module end
     assert(loadfile("src/ForeverMouseoverBuff/Core.lua"))("ForeverMouseoverBuff", ns)
+    assert(loadfile("src/ForeverMouseoverBuff/Locale.lua"))("ForeverMouseoverBuff", ns)
     local diagnosticPath = "src/ForeverMouseoverBuff/Diagnostics.lua"
     local diagnosticFile = io.open(diagnosticPath, "rb")
     if diagnosticFile then
@@ -1244,6 +1245,54 @@ test("mage_commands_accept_its_buffs_and_refuse_foreign_family", function()
     local ns,state=setup(); state.context.playerClass="MAGE"
     ns:Command("intellect"); eq(ns.db.mode,"intellect")
     ns:Command("might"); eq(ns.db.mode,"intellect","foreign mode must not replace Mage setting")
+end)
+
+-- Language is a per-character preference. The command stores it through the
+-- locale module, reports the effective language and never reloads by itself.
+test("language command stores a valid setting and reports it", function()
+    local ns, state = setup({})
+    eq(ns.db.language, nil, "auto is the default")
+    ns:Command("lang en"); eq(ns.db.language, "en")
+    assert(state.logs[#state.logs]:find("English", 1, true), "report names the language")
+    ns:Command("lang de"); eq(ns.db.language, "de")
+    assert(state.logs[#state.logs]:find("Deutsch", 1, true), "report names German")
+    ns:Command("lang auto"); eq(ns.db.language, nil, "auto is stored as absence")
+    assert(state.logs[#state.logs]:find("Automatisch", 1, true), "report names auto")
+end)
+test("language command rejects unknown values and keeps the setting", function()
+    local ns, state = setup({language = "en"})
+    local before = #state.logs
+    ns:Command("lang xx"); eq(ns.db.language, "en")
+    eq(#state.logs, before + 1, "one explanation line")
+    assert(state.logs[#state.logs]:find("/fmb lang auto | de | en", 1, true), "usage is shown")
+    ns:Command("lang"); eq(ns.db.language, "en", "no argument only reports")
+    assert(state.logs[#state.logs]:find("English", 1, true), "report without argument")
+end)
+test("language command without the module explains the missing file", function()
+    local ns, state = setup({})
+    ns.Locale = nil
+    ns:Command("lang en")
+    eq(ns.db.language, nil, "nothing stored without the module")
+    assert(state.logs[#state.logs]:find("Sprachmodul fehlt", 1, true), "missing module message")
+end)
+test("initialization drops an invalid saved language and keeps a valid one", function()
+    local ns = setup({language = "xx"})
+    eq(ns.db.language, nil)
+    ns = setup({language = "en"})
+    eq(ns.db.language, "en")
+end)
+test("help mentions the language command for paladins and other classes", function()
+    local ns, state = setup({})
+    ns:Command("help")
+    local found = false
+    for _, line in ipairs(state.logs) do if line:find("/fmb lang", 1, true) then found = true end end
+    assert(found, "paladin help names /fmb lang")
+    ns.CasterClass = function() return "MAGE" end
+    state.logs = {}
+    ns:Command("help")
+    found = false
+    for _, line in ipairs(state.logs) do if line:find("/fmb lang", 1, true) then found = true end end
+    assert(found, "non-paladin help names /fmb lang")
 end)
 
 local count, failures = 0, 0
