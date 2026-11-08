@@ -95,7 +95,7 @@ function ns:ShowFeedbackPanel(kind)
         -- Plain EditBox avoids inherited Blizzard artwork. The original copy-only
         -- behavior remains: selection is deliberate and Escape releases focus.
         Theme.Rect(panel, 24, 553, 712, 33, colors.edge)
-        Theme.Rect(panel, 25, 554, 710, 31, colors.row)
+        Theme.Rect(panel, 25, 554, 710, 31, colors.row, 1)
         self.feedbackURL = CreateFrame("EditBox", nil, panel)
         self.feedbackURL:SetSize(690, 29); self.feedbackURL:SetPoint("TOPLEFT", panel, "TOPLEFT", 35, -555)
         self.feedbackURL:SetFont("Fonts\\ARIALN.TTF", 13, "")

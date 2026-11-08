@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — Deterministic texture order
+
+- Give every stacked Sanctum rect an explicit sublevel (window layers, button
+  border and fill, toggle row and indicator, card edge strip, statistic bars,
+  feedback link row). WoW leaves the draw order of same-layer, same-sublevel
+  textures unspecified; in game this showed as buttons that were solid gold,
+  framed or invisible depending on the reload. Colors and geometry unchanged.
+- Add a theme contract test that records sublevels, observed failing before
+  the change.
+
 ## 0.9.3 Beta — Heal and buff with the same key
 
 - Outside your own combat, a deliberate FMB keypress heals a friendly mouseover

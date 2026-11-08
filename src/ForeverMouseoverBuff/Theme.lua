@@ -19,8 +19,11 @@ function Theme.Path(name)
     return "Interface\\AddOns\\ForeverMouseoverBuff\\Media\\" .. name
         .. (name:match("%.tga$") and "" or ".tga")
 end
-function Theme.Rect(parent, x, y, width, height, color)
-    local texture = parent:CreateTexture(nil, "BACKGROUND")
+-- Stacked rects need explicit sublevels: WoW leaves the draw order of textures
+-- in the same layer and sublevel unspecified, so a border could cover its fill
+-- on one reload and sit under it on the next. Lower numbers draw first.
+function Theme.Rect(parent, x, y, width, height, color, sublevel)
+    local texture = parent:CreateTexture(nil, "BACKGROUND", nil, sublevel or 0)
     texture:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -y)
     texture:SetSize(width, height); paint(texture, color or c.panel)
     return texture
@@ -46,7 +49,7 @@ function Theme.Button(parent, value, x, y, width, height, action)
     local button = CreateFrame("Button", nil, parent)
     button:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -y); button:SetSize(width, height)
     button.border = Theme.Rect(button, 0, 0, width, height, c.edge)
-    button.fill = Theme.Rect(button, 1, 1, width - 2, height - 2, c.row)
+    button.fill = Theme.Rect(button, 1, 1, width - 2, height - 2, c.row, 1)
     button.label = Theme.Text(button, value, 9, 0, width - 18, height, 14, c.text)
     button.label:SetJustifyH("CENTER"); button.label:SetJustifyV("MIDDLE")
     function button:SetText(text) self.text = text; self.label:SetText(text) end
@@ -70,7 +73,7 @@ function Theme.Toggle(parent, value, description, x, y, width, action)
     Theme.Rect(button, 0, 0, width, 64, c.row)
     Theme.Text(button, value, 14, 10, width - 102, 22, 15, c.text)
     Theme.Text(button, description, 14, 34, width - 102, 25, 12, c.muted)
-    button.indicator = Theme.Rect(button, width - 67, 20, 51, 26, c.edge)
+    button.indicator = Theme.Rect(button, width - 67, 20, 51, 26, c.edge, 1)
     button.badge = Theme.Text(button, "", width - 67, 20, 51, 26, 12, c.text)
     button.badge:SetJustifyH("CENTER"); button.badge:SetJustifyV("MIDDLE")
     function button:SetValue(enabled)
@@ -97,9 +100,10 @@ function Theme.Window(name, title, width, height)
     frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
-    Theme.Rect(frame, 0, 0, width, height, c.edge)
-    Theme.Rect(frame, 1, 1, width - 2, height - 2, c.bg)
-    Theme.Rect(frame, 1, 1, width - 2, 2, c.gold)
+    -- Window layers stay below 0 so later decorations on the frame draw above them.
+    Theme.Rect(frame, 0, 0, width, height, c.edge, -3)
+    Theme.Rect(frame, 1, 1, width - 2, height - 2, c.bg, -2)
+    Theme.Rect(frame, 1, 1, width - 2, 2, c.gold, -1)
     if title and title ~= "" then Theme.Text(frame, title, 24, 23, width - 100, 29, 20, c.gold) end
     frame.closeButton = Theme.Button(frame, "×", width - 44, 18, 26, 26, function() frame:Hide() end)
     if type(UISpecialFrames) == "table" then UISpecialFrames[#UISpecialFrames + 1] = name end

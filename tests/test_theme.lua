@@ -43,4 +43,44 @@ ns.feedbackSelectButton:Click()
 assert(ns.feedbackURL.focused and ns.feedbackURL.highlighted)
 ns.feedbackURL.scripts.OnEscapePressed(ns.feedbackURL)
 assert(not ns.feedbackURL.focused and not ns.feedbackPanel:IsShown())
+-- Stacked textures must carry explicit sublevels. WoW leaves the draw order of
+-- same-layer, same-sublevel textures unspecified; observed in game as a window
+-- whose buttons were solid, framed or invisible depending on the reload.
+local recordedTextures = {}
+local nativeCreateFrame = CreateFrame
+_G.CreateFrame = function(kind, name, parent, template)
+    local frame = nativeCreateFrame(kind, name, parent, template)
+    local nativeCreateTexture = frame.CreateTexture
+    frame.CreateTexture = function(self, textureName, layer, inherits, sublevel)
+        local texture = nativeCreateTexture(self, textureName, layer)
+        texture.sublevel = sublevel or 0
+        recordedTextures[#recordedTextures + 1] = texture
+        return texture
+    end
+    return frame
+end
+local function texturesOf(parent)
+    local list = {}
+    for _, texture in ipairs(recordedTextures) do
+        if texture.parent == parent then list[#list + 1] = texture end
+    end
+    return list
+end
+local orderedWindow = Theme.Window("TestOrderedWindow", "", 840, 620)
+local windowLayers = texturesOf(orderedWindow)
+assert(#windowLayers >= 3, "window draws edge, background and gold bar")
+assert(windowLayers[1].sublevel < windowLayers[2].sublevel and windowLayers[2].sublevel < windowLayers[3].sublevel,
+    "window edge, background and gold bar need rising sublevels")
+assert(windowLayers[3].sublevel < 0, "window layers stay below later decorations drawn at sublevel 0")
+local orderedButton = Theme.Button(orderedWindow, "Ordered", 20, 100, 160, 38, function() end)
+assert(orderedButton.fill.sublevel > orderedButton.border.sublevel, "button fill must draw above its border")
+local orderedToggle = Theme.Toggle(orderedWindow, "Ordered", "desc", 20, 160, 500, function() end)
+local toggleLayers = texturesOf(orderedToggle)
+assert(orderedToggle.indicator.sublevel > toggleLayers[1].sublevel, "toggle indicator must draw above its row background")
+local passthrough = Theme.Rect(orderedWindow, 0, 0, 10, 10, Theme.colors.edge, 1)
+assert(passthrough.sublevel == 1, "Rect passes an explicit sublevel through")
+assert(Theme.Rect(orderedWindow, 0, 0, 10, 10, Theme.colors.edge).sublevel == 0, "Rect defaults to sublevel 0")
+_G.CreateFrame = nativeCreateFrame
+print("PASS texture order: stacked rects carry explicit sublevels")
+
 print("PASS 9 native theme contracts; actual WoW rendering remains a separate check")
