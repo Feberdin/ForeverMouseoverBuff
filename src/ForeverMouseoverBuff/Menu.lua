@@ -26,7 +26,7 @@ local function text(parent, value, x, y, width, height, size, color)
 end
 local function card(parent, y, height)
     ns.Theme.Rect(parent, 0, y, 588, height, ns.Theme.colors.panel)
-    ns.Theme.Rect(parent, 0, y, 2, height, ns.Theme.colors.edge)
+    ns.Theme.Rect(parent, 0, y, 2, height, ns.Theme.colors.edge, 1)
 end
 local function heading(page, title, subtitle)
     text(page, title, 0, 0, 588, 32, 23)
@@ -311,7 +311,7 @@ local function buildStats(page)
         local y = 185 + (index - 1) * 45
         Menu.familyLabels[family] = text(page, modeNames[family], 0, y, 580, 20, 13)
         ns.Theme.Rect(page, 0, y + 26, 588, 3, ns.Theme.colors.row)
-        Menu.familyBars[family] = ns.Theme.Rect(page, 0, y + 26, 1, 3, ns.Theme.colors.mint)
+        Menu.familyBars[family] = ns.Theme.Rect(page, 0, y + 26, 1, 3, ns.Theme.colors.mint, 1)
     end
     ns.rankingButton = toggle(page, "Ranking-Export bereitstellen", "Nur lokal vorbereiten. Ein Upload braucht einen separaten, bewussten Schritt.", 325, "rankingEnabled", "ranking")
     ns.uploadHelpButton = action(page, "Upload-Anleitung", 0, 400, 182, "ranking help")
