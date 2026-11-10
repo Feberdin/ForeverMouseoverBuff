@@ -31,11 +31,15 @@ class DiagnosticTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def invoke(self, contents, *, json_output=True):
+    def invoke(self, contents, *, json_output=True, shared_contents=None):
         self.source.write_bytes(contents)
         before = self.source.read_bytes()
         out, err = io.StringIO(), io.StringIO()
         arguments = ["diagnostics", "--saved-variables", str(self.source)]
+        shared_path = self.source.with_name("AccountSynthetic.lua")
+        if shared_contents is not None:
+            shared_path.write_bytes(shared_contents)
+            arguments.extend(["--shared-saved-variables", str(shared_path)])
         if json_output:
             arguments.append("--json")
         with (
@@ -47,7 +51,117 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(
             self.source.read_bytes(), before, "diagnostic reader must never write WoW data"
         )
+        if shared_contents is not None:
+            self.assertEqual(shared_path.read_bytes(), shared_contents)
         return status, out.getvalue(), err.getvalue()
+
+    def test_separate_account_snapshot_adds_sanitized_lua_errors_without_network(self):
+        main_data = b'ForeverMouseoverBuffDB={diagnostics={version="0.10.2"}}'
+        shared_data = (
+            b"ForeverMouseoverBuffDiagnosticsDB={schema=1,events={"
+            b'{code="LUA_ERROR",file="App.lua",line=42,sequence=1,'
+            b'message="PRIVATE_CANARY"}}}'
+        )
+        for json_output in (True, False):
+            with self.subTest(json_output=json_output):
+                status, output, error = self.invoke(
+                    main_data, shared_contents=shared_data, json_output=json_output
+                )
+                self.assertEqual((status, error), (0, ""))
+                self.assertNotIn("PRIVATE_CANARY", output)
+                if json_output:
+                    report = json.loads(output)
+                    self.assertEqual(report["version"], "0.10.2")
+                    self.assertEqual(
+                        report["sharedLuaErrors"],
+                        [{"code": "LUA_ERROR", "file": "App.lua", "line": 42, "sequence": 1}],
+                    )
+                else:
+                    self.assertIn("LUA_ERROR | App.lua:42", output)
+        for invalid in (
+            b"Other={}",
+            b'ForeverMouseoverBuffDiagnosticsDB=os.execute("PRIVATE_CANARY")',
+        ):
+            status, output, error = self.invoke(main_data, shared_contents=invalid)
+            self.assertEqual((status, output), (2, ""))
+            self.assertNotIn("PRIVATE_CANARY", error)
+        status, output, error = self.invoke(b"Other={}", shared_contents=shared_data)
+        self.assertEqual((status, output), (2, ""))
+        self.assertEqual(json.loads(error)["code"], "DIAGNOSTICS_MISSING")
+
+    def test_shared_lua_errors_are_allowlisted_in_json_and_text(self):
+        data = (
+            b"ForeverMouseoverBuffDiagnosticsDB={schema=1,sequence=3,events={"
+            b'{code="READY",file="",line=0,sequence=1},'
+            b'{code="LUA_ERROR",file="AutoThanks.lua",line=42,sequence=2,'
+            b'message="PRIVATE_CANARY",stack="PRIVATE_CANARY"},'
+            b'{code="LUA_ERROR",file="App.lua",line=0,sequence=3}},'
+            b'exportJSON="PRIVATE_CANARY",token="PRIVATE_CANARY"};'
+            b"ForeverMouseoverBuffDB={diagnostics={}}"
+        )
+        for json_output in (True, False):
+            with self.subTest(json_output=json_output):
+                status, output, error = self.invoke(data, json_output=json_output)
+                self.assertEqual((status, error), (0, ""))
+                self.assertNotIn("PRIVATE_CANARY", output)
+                if json_output:
+                    self.assertEqual(
+                        json.loads(output)["sharedLuaErrors"],
+                        [
+                            {
+                                "code": "LUA_ERROR",
+                                "file": "AutoThanks.lua",
+                                "line": 42,
+                                "sequence": 2,
+                            },
+                            {"code": "LUA_ERROR", "file": "App.lua", "line": 0, "sequence": 3},
+                        ],
+                    )
+                else:
+                    self.assertIn("LUA_ERROR | AutoThanks.lua:42", output)
+
+    def test_shared_lua_errors_discard_untrusted_locations_and_numbers(self):
+        rows = [
+            b'{code="LUA_ERROR",file="PRIVATE_CANARY.lua",line=1,sequence=1}',
+            b'{code="LUA_ERROR",file="../App.lua",line=1,sequence=2}',
+            b'{code="LUA_ERROR",file="App.lua",line=1000001,sequence=3}',
+            b'{code="LUA_ERROR",file="App.lua",line=-1,sequence=4}',
+            b'{code="LUA_ERROR",file="App.lua",line="1",sequence=5}',
+            b'{code="LUA_ERROR",file="App.lua",line=1,sequence=1000000001}',
+            b'{code="LUA_ERROR",file="App.lua",line=1,sequence=0}',
+            b'{code="LUA_ERROR",file="App.lua",line=1000000,sequence=1000000000}',
+        ]
+        result = parse_diagnostics(
+            b"ForeverMouseoverBuffDB={diagnostics={}};"
+            b"ForeverMouseoverBuffDiagnosticsDB={schema=1,events={" + b",".join(rows) + b"}}"
+        )
+        self.assertEqual(
+            result["sharedLuaErrors"],
+            [{"code": "LUA_ERROR", "file": "App.lua", "line": 1000000, "sequence": 1000000000}],
+        )
+        self.assertNotIn("PRIVATE_CANARY", json.dumps(result))
+        self.assertIn("DIAGNOSTICS_FIELDS_FILTERED", result["warnings"])
+
+    def test_shared_diagnostics_remain_optional_bounded_and_cannot_replace_main(self):
+        self.assertNotIn(
+            "sharedLuaErrors", parse_diagnostics(b"ForeverMouseoverBuffDB={diagnostics={}}")
+        )
+        self.assert_error(
+            b"ForeverMouseoverBuffDiagnosticsDB={schema=1,events={}}", "DIAGNOSTICS_MISSING"
+        )
+        prefix = b"ForeverMouseoverBuffDB={diagnostics={}};ForeverMouseoverBuffDiagnosticsDB="
+        self.assert_error(prefix + b"{schema=1,events={[101]={}}}", "DIAGNOSTICS_LIMIT")
+        self.assert_error(
+            prefix + b"{schema=1,events={}};ForeverMouseoverBuffDiagnosticsDB={}",
+            "DIAGNOSTICS_SYNTAX",
+        )
+        self.assert_error(
+            prefix + b'{schema=1,events=os.execute("PRIVATE_CANARY")}', "DIAGNOSTICS_SYNTAX"
+        )
+        for invalid in (b"{schema=2,events={}}", b'"PRIVATE_CANARY"'):
+            result = parse_diagnostics(prefix + invalid)
+            self.assertEqual(result["sharedLuaErrors"], [])
+            self.assertIn("DIAGNOSTICS_FIELDS_FILTERED", result["warnings"])
 
     def test_ready_heal_is_preserved_as_a_public_core_event(self):
         status, output, error = self.report(

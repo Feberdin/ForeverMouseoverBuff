@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.2 Beta — Consistent installation and reliable local diagnostics
+
+- Guard the optional healing-thanks callback so an older buff-only observer cannot crash the event handler.
+- Package and install all runtime files together; retain saved settings.
+- Capture addon-owned callback errors as sanitized filename/line records while preserving Blizzard error reporting.
+- Include the previously local PvP safety checks and outside-group healing thanks; restricted or unavailable client data fails closed.
+- Keep diagnostics local: no raw error messages, names, chat or automatic uploads.
+- Require a deliberate keypress outside combat; local offline checks do not establish in-game acceptance.
+
 ## 0.9.3 Beta — Heal and buff with the same key
 
 - Outside your own combat, a deliberate FMB keypress heals a friendly mouseover

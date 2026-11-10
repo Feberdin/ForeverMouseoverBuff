@@ -37,6 +37,20 @@ python3 companion/companion.py diagnostics \
   --saved-variables '/ABSOLUTER/PFAD/SavedVariables/ForeverMouseoverBuff.lua'
 ```
 
+Für gespeicherte Lua-Fehlerstellen zusätzlich die accountweite Datei angeben.
+Die erste Datei liegt unter dem Charakter, die zweite direkt unter dem Account:
+
+```sh
+python3 companion/companion.py diagnostics \
+  --saved-variables '/ABSOLUTER/PFAD/WTF/Account/ACCOUNT/REALM/CHARAKTER/SavedVariables/ForeverMouseoverBuff.lua' \
+  --shared-saved-variables '/ABSOLUTER/PFAD/WTF/Account/ACCOUNT/SavedVariables/ForeverMouseoverBuff.lua' \
+  --json
+```
+
+`--shared-saved-variables` ist optional. Eine explizit angegebene Account-Datei
+muss lesbar sein und `ForeverMouseoverBuffDiagnosticsDB` enthalten; andernfalls
+bricht der Befehl mit einem festen Fehlercode ab. Ein `sharedLuaErrors: []` bedeutet,
+dass keine gültige gespeicherte Lua-Fehlerstelle vorhanden ist.
 Für eine automatische lokale Auswertung denselben Befehl mit `--json` ausführen.
 Kein Rankingexport, keine Anmeldung, Token-Datei oder Upload-Zustimmung nötig.
 Es entsteht weder eine neue Logdatei noch Netzwerkverkehr. Die Quelldatei wird
@@ -45,7 +59,8 @@ werden abgelehnt.
 
 Die Ausgabe enthält nur Addon-/Clientversion, feste Diagnosecodes mit
 Schweregrad `INFO`, `WARN` oder `ERROR`, Modul, optionale UTC-Zeit, Diagnosezähler
-und öffentliche An-/Aus-Schalter. Niemals Namen, GUIDs, Tastenzuweisungen,
+und öffentliche An-/Aus-Schalter sowie optionale eigene Lua-Dateinamen mit
+Zeilennummer und Sequenz. Niemals Namen, GUIDs, Tastenzuweisungen,
 Chattexte, freie Fehlermeldungen, Tokens oder den Quelldateipfad. Schweregrad und
 Modul kommen aus demselben festen Codekatalog wie im Addon. Ein unbekannter Code
 wird nicht allein wegen eines passenden Präfixes akzeptiert.
@@ -149,6 +164,15 @@ Der Companion liest keine übrigen Charakterdaten fachlich aus. Die Rankingbefeh
 prüfen die SavedVariables-Literalstruktur, um die eine globale Zuweisung
 `ForeverMouseoverBuffRankingExport = "JSON"` sicher zu finden. Der Diagnosebefehl
 wählt ausschließlich erlaubte Felder unter `ForeverMouseoverBuffDB.diagnostics`.
+Ist im selben ausgewählten Snapshot zusätzlich `ForeverMouseoverBuffDiagnosticsDB`
+vorhanden oder wird die accountweite Datei mit `--shared-saved-variables` angegeben,
+erscheinen deren erlaubte Lua-Fehlerstellen in Text und JSON
+(`sharedLuaErrors`). Aus höchstens 100 Einträgen werden nur `LUA_ERROR`, feste
+eigene Dateinamen, Zeilen 0–1.000.000 und Sequenzen 1–1.000.000.000 übernommen.
+Rohfehler, Stack, Export-JSON und unbekannte Felder werden verworfen. Die zusätzliche
+Tabelle ist optional; die Hauptdiagnose bleibt erforderlich. WoW speichert die
+zusätzliche Tabelle accountweit und die Hauptdiagnose pro Charakter: Eine separate
+Account-Datei allein ersetzt deshalb nicht den bisherigen Charakter-Snapshot.
 Keine Ausführung
 von Lua/Python, kein `eval`, keine dynamischen Imports aus Spieldateien.
 Strings, lange Strings, Kommentare und verschachtelte Tabellenschlüssel können

@@ -1,6 +1,6 @@
 # Forever Mouseover Buff
 
-**0.10.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.2 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Hover a friendly player and press your assigned key to cast an appropriate learned buff.
 

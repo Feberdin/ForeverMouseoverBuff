@@ -17,6 +17,7 @@ from .errors import CompanionError
 from .export import FILE_LIMIT, LiteralReader
 
 GLOBAL = b"ForeverMouseoverBuffDB"
+SHARED_GLOBAL = b"ForeverMouseoverBuffDiagnosticsDB"
 COUNT_LIMIT = 1_000_000_000
 TIME_LIMIT = 4_102_444_800
 VERSION = re.compile(rb"[0-9]+\.[0-9]+\.[0-9]+\Z")
@@ -68,6 +69,40 @@ DIAGNOSTIC_FIELDS = {
     b"status": STATUS_FIELDS,
 }
 DATABASE_FIELDS = {b"diagnostics": DIAGNOSTIC_FIELDS}
+SHARED_FIELDS = {
+    b"schema": SCALAR,
+    b"events": ArrayShape(100, {key: SCALAR for key in (b"code", b"file", b"line", b"sequence")}),
+}
+# Fixed own-addon vocabulary: a SavedVariables string cannot introduce a path or
+# another addon's filename. Update deliberately when adding a source file.
+OWN_FILES = frozenset(
+    name.encode("ascii")
+    for name in (
+        "FeberdinDiagnostics.lua",
+        "Core.lua",
+        "API.lua",
+        "Hash.lua",
+        "CounterCodec.lua",
+        "Stats.lua",
+        "SpellLink.lua",
+        "GreetingCatalog.lua",
+        "Greetings.lua",
+        "Recipient.lua",
+        "Chat.lua",
+        "RankingExport.lua",
+        "Whisper.lua",
+        "SealReminder.lua",
+        "AutoThanks.lua",
+        "Diagnostics.lua",
+        "Feedback.lua",
+        "Theme.lua",
+        "Keybinding.lua",
+        "Menu.lua",
+        "FeedbackUI.lua",
+        "AttemptTrace.lua",
+        "App.lua",
+    )
+)
 
 
 def integer(node, maximum=COUNT_LIMIT):
@@ -304,31 +339,97 @@ def sanitize_diagnostics(node):
     return result
 
 
-def parse_diagnostics(data):
-    """Find one real top-level DB assignment, never text/comment/string decoys."""
+def sanitize_shared_errors(node, warnings):
+    """Keep only own Lua error locations; discard messages, stacks and exports.
+
+    Example: LUA_ERROR + App.lua + line 42 becomes a detached public location.
+    Sequence wraps in the source ring, so validate its bounds without sorting.
+    """
+    values = table(node)
+    if values is None or integer(values.get(b"schema")) != 1:
+        filtered(warnings)
+        return []
+    result = []
+    for item in array(values.get(b"events"), warnings):
+        event = table(item)
+        if event is None:
+            filtered(warnings)
+            continue
+        if event.get(b"code") != ("STRING", b"LUA_ERROR"):
+            continue
+        file = event.get(b"file")
+        line = integer(event.get(b"line"), 1_000_000)
+        sequence = integer(event.get(b"sequence"))
+        if (
+            file is None
+            or file[0] != "STRING"
+            or file[1] not in OWN_FILES
+            or line is None
+            or sequence is None
+            or sequence == 0
+        ):
+            filtered(warnings)
+            continue
+        result.append(
+            {
+                "code": "LUA_ERROR",
+                "file": file[1].decode("ascii"),
+                "line": line,
+                "sequence": sequence,
+            }
+        )
+    return result
+
+
+def read_diagnostic_globals(data):
+    """Project real top-level globals, never text/comment/string decoys."""
     if not isinstance(data, bytes):
         raise CompanionError("DIAGNOSTICS_SYNTAX")
     if len(data) > FILE_LIMIT:
         raise CompanionError("SOURCE_TOO_LARGE")
     reader = DiagnosticReader(data.removeprefix(b"\xef\xbb\xbf"))
-    found, seen = None, False
+    found, seen = None, set()
+    shared = None
     while reader.peek()[0] != "EOF":
         name = reader.take("IDENT")[1]
         reader.take("=")
-        if name == GLOBAL:
-            if seen:
+        if name in (GLOBAL, SHARED_GLOBAL):
+            if name in seen:
                 raise CompanionError("DIAGNOSTICS_SYNTAX")
-            seen = True
-            database = table(reader.project(DATABASE_FIELDS))
-            if database is not None:
-                found = database.get(b"diagnostics")
+            seen.add(name)
+            if name == SHARED_GLOBAL:
+                shared = reader.project(SHARED_FIELDS)
+            else:
+                database = table(reader.project(DATABASE_FIELDS))
+                if database is not None:
+                    found = database.get(b"diagnostics")
         else:
             reader.literal()
         if reader.peek()[0] == ";":
             reader.take()
+    return found, shared, seen
+
+
+def parse_diagnostics(data, shared_data=None):
+    """Read a required character snapshot and optional account-wide snapshot.
+
+    Each file has independent size/parser limits. An explicitly selected account
+    file must contain its expected global, avoiding a silent wrong-file success.
+    """
+    found, shared, seen = read_diagnostic_globals(data)
     if found is None:
         raise CompanionError("DIAGNOSTICS_MISSING")
-    return sanitize_diagnostics(found)
+    report = sanitize_diagnostics(found)
+    if shared_data is not None:
+        _, shared, account_seen = read_diagnostic_globals(shared_data)
+        if SHARED_GLOBAL not in account_seen:
+            raise CompanionError("DIAGNOSTICS_MISSING")
+        seen.add(SHARED_GLOBAL)
+    if SHARED_GLOBAL in seen:
+        warnings = set(report["warnings"])
+        report["sharedLuaErrors"] = sanitize_shared_errors(shared, warnings)
+        report["warnings"] = sorted(warnings)
+    return report
 
 
 def human_report(report):
@@ -370,6 +471,10 @@ def human_report(report):
         lines.append("Letzte Diagnosecodes: " + ", ".join(report["codes"]))
     else:
         lines.append("Keine gespeicherten Diagnoseereignisse verfügbar.")
+    if report.get("sharedLuaErrors"):
+        lines.append("Gespeicherte Lua-Fehlerstellen:")
+        for event in report["sharedLuaErrors"]:
+            lines.append(f"  #{event['sequence']} LUA_ERROR | {event['file']}:{event['line']}")
     for warning in report["warnings"]:
         if warning == "DIAGNOSTICS_FIELDS_FILTERED":
             lines.append("Hinweis: Unbekannte oder ungültige Diagnosewerte wurden ausgeblendet.")

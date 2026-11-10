@@ -1,10 +1,10 @@
--- Purpose: hardware-triggered OOC healing/blessings, a fixed learned Kings combat binding, and feedback.
+-- Purpose: hardware-triggered OOC healing/blessings with a fail-closed PvP check and feedback.
 -- Input: public API snapshots, /fmb, Blizzard key bindings and UI events.
 -- Output: status, throttled feedback, native key-up casts, confirmed whispers and seal reminders.
--- Invariants: no hover/timer casts, automatic key assignment, self fallback or dynamic combat selection.
+-- Invariants: no hover/timer casts, combat casts, automatic key assignment or self fallback.
 -- Debug: /fmb diag; /fmb debug on; /fmb status. Structured local logs flush on reload/logout.
 local _, ns = ...
-ns.VERSION = "0.10.0"
+ns.VERSION = "0.10.2"
 -- Persist help revisions separately from addon releases: only missing-key users
 -- need the improved setup once, and dismissing it remains a valid choice.
 ns.INTRODUCTION_VERSION = 2
@@ -49,6 +49,11 @@ local function safeString(value)
     if type(value) == "string" and #value <= 300 then return value end
 end
 local function blocked(code, text) return {ready = false, code = code, text = text} end
+local pvpBlockedText = {
+    TARGET_PVP = "PvP-geflaggte Spieler werden nicht gebufft. Bitte ein nicht markiertes Ziel wählen.",
+    TARGET_STATE_UNKNOWN = "PvP-Status des Ziels unbekannt. Es wird kein Zauber vorbereitet. Ziel erneut wählen; bei anhaltendem Problem /fmb diag prüfen.",
+    PLAYER_IN_COMBAT = "Im Kampf ist die sichere PvP-Prüfung nicht möglich. Buffs sind dort gesperrt.",
+}
 
 -- Only fixed reason codes and small counters are retained. No names, GUIDs,
 -- messages or native exception text enter SavedVariables through this ledger.
@@ -125,7 +130,7 @@ end
 
 local function combatFeedback(self)
     self:Log("PLAYER_IN_COMBAT")
-    self:Feedback(blocked("PLAYER_IN_COMBAT", "Im Kampf gesperrt. Bitte außerhalb des Kampfes erneut drücken."))
+    self:Feedback(blocked("COMBAT_PVP_UNCHECKABLE", "Im Kampf lässt WoW die sichere PvP-Prüfung des Mouseover-Ziels nicht zu. Buffs sind dort gesperrt; nach dem Kampf erneut drücken."))
 end
 
 -- Optional local observer: failure must never change the protected action path.
@@ -223,26 +228,18 @@ function ns:BindingLabel()
     return self:BindingKey() or "Noch keine Taste"
 end
 
--- The protected router keeps the original binding name. Its combat branch is
--- fixed BEFORE combat; the OOC child still uses an exact spell ID and Blizzard's
--- native OOC guard. No rank strings, restricted snippets or user keys are edited.
+-- The router keeps the binding stable through combat. WoW's protected macro
+-- cannot query the mouseover player's PvP flag in combat, so it deliberately
+-- has no combat cast branch. Out of combat, the child rechecks the target.
 function ns:RefreshCombatAction()
     if self.API.Locked() then self.combatDirty = true; return false end
     if not self.router then return false end
-    local spell, reason
-    if self.db.enabled and type(self.API.CombatBlessing) == "function" then
-        local ok, value, code = pcall(self.API.CombatBlessing)
-        if ok then spell, reason = value, code end
-    end
-    local name = type(spell) == "table" and safeString(spell.spellName)
-    if not name or name == "" or name:find("[%c|;/%[%]]") or spell.spellID ~= 20217 then spell = nil end
     if self.API.Locked() then self.combatDirty = true; return false end
-    self.combatSpell = spell
-    self.combatReason = diagnosticCode(reason) and reason or "COMBAT_SPELL_UNAVAILABLE"
+    self.combatSpell = nil
+    self.combatReason = "COMBAT_PVP_UNCHECKABLE"
     self.combatEnabled, self.combatDirty = self.db.enabled, false
     local lines = {}
     if self.combatEnabled then
-        if spell then lines[#lines + 1] = "/cast [combat,@mouseover,help,nodead] " .. name end
         lines[#lines + 1] = "/click [nocombat] ForeverMouseoverBuffAutoButton LeftButton"
     end
     self.router:SetAttribute("*type1", "macro")
@@ -252,19 +249,9 @@ function ns:RefreshCombatAction()
 end
 
 function ns:CombatDecision()
-    if self.playerClass and self.playerClass ~= "PALADIN" then
-        return blocked("PLAYER_IN_COMBAT", "Klassenbuffs sind im Kampf gesperrt. Nach dem Kampf erneut drücken.")
-    end
     if not self.combatEnabled then return blocked("DISABLED", "Ausgeschaltet. Änderungen der Kampfbelegung gelten erst nach dem Kampf.") end
-    if not self.combatSpell then
-        if self.combatReason == "COMBAT_SPELL_NOT_LEARNED" then
-            return blocked(self.combatReason, "Könige ist für den Kampf nicht gelernt. Nach dem Kampf Könige lernen; /fmb auto nutzt gelernte Alternativen außerhalb des Kampfes.")
-        end
-        return blocked("COMBAT_SPELL_UNAVAILABLE", "Könige konnte vor dem Kampf nicht vorbereitet werden. Nach dem Kampf /fmb status prüfen.")
-    end
-    return {ready = true, code = "COMBAT_FIXED_READY", spellID = 20217,
-        text = "Im Kampf: Könige auf ein lebendes freundliches Mouseover-Ziel. Keine Prüfung vorhandener Segen."
-            .. (self.combatDirty and " Änderungen gelten nach dem Kampf." or "")}
+    return blocked("COMBAT_PVP_UNCHECKABLE", "Im Kampf lässt WoW die sichere Prüfung des PvP-Ziels nicht zu. Buffs sind dort gesperrt; nach dem Kampf erneut drücken."
+        .. (self.combatDirty and " Änderungen gelten nach dem Kampf." or ""))
 end
 
 -- A displayed recommendation is never an armed action. The full context is read
@@ -292,6 +279,13 @@ function ns:Decision()
     local good, decision = pcall(self.Core.Decide, context)
     if not good or type(decision) ~= "table" then
         return blocked("DECISION_ERROR", "Buff-Auswahl fehlgeschlagen. /reload ausführen; bleibt es so: /fmb diag und unter Hilfe eine Fehlermeldung vorbereiten.")
+    end
+    if decision.ready then
+        local checked, safe, code = pcall(self.API.PvPSafeMouseover)
+        if not checked or safe ~= true then
+            code = diagnosticCode(code) and code or "TARGET_STATE_UNKNOWN"
+            return blocked(code, pvpBlockedText[code] or pvpBlockedText.TARGET_STATE_UNKNOWN)
+        end
     end
     self.attemptDecisionFacts = attemptTrace("Capture", context, decision)
     return decision
@@ -333,8 +327,8 @@ function ns:TrackAttempt(spellID, action)
     self:Log("CAST_REQUESTED")
 end
 
--- The macro's native [combat] condition decides which action can actually run.
--- This callback observes input only; it never edits a protected combat action.
+-- The protected router has no combat cast branch: secure macro conditions cannot
+-- read PvP flags. This callback only reports that deliberate combat clicks block.
 function ns:RouterPreClick(_, mouseButton, down)
     if mouseButton ~= "LeftButton" or down then return end
     self.routerStartedInCombat = self.API.Locked()
@@ -546,17 +540,17 @@ function ns:Help()
         local choices = {}
         for _, row in ipairs(self.Core.BuffModes(self.playerClass)) do choices[#choices + 1] = "/fmb " .. row[1] end
         say("Klassenbuffs: " .. table.concat(choices, " | ") .. ". Menü mit /fmb öffnen; /fmb bind richtet die Taste ein.")
-        say("Freundlichen anderen Spieler wählen, Taste drücken und loslassen. Im Kampf, auf Reittieren und bei unbekannten Daten gesperrt. Bloßes Mouseover zaubert nie.")
+        say("Freundlichen anderen Spieler wählen, Taste drücken und loslassen. PvP-geflaggte Ziele, der eigene Kampf, Reittiere und unbekannte Daten sind gesperrt. Bloßes Mouseover zaubert nie.")
         say("Auto erhält gleichartige vorhandene Buffs. Magie dämpfen/verstärken und Wasserwandeln nur bewusst auswählen: Sie verändern Heilung bzw. Bewegung. Schamanen brauchen Reagenzien; WoW zeigt fehlende Gegenstände beim Zaubern.")
-        say("Heilung, feste Könige im Kampf, Segensgrüße, Zähler und Ranking-Export gehören zum Paladin-Modul. Gruppen-/Eigenbuffs bei Krieger, Jäger und Schurke direkt über WoW nutzen.")
+        say("Heilung, Segensgrüße, Zähler und Ranking-Export gehören zum Paladin-Modul. Gruppen-/Eigenbuffs bei Krieger, Jäger und Schurke direkt über WoW nutzen.")
         say("/fmb debug on, /fmb status und /fmb diag zeigen lokale technische Codes. Danach /fmb debug off.")
         return
     end
     say("/fmb intro zeigt die kurze Einführung. /fmb bind öffnet die Tastenwahl; Escape bricht ab. Belegte Tasten bleiben geschützt.")
     say("Alternativ: WoW-Optionen → Tastaturbelegung → Forever Mouseover Buff. Ohne deine Auswahl wird keine Taste belegt.")
-    say("Maus über einen befreundeten Spieler halten, Taste drücken und loslassen. Solange du selbst außerhalb des Kampfes bist, darf das Ziel auch kämpfen. Ein vorhandener gleichartiger Segen bleibt erhalten; Auto wählt eine hilfreiche Alternative. Auf Reittieren ist die Auto-Auswahl gesperrt.")
+    say("Maus über einen nicht PvP-geflaggten befreundeten Spieler halten, Taste drücken und loslassen. PvP-Ziele, dein eigener Kampf, Reittiere und unbekannte PvP-Daten sind gesperrt. Ein vorhandener gleichartiger Segen bleibt erhalten; Auto wählt eine hilfreiche Alternative.")
     say("Außerhalb des Kampfes: Stehst du still und hat das freundliche Mausziel strikt unter 50 % Leben, wirkt dieselbe Taste eine gelernte nutzbare Heilung: zuerst Lichtblitz, sonst Heiliges Licht. Andernfalls gilt die bisherige sichere Segenauswahl. Bloßes Mouseover zaubert nie.")
-    say("Im Kampf: dieselbe Taste wirkt ausschließlich Segen der Könige, sobald gelernt. Keine Klassen-, Rang- oder Buffprüfung; eigene Segen können ersetzt werden. An/Aus-Änderungen gelten erst nach dem Kampf.")
+    say("Im eigenen Kampf sind Buffs gesperrt, weil WoW die PvP-Markierung des Mouseover-Ziels auf der geschützten Kampfaktion nicht prüfen lässt. Nach dem Kampf kannst du die Taste wieder verwenden.")
     say("Auto: Unter /fmb priorities für jede Zielklasse Segen aktivieren und nach Priorität ordnen. Druiden: standardmäßig Könige → Weisheit → Macht. Bereits vorhandene fremde Segen werden übersprungen; eigene Segen bleiben stehen. Nur gelernte Ränge bis zur Zielstufe.")
     say("/fmb priorities reset setzt alle Klassen auf Standard zurück. Einzelne Klassen lassen sich im Menü zurücksetzen. Die Prioritäten gelten außerhalb des Kampfes im Modus Auto; feste Modi bleiben unabhängig.")
     say("/fmb auto | might | wisdom | kings wählt den Modus; /fmb on | off schaltet ein/aus. /fmb debug on, /fmb status, danach /fmb debug off für Fehlerdiagnose.")
@@ -586,8 +580,7 @@ function ns:Diagnostics()
         .. " | Automatisch danken: " .. (self.db.autoThanks and "an" or "aus")
         .. " | Danke-Status: " .. (self.AutoThanks and self.AutoThanks.LastCode or "noch kein Ereignis")
         .. " | Siegelton: " .. (self.db.sealSound and "an" or "aus")
-        .. "\nKampf: " .. (self.playerClass ~= "PALADIN" and "Klassenbuffs gesperrt"
-            or (self.combatSpell and "Könige vorbereitet" or "Könige nicht vorbereitet"))
+        .. "\nKampf: Buffs gesperrt (PvP-Schutz)"
         .. (self.combatDirty and " | Änderung nach dem Kampf" or "")
         .. "\nCodes: " .. table.concat(self.logs or {}, ", ")
         .. "\nBuff-Versuche: " .. diagnostic.attempts .. " | Bestätigte Zauberereignisse: "
@@ -646,7 +639,7 @@ function ns:Command(command)
     elseif command == "thanks on" or command == "thanks off" then
         self.db.autoThanks = command == "thanks on"
         if self.AutoThanks then self.AutoThanks.Reset(); self.AutoThanks.Check() end
-        say("Automatisch für erhaltene Buffs danken: " .. (self.db.autoThanks and "AN" or "AUS") .. ". Kein Zielwechsel; /fmb thanks off schaltet es aus.")
+        say("Automatischer Dank (Buffs sowie Heilung von außerhalb der Gruppe): " .. (self.db.autoThanks and "AN" or "AUS") .. ". Kein Zielwechsel; /fmb thanks off schaltet es aus.")
     elseif command == "whisper on" or command == "whisper off" then
         self.db.whisper = command == "whisper on"
         say("Automatische Grüße senden: " .. (self.db.whisper and "AN" or "AUS") .. ". Buffen und eigene Anzeige bleiben unverändert.")
@@ -776,6 +769,14 @@ function ns:OnEvent(event, unit, second, third, fourth)
         if safeString(unit) == "WIM" and self.Chat then self.Chat.Initialize() end
         return
     end
+    -- High-frequency observation never refreshes or edits protected actions.
+    if event == "COMBAT_LOG_EVENT_UNFILTERED" then
+        -- Buff-only observer versions predate the optional healing callback.
+        if self.AutoThanks and type(self.AutoThanks.OnCombatLog) == "function" then
+            self.AutoThanks.OnCombatLog()
+        end
+        return
+    end
     if event == "PLAYER_ENTERING_WORLD" and self.AutoThanks then
         self.AutoThanks.Reset(); self.AutoThanks.Check()
     end
@@ -812,14 +813,38 @@ function ns:OnEvent(event, unit, second, third, fourth)
     self:Refresh()
 end
 
+-- Capture only our lifecycle failures before forwarding the original to the
+-- existing Blizzard display. No global handler is replaced and no raw error
+-- enters SavedVariables. A broken optional observer cannot hide the real error.
+local function observeLifecycleError(message)
+    local diagnostics = type(FeberdinDiagnostics) == "table" and FeberdinDiagnostics.ForeverMouseoverBuff
+    if type(diagnostics) == "table" and type(diagnostics.ObserveError) == "function" then
+        pcall(diagnostics.ObserveError, message)
+    end
+    return message
+end
+local function runLifecycle(callback)
+    local ok, message = xpcall(callback, observeLifecycleError)
+    if ok then return end
+    local handler = type(geterrorhandler) == "function" and geterrorhandler()
+    if type(handler) == "function" then handler(message)
+    else error(message, 0) end
+end
+
 local frame = CreateFrame("Frame")
 for _, event in ipairs({"PLAYER_LOGIN", "CHAT_MSG_ADDON", "ADDON_LOADED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
-    "PLAYER_ENTERING_WORLD", "UPDATE_MOUSEOVER_UNIT", "SPELLS_CHANGED", "PLAYER_LEVEL_UP", "UPDATE_BINDINGS", "UNIT_AURA",
+    "COMBAT_LOG_EVENT_UNFILTERED", "PLAYER_ENTERING_WORLD", "UPDATE_MOUSEOVER_UNIT", "SPELLS_CHANGED", "PLAYER_LEVEL_UP", "UPDATE_BINDINGS", "UNIT_AURA",
     "UNIT_SPELLCAST_SENT", "UNIT_SPELLCAST_SUCCEEDED", "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED"}) do
     local ok = pcall(frame.RegisterEvent, frame, event)
     if not ok then ns:Log("EVENT_UNAVAILABLE") end
 end
-frame:SetScript("OnEvent", function(_, event, ...) ns:OnEvent(event, ...) end)
-frame:SetScript("OnUpdate", function(_, delta) ns:Tick(delta) end)
+frame:SetScript("OnEvent", function(_, event, unit, second, third, fourth)
+    -- Match ns:OnEvent's inputs explicitly: Lua 5.1 cannot capture ... inside
+    -- the xpcall closure, and a table pack would allocate on every game event.
+    runLifecycle(function() ns:OnEvent(event, unit, second, third, fourth) end)
+end)
+frame:SetScript("OnUpdate", function(_, delta)
+    runLifecycle(function() ns:Tick(delta) end)
+end)
 SLASH_FOREVERMOUSEOVERBUFF1 = "/fmb"
 SlashCmdList.FOREVERMOUSEOVERBUFF = function(command) ns:Command(command) end

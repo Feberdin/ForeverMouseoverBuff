@@ -4,7 +4,7 @@
 ## Notes-deDE: Klassenabhängige Mouseover-Buffs, bewusste Tasteneingabe, persönliche Grüße und optionale Danke-Geste. /fmb help
 ## Notes: Class-aware mouseover buffs, deliberate key presses, personal greetings and optional thanks. /fmb help
 ## Author: Feberdin
-## Version: 0.10.0
+## Version: 0.10.2
 ## SavedVariablesPerCharacter: ForeverMouseoverBuffDB, ForeverMouseoverBuffRankingExport
 ## Category-deDE: Zauber
 ## Category-enUS: Spells

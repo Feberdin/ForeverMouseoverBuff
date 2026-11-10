@@ -54,6 +54,8 @@ local function fixture()
     env.UnitInVehicle = function(unit) unitAllowed(unit); return false end
     env.UnitExists = function(unit) unitAllowed(unit); return true end
     env.UnitIsPlayer = function(unit) unitAllowed(unit); return true end
+    env.UnitIsPVP = function(unit) unitAllowed(unit); return f.pvp == true end
+    env.UnitIsPVPFreeForAll = function(unit) unitAllowed(unit); return f.ffa == true end
     env.UnitCanAssist = function(one, two) unitAllowed(one); unitAllowed(two); return true end
     env.UnitIsDeadOrGhost = function(unit) unitAllowed(unit); return false end
     env.UnitIsUnit = function(one, two) unitAllowed(one); unitAllowed(two); return false end
@@ -120,6 +122,7 @@ local function fixture()
     env.C_Secrets = { ShouldAurasBeSecret = function() return f.auraRestricted end }
     env.C_UnitAuras = { GetAuraDataByIndex = function(unit, index, filter)
         equal(unit, "mouseover")
+        if f.onAuraRead then f.onAuraRead() end
         if filter == "HELPFUL|PLAYER" then
             count("ownAura")
             return f.ownedAuras[index]
@@ -145,6 +148,62 @@ function tests.learned_low_ranks_are_captured_and_highest_eligible_rank_is_ready
     equal(#data.spells, 5, "all learned ranks, not just the displayed highest rank")
     equal(data.spells[2].learnedLevel, 12)
     equal(f.core.Decide(data).spellID, 19834)
+end
+
+function tests.pvp_flagged_and_free_for_all_targets_are_rejected()
+    for _, key in ipairs({"pvp", "ffa"}) do
+        local f = fixture()
+        f[key] = true
+        local result = f:decision()
+        equal(result.ready, false, key .. " flagged player must not be buffed")
+        equal(result.code, "TARGET_PVP")
+        equal(result.spellID, nil)
+    end
+end
+
+function tests.unknown_pvp_state_is_rejected()
+    local f = fixture()
+    f.env.UnitIsPVP = nil
+    local result = f:decision()
+    equal(result.ready, false, "missing PvP API must fail closed")
+    equal(result.code, "TARGET_STATE_UNKNOWN")
+    equal(result.spellID, nil)
+end
+
+function tests.failed_or_secret_pvp_read_cannot_be_treated_as_unflagged()
+    for _, kind in ipairs({"throws", "secret", "missing_ffa"}) do
+        local f = fixture()
+        if kind == "throws" then
+            f.env.UnitIsPVP = function() error("synthetic") end
+        elseif kind == "secret" then
+            f.env.UnitIsPVPFreeForAll = function() return f.secret end
+        else
+            f.env.UnitIsPVPFreeForAll = nil
+        end
+        local result = f:decision()
+        equal(result.code, "TARGET_STATE_UNKNOWN", kind)
+        equal(result.spellID, nil, kind .. " must not produce a cast")
+    end
+end
+
+function tests.final_pvp_guard_rechecks_after_context_reads()
+    local f = fixture()
+    f.onAuraRead = function() f.pvp = true end
+    local data = f:read()
+    equal(data.target.pvp, false, "initial context saw unflagged target")
+    local safe, code = f.api.PvPSafeMouseover()
+    equal(safe, false, "final check must detect flag changes during snapshot")
+    equal(code, "TARGET_PVP")
+end
+
+function tests.final_pvp_guard_fails_closed_for_unknown_or_caster_combat()
+    local f = fixture()
+    f.env.UnitIsPVPFreeForAll = nil
+    local safe, code = f.api.PvPSafeMouseover()
+    equal(safe, false); equal(code, "TARGET_STATE_UNKNOWN")
+    f = fixture(); f.combat = true
+    safe, code = f.api.PvPSafeMouseover()
+    equal(safe, false); equal(code, "PLAYER_IN_COMBAT")
 end
 
 -- The real API must pass existing families and complete learned spells to the

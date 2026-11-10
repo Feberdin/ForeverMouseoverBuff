@@ -47,6 +47,16 @@ function tests.ready_heal_is_retained_as_an_informational_core_decision()
     equal(f.api.Snapshot().fallbackReason, "READY_HEAL")
 end
 
+function tests.healing_thanks_diagnostics_keep_fixed_codes_and_app_origin()
+    for _, code in ipairs({"THANKS_HEAL_UNKNOWN", "THANKS_HEAL_RESTRICTED", "THANKS_HEAL_UNAVAILABLE"}) do
+        local f = fixture(); assert(initialize(f))
+        f.api.Record(code)
+        local events = f.api.Snapshot().events
+        equal(events[#events].code, code, "healing diagnostic must not become DIAGNOSTIC_INVALID")
+        equal(events[#events].origin, "APP"); equal(events[#events].severity, "WARN")
+    end
+end
+
 function tests.public_events_have_sequence_origin_severity_and_optional_server_time()
     local f = fixture(); assert(initialize(f))
     assert(f.api.Record("STATS_INTEGRITY_FAILED"))

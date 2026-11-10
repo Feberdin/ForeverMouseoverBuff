@@ -10,16 +10,17 @@ end
 local function fixture()
     return {playerClass = "PALADIN", playerCombat = false, mounted = false, flying = false, inVehicle = false,
         mode = "auto", auraState = "ready", hasBlessing = false,
-        target = {exists = true, isPlayer = true, friendly = true, dead = false, isSelf = false,
-            connected = true, visible = true, combat = false, class = "WARRIOR", level = 18},
+        target = {exists = true, isPlayer = true, friendly = true, pvp = false, freeForAll = false,
+            dead = false, isSelf = false, connected = true, visible = true, combat = false,
+            class = "WARRIOR", level = 18},
         spells = {{spellID = 19834, spellName = "Segen der Macht", family = "might", learnedLevel = 12,
             known = true, inRange = true, usable = true}}}
 end
 
 -- The fake preserves the Blizzard template's native OnClick marker. It counts
 -- attempted actions, not successful WoW casts; it also models the OOC hard gate.
-local function setup(saved, modules, initialCombat, bindingKey)
-    local state = {frames = {}, locked = initialCombat == true, nativeClicks = 0, actions = {}, reads = 0,
+local function setup(saved, modules, initialCombat, bindingKey, unavailableEvent)
+    local state = {frames = {}, events = {}, locked = initialCombat == true, nativeClicks = 0, actions = {}, reads = 0, armedWrites = 0,
         context = fixture(), logs = {}, notices = {}, sounds = {}, attributeWrites = 0,
         refreshBook = 0, templateMissing = false, kingsKnown = false, now = 100}
     local function newFrame(name)
@@ -31,9 +32,14 @@ local function setup(saved, modules, initialCombat, bindingKey)
         function frame:EnableMouseWheel(value) self.mouseWheelEnabled = value end
         function frame:SetPropagateKeyboardInput(value) self.propagateKeyboard = value end
         function frame:GetScript(event) return self.scripts[event] end
-        function frame:RegisterEvent(event) self.events = self.events or {}; self.events[event] = true end
+        function frame:RegisterEvent(event)
+            if event == unavailableEvent then error("synthetic unavailable event") end
+            if event == "PLAYER_LOGIN" then state.eventFrame = self end
+            self.events = self.events or {}; self.events[event] = true; state.events[event] = true
+        end
         function frame:SetAttribute(key, value)
             state.attributeWrites = state.attributeWrites + 1
+            if value ~= nil and (key == "*spell1" or key == "*type1") then state.armedWrites = state.armedWrites + 1 end
             self.attributes[key] = value
         end
         function frame:GetAttribute(key) return self.attributes[key] end
@@ -75,6 +81,8 @@ local function setup(saved, modules, initialCombat, bindingKey)
     _G.ForeverMouseoverBuffDB = saved
     _G.ForeverMouseoverBuffButton = nil
     _G.SlashCmdList = {}
+    _G.FeberdinDiagnostics = nil
+    _G.geterrorhandler = nil
     _G.UISpecialFrames = {}
     _G.UIParent = newFrame()
     state.pendingUI = {}
@@ -135,6 +143,7 @@ local function setup(saved, modules, initialCombat, bindingKey)
     end
     local ns = {API = {
         Locked = function() return state.locked end,
+        PvPSafeMouseover = function() return state.pvpState ~= false, state.pvpCode end,
         PlayerClass = function() return state.context.playerClass end,
         ReadContext = function(mode) state.reads = state.reads + 1; state.context.mode = mode; return state.context end,
         RefreshSpellbook = function() state.refreshBook = state.refreshBook + 1 end,
@@ -439,6 +448,8 @@ test("real_api_core_and_native_button_contract_select_and_skip_buff", function()
     _G.UnitExists = function() return true end
     _G.UnitIsPlayer = function() return true end
     _G.UnitCanAssist = function() return true end
+    _G.UnitIsPVP = function() return false end
+    _G.UnitIsPVPFreeForAll = function() return false end
     _G.UnitIsDeadOrGhost = function() return false end
     _G.UnitIsUnit = function() return false end
     _G.UnitIsConnected = function() return true end
@@ -723,25 +734,24 @@ test("feedback_missing_ui_or_clock_preserves_chat_without_repeated_sound", funct
     assert(table.concat(ns.logs, ","):find("FEEDBACK_CLOCK_UNAVAILABLE", 1, true))
 end)
 
-test("combat_learned_kings_casts_on_same_key_without_dynamic_target_reads", function()
+test("combat_learned_kings_are_blocked_because_secure_router_cannot_check_pvp", function()
     local ns, state = setup()
     state.kingsKnown = true
     ns:OnEvent("SPELLS_CHANGED")
     state.locked = true
     local reads, writes = state.reads, state.attributeWrites
     click(state)
-    eq(#state.actions, 1, "Learned Kings must work on the existing key during combat")
-    eq(state.actions[1].spellID, 20217); eq(state.actions[1].unit, "mouseover")
+    eq(#state.actions, 0, "combat routing must never cast without a PvP check")
     eq(state.reads, reads); eq(state.attributeWrites, writes)
-    eq(#state.sounds, 0); eq(#state.notices, 0)
+    eq(#state.sounds, 1); assert(state.notices[1]:find("PvP", 1, true))
 end)
-test("combat_unlearned_kings_explains_waiting_without_a_fallback", function()
+test("combat_click_explains_pvp_safe_casts_are_disabled", function()
     local ns, state = setup()
     state.locked = true
     click(state)
     eq(#state.actions, 0); eq(#state.sounds, 1)
-    assert(state.notices[1]:find("Könige", 1, true))
-    assert(state.notices[1]:find("gelernt", 1, true))
+    assert(state.notices[1]:find("PvP", 1, true))
+    assert(state.notices[1]:find("gesperrt", 1, true))
 end)
 test("combat_disable_is_deferred_until_unlock_and_reported_honestly", function()
     local ns, state = setup()
@@ -752,13 +762,13 @@ test("combat_disable_is_deferred_until_unlock_and_reported_honestly", function()
     ns:Command("off")
     eq(state.attributeWrites, writes)
     assert(table.concat(state.logs, " "):find("nach dem Kampf", 1, true))
-    click(state); eq(#state.actions, 1, "Combat binding stays fixed until unlock")
+    click(state); eq(#state.actions, 0, "combat action stays blocked")
     state.locked = false
     ns:OnEvent("PLAYER_REGEN_ENABLED")
     state.locked = true
-    click(state); eq(#state.actions, 1, "Deferred disable must apply after unlock")
+    click(state); eq(#state.actions, 0, "combat action remains blocked after deferred disable")
 end)
-test("combat_spell_changes_wait_for_unlock_and_no_spells_cast_from_events", function()
+test("combat buff routing is disabled because protected macros cannot verify the mouseover PvP flag", function()
     local ns, state = setup()
     state.locked = true
     state.kingsKnown = true
@@ -770,7 +780,7 @@ test("combat_spell_changes_wait_for_unlock_and_no_spells_cast_from_events", func
     ns:OnEvent("PLAYER_REGEN_ENABLED")
     eq(#state.actions, 0)
     state.locked = true
-    click(state); eq(#state.actions, 1); eq(state.actions[1].spellID, 20217)
+    click(state); eq(#state.actions, 0, "no combat path may bypass the PvP recipient check")
 end)
 
 -- End-to-end offline event forwarding: load the real whisper module as well.
@@ -804,9 +814,15 @@ test("whisper_real_module_receives_ooc_and_combat_cast_events_only_after_click",
             ns:OnEvent("SPELLS_CHANGED")
             state.locked = true
         end
-        local id = combat and 20217 or 19834
         ns:Refresh(); eq(#state.messages, 0)
         click(state); eq(#state.messages, 0)
+        if combat then
+            eq(#state.actions, 0, "combat cast must be blocked when PvP flags cannot be checked")
+            ns:OnEvent("UNIT_SPELLCAST_SENT", "player", "Example-TestRealm", "Cast-1", 20217)
+            ns:OnEvent("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-1", 20217)
+            eq(#state.messages, 0, "unrequested synthetic combat casts must not trigger greetings")
+        else
+            local id = 19834
         ns:OnEvent("UNIT_SPELLCAST_SENT", "player", "Example-TestRealm", "Cast-1", id)
         eq(#state.messages, 0)
         ns:OnEvent("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-1", id)
@@ -815,6 +831,7 @@ test("whisper_real_module_receives_ooc_and_combat_cast_events_only_after_click",
         eq(state.messages[1].target, "Example-TestRealm")
         ns:OnEvent("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-1", id)
         eq(#state.messages, 1)
+        end
         assert(not table.concat(ns.logs, ","):find("Example", 1, true))
     end
 end)
@@ -1062,6 +1079,19 @@ test("priority_saved_order_drives_preview_and_actual_click", function()
     eq(state.actions[1].spellID, 19834, "native click must use the configured first family")
 end)
 
+test("pvp_state_is_rechecked_after_safe_preview_before_click_arming", function()
+    local ns, state = setup()
+    ns:Refresh()
+    assert(ns.decision.ready, "unflagged preview should be usable")
+    local armedWrites, reads = state.armedWrites, state.reads
+    state.pvpState, state.pvpCode = false, "TARGET_PVP"
+    click(state)
+    eq(#state.actions, 0, "newly PvP-flagged mouseover must not arm a cast")
+    eq(state.armedWrites, armedWrites, "unsafe fresh check must happen before secure attributes are armed")
+    assert(state.notices[#state.notices]:find("PvP", 1, true))
+    assert(state.reads > reads, "click path must make a fresh context read")
+end)
+
 test("priority_edit_is_detached_persistent_and_rechecked_on_click", function()
     local ns, state = setup()
     priorityTarget(state)
@@ -1201,11 +1231,11 @@ test("healing_key_rereads_health_and_movement_at_key_release", function()
     state.context.target.health, state.context.playerSpeed = 49, 1
     click(state); eq(state.actions[2].spellID, 19834)
 end)
-test("healing_combat_keeps_fixed_kings_without_context_reads", function()
+test("healing_combat_blocks_cast_without_context_reads", function()
     local ns, state = setup(); enableHealing(state); ns:Refresh(); eq(ns.decision.action, "heal")
     state.kingsKnown = true; ns:RefreshCombatAction(); state.locked = true
     local reads, writes = state.reads, state.attributeWrites
-    click(state); eq(state.actions[1].spellID, 20217)
+    click(state); eq(#state.actions, 0, "combat cannot cast when target PvP is unverifiable")
     eq(state.reads, reads); eq(state.attributeWrites, writes)
 end)
 test("healing_failure_names_healing_and_stays_rate_limited", function()
@@ -1238,6 +1268,107 @@ test("auto_thanks_lifecycle_checks_only_player_auras_and_resets_on_world_entry",
     local actions, writes = #state.actions, state.attributeWrites
     ns:Tick(0.25); eq(ticks, 1); eq(#state.actions, actions); eq(state.attributeWrites, writes)
     ns:Command("thanks off"); eq(resets, 3); eq(ns.db.autoThanks, false)
+end)
+
+test("auto_thanks_combat_log_routes_without_refresh_or_protected_changes", function()
+    local calls = 0
+    local ns, state = setup(nil, {AutoThanks = {Reset = function() end,
+        Check = function() end, OnCombatLog = function() calls = calls + 1 end}})
+    eq(state.events.COMBAT_LOG_EVENT_UNFILTERED == true, true, "healing observer event must be registered")
+    local writes, actions = state.attributeWrites, #state.actions
+    ns:OnEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    eq(calls, 1); eq(state.attributeWrites, writes); eq(#state.actions, actions)
+end)
+
+-- Older buff-only observers legitimately omit the later healing callback.
+-- A mixed installation must keep normal events usable without touching casts.
+test("auto_thanks_combat_log_missing_optional_handler_is_ignored", function()
+    local ns, state = setup(nil, {AutoThanks = {Reset = function() end, Check = function() end}})
+    local reads, writes, actions = state.reads, state.attributeWrites, #state.actions
+    ns:OnEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    eq(state.reads, reads); eq(state.attributeWrites, writes); eq(#state.actions, actions)
+    ns:OnEvent("UPDATE_MOUSEOVER_UNIT")
+    eq(state.reads, reads + 1, "normal refresh must remain available after an unsupported observer event")
+end)
+
+-- Some client builds omit CLEU entirely. Registration rejection must leave
+-- the ordinary buff observer and the remaining lifecycle events operational.
+test("auto_thanks_combat_log_registration_rejection_keeps_other_events", function()
+    local checks = 0
+    local ns, state = setup(nil, {AutoThanks = {Reset = function() end,
+        Check = function() checks = checks + 1 end}}, false, nil, "COMBAT_LOG_EVENT_UNFILTERED")
+    eq(ns.initialized, true)
+    eq(state.events.COMBAT_LOG_EVENT_UNFILTERED, nil)
+    eq(state.events.UNIT_AURA, true)
+    eq(state.events.PLAYER_ENTERING_WORLD, true)
+    ns:OnEvent("UNIT_AURA", "player"); eq(checks, 2)
+end)
+
+-- Drive the actual registered frame scripts. A direct ns:OnEvent test would
+-- miss a broken lifecycle boundary and falsely promise capture in the client.
+test("lifecycle_errors_reach_sanitizer_then_blizzard_once", function()
+    for _, script in ipairs({"OnEvent", "OnUpdate"}) do
+        local ns, state = setup()
+        local observed, shown, order = {}, {}, {}
+        local message = "Interface/AddOns/ForeverMouseoverBuff/AutoThanks.lua:162: synthetic test error"
+        _G.FeberdinDiagnostics = {ForeverMouseoverBuff = {ObserveError = function(value)
+            observed[#observed + 1] = value; order[#order + 1] = "sanitize"
+        end}}
+        _G.geterrorhandler = function() return function(value)
+            shown[#shown + 1] = value; order[#order + 1] = "blizzard"
+        end end
+        ns[script == "OnEvent" and "OnEvent" or "Tick"] = function() error(message, 0) end
+        local ok = pcall(state.eventFrame.scripts[script], state.eventFrame, "synthetic event")
+        eq(#observed, 1, script .. " must call the own-error sanitizer exactly once")
+        eq(#shown, 1, script .. " must keep the Blizzard error display")
+        eq(observed[1], message); eq(shown[1], message)
+        eq(order[1], "sanitize"); eq(order[2], "blizzard")
+        eq(ok, true, "the existing Blizzard handler accepts the original error")
+    end
+end)
+
+test("lifecycle_errors_without_sanitizer_still_reach_blizzard", function()
+    local ns, state = setup()
+    local shown = 0
+    _G.geterrorhandler = function() return function() shown = shown + 1 end end
+    ns.OnEvent = function() error("synthetic lifecycle error", 0) end
+    local ok = pcall(state.eventFrame.scripts.OnEvent, state.eventFrame, "synthetic event")
+    eq(shown, 1); eq(ok, true)
+end)
+
+test("lifecycle_errors_without_blizzard_handler_are_rethrown", function()
+    for _, script in ipairs({"OnEvent", "OnUpdate"}) do
+        local ns, state = setup()
+        local message = "synthetic lifecycle error"
+        ns[script == "OnEvent" and "OnEvent" or "Tick"] = function() error(message, 0) end
+        local ok, why = pcall(state.eventFrame.scripts[script], state.eventFrame, "synthetic event")
+        eq(ok, false); eq(why, message, "missing error UI must never swallow lifecycle failures")
+    end
+end)
+
+test("lifecycle_sanitizer_failure_preserves_original_blizzard_error", function()
+    local ns, state = setup()
+    local message, shown = "synthetic lifecycle error", {}
+    _G.FeberdinDiagnostics = {ForeverMouseoverBuff = {ObserveError = function()
+        error("synthetic observer failure", 0)
+    end}}
+    _G.geterrorhandler = function() return function(value) shown[#shown + 1] = value end end
+    ns.OnEvent = function() error(message, 0) end
+    local ok = pcall(state.eventFrame.scripts.OnEvent, state.eventFrame, "synthetic event")
+    eq(#shown, 1); eq(shown[1], message); eq(ok, true)
+end)
+
+test("lifecycle_boundary_preserves_event_arguments_and_update_delta", function()
+    local ns, state = setup()
+    local received
+    ns.OnEvent = function(_, event, unit, second, third, fourth)
+        received = {event = event, unit = unit, second = second, third = third, fourth = fourth}
+    end
+    state.eventFrame.scripts.OnEvent(state.eventFrame, "synthetic event", "player", nil, 123, false)
+    eq(received.event, "synthetic event"); eq(received.unit, "player")
+    eq(received.second, nil); eq(received.third, 123); eq(received.fourth, false)
+    ns.Tick = function(_, delta) received = delta end
+    state.eventFrame.scripts.OnUpdate(state.eventFrame, 0.25); eq(received, 0.25)
 end)
 
 test("mage_commands_accept_its_buffs_and_refuse_foreign_family", function()

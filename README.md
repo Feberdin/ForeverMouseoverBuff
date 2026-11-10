@@ -10,13 +10,13 @@ Choose a learned class buff for the friendly player under your mouse. Paladins,
 Mages, Priests, Druids, Warlocks and Shamans have direct buff profiles. Every
 class can receive greetings and use optional automatic thanks.
 
-**0.10.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.2 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 The interface and greetings are primarily German. Class priorities and the native
 Sanctum menu have automated behavior and offline layout coverage. Live gameplay
 and receipt of greetings by another player still need in-game acceptance.
 
-## Class buffs (0.10.0 Beta)
+## Class buffs (0.10.2 Beta)
 
 | Caster | Auto, in priority order | Explicit additional choices |
 | --- | --- | --- |
@@ -40,8 +40,8 @@ Only actual learned spellbook slots/ranks are used, with fresh range/usability
 checks. Rank eligibility conservatively requires learned level ≤ recipient level;
 this is an addon safety rule, **not a claim about WoW's minimum buff level**.
 Rank choice may therefore be more restrictive than manual casting. Automatic
-healing and fixed combat Kings remain Paladin features; other class casts are
-blocked during the caster's combat. No resurrection, group/reagent buffs, party
+healing remains a Paladin feature. All addon casts are blocked during the
+caster's combat so no protected combat route can bypass the PvP check. No resurrection, group/reagent buffs, party
 shouts, totems, aspects, temporary cooldown buffs, pet/weapon or self buffs are
 cast by this profile. New class buffs do not generate Paladin scores or exports.
 
@@ -55,8 +55,9 @@ cast by this profile. New class buffs do not generate Paladin scores or exports.
 - **Respect existing buffs:** selection uses readable target information and
   preserves existing blessings. When essential information is unclear or
   protected, it stops with a reason.
-- **Combat binding:** once learned, Kings is available on the same mouseover key
-  during your combat. This is a fixed binding, without dynamic buff selection.
+- **PvP protection:** flagged and free-for-all recipients are blocked. Missing
+  or unreadable flags also block the action. All addon casts are disabled during
+  your combat, when the protected route cannot perform this recipient check.
 - **Helpful feedback:** a blocked attempt gives a short explanation and an
   optional sound. A separate cue can announce an observed natural seal expiry.
 - **Personal greetings:** after a confirmed FMB buff, send a rotating German
@@ -90,7 +91,7 @@ Opening feedback hides the main menu. Closing or Escape returns to the previous
 page. Standalone `/fmb feedback` closes without opening a previously closed menu.
 Only one FMB window is visible at a time.
 
-## Paladin healing and buffing with one key (0.10.0)
+## Paladin healing and buffing with one key (0.10.2)
 
 Keep your existing FMB key. Outside your own combat, stand still and hover a
 friendly unit with **strictly less than 50% health**, then press the key to
@@ -100,8 +101,8 @@ WoW can still prevent a cast, for example when line of sight is blocked.
 Each heal requires your deliberate keypress.
 
 At exactly 50% or more health, or while you are moving, the key follows the usual
-blessing selection instead. During your own combat it keeps the fixed learned
-Kings action. Healing does not send buff greetings and does not increase buff
+blessing selection instead. During your own combat the addon key cannot cast.
+Healing also requires an unflagged recipient. It does not send buff greetings or increase buff
 statistics or ranking counters. Existing key setup, blessing preferences and
 status guidance remain available.
 
@@ -158,8 +159,8 @@ repeated key presses from replacing your own blessing in a cycle. This is an
 ordered choice of one blessing, not three simultaneous blessings from one paladin.
 Use an explicit fixed mode when you intentionally want to replace your own buff.
 
-These settings apply only to **Auto outside combat**. The combat key remains fixed
-to learned Kings; manual modes ignore class priorities. Settings never cast a spell.
+These settings apply only to **Auto outside combat**. Addon casts are blocked in
+your combat; manual modes ignore class priorities. Settings never cast a spell.
 Unreadable aura information still blocks selection. Invalid saved priorities block
 Auto with `INVALID_PRIORITIES`; correct the list in the menu or deliberately use
 `/fmb priorities reset` to restore **all** classes. `CLASS_DISABLED` means all
@@ -196,7 +197,9 @@ you log in without an active seal.
 
 ## 📊 Local counts and optional ranking experiments
 
-`/fmb stats` shows local, unverified counts of successful FMB buffs. Version 0.7.1
+`/fmb stats` shows the saved total of confirmed FMB blessings for this character,
+across reloads and sessions. Outgoing greetings say `[insgesamt: N Buffs verteilt]`.
+This is not a count of clicks, heals or all characters. Version 0.7.1
 stores the twenty supported spell counters as binary data encoded in Base64,
 with a SHA-256 checksum. Valid older counters migrate automatically. Damaged or
 unreadable records stay unchanged; statistic updates pause while buffing remains
@@ -224,7 +227,7 @@ These are class presets, not talent or role detection. An existing same-family
 blessing is conservatively preserved; a useful own blessing stays in place.
 The addon does not calculate whether another player's talents make a buff stronger.
 Missing or protected target data can prevent selection. During your own combat,
-the key uses fixed learned Kings without this automatic selection.
+the key is blocked to preserve recipient PvP protection.
 
 ## ✨ Sanctum in-game menu
 
@@ -263,7 +266,7 @@ anything. It cannot read live game memory. An old file is not a live health chec
 
 **Can I buff a player who is fighting?**  
 Yes, their combat state alone does not prevent it. Selection still needs usable
-target information. Your own combat switches the binding to learned Kings.
+target information and a known unflagged recipient. Your own combat blocks the addon key.
 
 **What should I include in a bug report?**  
 Use `/fmb status`, `/fmb help` and temporarily `/fmb debug on`. Share your version,
@@ -312,7 +315,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.10.0 --output dist/review-0.10.0
+python3 scripts/prepare-release.py --version 0.10.2 --output dist/review-0.10.2
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party
@@ -340,7 +343,7 @@ directly. An introduction deferred at login opens after combat ends. `/fmb statu
 shows the installed version and binding. `/fmb debug on` enables the existing
 local diagnostic codes; `/fmb debug off` disables them. No new diagnostic code
 records key values. If the introduction does not appear, check that the addon is
-enabled for this character and `/fmb status` reports version 0.10.0.
+enabled for this character and `/fmb status` reports version 0.10.2.
 
 ### Actionable status guidance (0.9.2)
 
@@ -356,12 +359,20 @@ the addon does not guess mana loss, cooldown or line of sight. Preview updates
 do not send chat messages. The status card also detects missing keys in combat
 without reading target data or modifying protected buttons.
 
-### Local automatic buff thanks (2026-11-07)
+### Local automatic buff and healing thanks (2026-11-07)
 
 `/fmb thanks on|off` (default ON), also available in the greetings settings,
-requests a named native THANK emote for readable friendly-player classic buffs.
+requests a named native THANK emote for readable friendly-player classic buffs
+and effective direct/periodic healing received from players outside your party
+or raid. Self-heals, pets/NPCs, damage, healing other units and full overhealing
+are ignored. Buff thanks still work for group members. Healing-only requests are
+cancelled if the healer joins your group before the emote is requested.
 No target, attack, spell or binding changes are made. Requests are bundled for
 two seconds, limited to once per caster per minute and once globally per five
-seconds. Unknown/restricted aura or caster data is skipped. In-game acceptance
+seconds, shared by buffs and healing. Unknown/restricted aura, combat-log or
+roster data is skipped. If the client does not expose a readable combat log,
+healing thanks remain inactive; `THANKS_HEAL_UNAVAILABLE` / `THANKS_HEAL_UNKNOWN` / `THANKS_HEAL_RESTRICTED`
+are fixed diagnostic codes shown by `/fmb status` or `/fmb debug on` (no player
+names or native errors are logged). In-game acceptance
 is pending. Use `/reload`, inspect `/fmb status`, disable with `/fmb thanks off`.
 [Checks, backup and rollback](docs/auto-thanks-2026-11-07/REPORT.md).

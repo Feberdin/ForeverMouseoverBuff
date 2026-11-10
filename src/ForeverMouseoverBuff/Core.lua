@@ -93,6 +93,8 @@ local messages = {
     SELF_TARGET = "Eigene Figur gewählt. Maus auf einen anderen befreundeten Spieler halten und Taste loslassen.",
     TARGET_DISCONNECTED = "Dieser Spieler ist offline. Einen verbundenen befreundeten Spieler wählen.",
     TARGET_NOT_VISIBLE = "Ziel unsichtbar oder Daten fehlen. Näher herangehen und Maus erneut auf den Spieler halten.",
+    TARGET_PVP = "PvP-geflaggte Spieler werden nicht gebufft. Bitte ein nicht markiertes Ziel wählen.",
+    COMBAT_PVP_UNCHECKABLE = "Im Kampf lässt WoW die sichere Prüfung des PvP-Ziels nicht zu. Buffs sind dort gesperrt; nach dem Kampf erneut drücken.",
     TARGET_LEVEL_UNKNOWN = "Zielstufe unbekannt. Näher herangehen und erneut über den Spieler fahren; bleibt es so: /reload.",
     TARGET_CLASS_UNKNOWN = "Zielklasse unbekannt. Maus erneut auf den Spieler halten; bleibt es so: /reload.",
     AURA_UNKNOWN = "Vorhandene Buffs noch unbekannt. Kurz warten und erneut drücken; bleibt es so: /reload, dann /fmb status.",
@@ -198,11 +200,12 @@ local function checkSafety(context)
         return "TARGET_STATE_UNKNOWN"
     end
     if not target.exists then return "NO_TARGET" end
-    if not knownBooleans(target, { "isPlayer", "friendly", "dead", "isSelf", "connected", "visible" }) then
+    if not knownBooleans(target, { "isPlayer", "friendly", "pvp", "freeForAll", "dead", "isSelf", "connected", "visible" }) then
         return "TARGET_STATE_UNKNOWN"
     end
     if not target.isPlayer then return "NOT_PLAYER" end
     if not target.friendly then return "NOT_FRIENDLY" end
+    if target.pvp or target.freeForAll then return "TARGET_PVP" end
     if target.dead then return "TARGET_DEAD" end
     if target.isSelf then return "SELF_TARGET" end
     if not target.connected then return "TARGET_DISCONNECTED" end

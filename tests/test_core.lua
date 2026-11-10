@@ -28,7 +28,7 @@ local function context()
         hasBlessing = false,
         target = {
             exists = true, isPlayer = true, friendly = true, dead = false,
-            isSelf = false, connected = true, visible = true, combat = false,
+            isSelf = false, connected = true, visible = true, pvp = false, freeForAll = false, combat = false,
             class = "WARRIOR", level = 18,
         },
         spells = { spell(101, "might", 4), spell(102, "might", 12),
@@ -157,6 +157,19 @@ function tests.disconnected_and_invisible_players_are_rejected()
     input = context()
     input.target.visible = false
     blocked(input, "TARGET_NOT_VISIBLE")
+end
+
+function tests.pvp_and_free_for_all_targets_are_rejected_and_unknown_fails_closed()
+    for _, key in ipairs({"pvp", "freeForAll"}) do
+        local input = context()
+        input.target[key] = true
+        local result = Core.Decide(input)
+        equal(result.code, "TARGET_PVP")
+        equal(result.spellID, nil)
+    end
+    local input = context()
+    input.target.pvp = nil
+    equal(Core.Decide(input).code, "TARGET_STATE_UNKNOWN", "missing flag must fail closed")
 end
 
 function tests.unknown_target_flags_are_not_assumed_safe()

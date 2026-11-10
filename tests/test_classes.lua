@@ -7,7 +7,7 @@ assert(loadfile('src/ForeverMouseoverBuff/Core.lua'))('ForeverMouseoverBuff', ns
 local function context(class, family)
     return { playerClass=class, playerCombat=false, mounted=false, flying=false, inVehicle=false,
         mode='auto', auraState='ready', hasBlessing=false, blessings={},
-        target={exists=true,isPlayer=true,friendly=true,dead=false,isSelf=false,connected=true,
+        target={exists=true,isPlayer=true,friendly=true,pvp=false,freeForAll=false,dead=false,isSelf=false,connected=true,
             visible=true,class='MAGE',level=60},
         spells={{spellID=100,spellName='Synthetic Buff',family=family,learnedLevel=1,
             known=true,inRange=true,usable=true}} }

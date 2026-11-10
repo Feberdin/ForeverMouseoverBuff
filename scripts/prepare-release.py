@@ -67,6 +67,7 @@ PORTABLE_TESTS = (
     "test_seal_reminder.lua",
     "test_auto_thanks.lua",
     "test_diagnostics.lua",
+    "test_feberdin_diagnostics.lua",
     "test_feedback.lua",
     "test_theme.lua",
     "test_menu.lua",

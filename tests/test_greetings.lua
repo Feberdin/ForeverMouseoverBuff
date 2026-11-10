@@ -163,7 +163,18 @@ function tests.confirmed_count_and_exact_buff_link_follow_sender_name()
     local input = profile()
     input.buffCount = 42
     input.spellLink = "|cff71d5ff|Hspell:20217|h[Segen der Könige]|h|r"
-    equal(Greetings.Format(input, 1), '[Forever Mouseover Buff] "Das Licht sei mit Euch, Alyndra!" - Paladin [lokal: 42 Buffs] ' .. input.spellLink)
+    equal(Greetings.Format(input, 1), '[Forever Mouseover Buff] "Das Licht sei mit Euch, Alyndra!" - Paladin [insgesamt: 42 Buffs verteilt] ' .. input.spellLink)
+end
+
+function tests.total_sent_counter_uses_clear_cumulative_wording_and_legacy_message_stays_valid()
+    local input = profile()
+    input.buffCount = 42
+    local message = Greetings.Format(input, 1)
+    assert(message:find("[insgesamt: 42 Buffs verteilt]", 1, true))
+    assert(not message:find("lokal", 1, true))
+    equal(Greetings.ValidMessage(message), true, "new cumulative wording is recognized")
+    equal(Greetings.ValidMessage('[Forever Mouseover Buff] "Hallo Alyndra!" - Paladin [lokal: 41 Buffs]'), true,
+        "older installed addons may still send the previous count wording")
 end
 function tests.extended_messages_are_validated_without_allowing_foreign_markup()
     local input = profile(); input.buffCount = 42

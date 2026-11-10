@@ -432,6 +432,10 @@ function API.ReadContext(mode)
     if target.exists ~= true then return finish(context) end
     target.isPlayer = boolean(UnitIsPlayer, "mouseover")
     target.friendly = boolean(UnitCanAssist, "player", "mouseover")
+    -- PvP flags are recipient facts. Unknown state must reach Core as unknown,
+    -- never as an implicit unflagged target.
+    target.pvp = boolean(UnitIsPVP, "mouseover")
+    target.freeForAll = boolean(UnitIsPVPFreeForAll, "mouseover")
     target.dead = boolean(UnitIsDeadOrGhost, "mouseover")
     target.isSelf = boolean(UnitIsUnit, "player", "mouseover")
     target.connected = boolean(UnitIsConnected, "mouseover")
@@ -456,6 +460,24 @@ function API.ReadContext(mode)
     if context.auraState ~= "ready" then return finish(context) end
     context.spells = readSpells()
     return finish(context)
+end
+
+-- Recheck the current mouseover after spell/aura reads and immediately before
+-- arming a click. It returns tri-state safety so missing APIs, stale units,
+-- restricted values, and native errors can never degrade to an unflagged guess.
+function API.PvPSafeMouseover()
+    if lockState() ~= false then return false, "PLAYER_IN_COMBAT" end
+    local exists = boolean(UnitExists, "mouseover")
+    local isPlayer = boolean(UnitIsPlayer, "mouseover")
+    local friendly = boolean(UnitCanAssist, "player", "mouseover")
+    local pvp = boolean(UnitIsPVP, "mouseover")
+    local freeForAll = boolean(UnitIsPVPFreeForAll, "mouseover")
+    if exists ~= true or isPlayer ~= true or friendly ~= true
+        or type(pvp) ~= "boolean" or type(freeForAll) ~= "boolean" then
+        return false, "TARGET_STATE_UNKNOWN"
+    end
+    if pvp or freeForAll then return false, "TARGET_PVP" end
+    return true
 end
 
 function API.Client()

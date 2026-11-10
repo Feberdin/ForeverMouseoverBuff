@@ -158,7 +158,7 @@ local function buildIntroduction(page)
     -- and reserve four lines so the combat exception remains readable too.
     card(page, 180, 112)
     text(page, "2   Maus über einen freundlichen Spieler", 16, 190, 550, 24, 17, ns.Theme.colors.gold)
-    text(page, paladin() and "Dieselbe Taste: Segen oder Heilung – nur auf deinen Tastendruck.\nAußerhalb des Kampfes im Stehen, Ziel unter 50 %: Lichtblitz.\nWenn Lichtblitz nicht nutzbar ist: Heiliges Licht.\nIm Kampf wirkt dieselbe Taste nur Könige, sobald gelernt."
+    text(page, paladin() and "Dieselbe Taste: Segen oder Heilung – nur auf deinen Tastendruck.\nAußerhalb des Kampfes im Stehen, Ziel unter 50 %: Lichtblitz.\nWenn Lichtblitz nicht nutzbar ist: Heiliges Licht.\nIm eigenen Kampf sind Buffs zum PvP-Schutz gesperrt."
         or "Deine gelernten Klassenbuffs – nur auf deinen Tastendruck.\nGleichartige vorhandene Buffs bleiben erhalten.\nIm Kampf gesperrt. Auto wählt sichere Routinebuffs.\nWasserwandeln und Magieänderungen bewusst im Menü wählen.", 16, 220, 550, 64, 12)
     card(page, 304, 70)
     text(page, "3   Grüße nach deinem Geschmack", 16, 312, 550, 24, 17, ns.Theme.colors.gold)
@@ -287,7 +287,7 @@ local function buildMessages(page)
     ns.outgoingButton = ns.Theme.Toggle(page, "Eigene Grüße verbergen",
         "Keine eigenen FMB-Grüße im Chat oder WIM; keine Popups oder WIM-Töne.", 0, 234, 588,
         function() ns:Command(ns.db.showOutgoingWhispers and "outgoing off" or "outgoing on") end)
-    toggle(page, "Automatisch für Buffs danken", "AN: /danke an den lesbaren Buffgeber. Ohne Zielwechsel, mit Spam-Sperre.", 312, "autoThanks", "thanks")
+    toggle(page, "Für Buffs und Heilung danken", "AN: /danke für Buffs. Bei wirksamer Heilung nur Spielern außerhalb der Gruppe danken. Ohne Zielwechsel, mit Spam-Sperre.", 312, "autoThanks", "thanks")
     text(page, "Standard: Danken AN. Unbekannte oder geschützte Buffgeber\nwerden ausgelassen. /fmb thanks off schaltet es sofort aus.", 0, 397, 588, 38, 12, ns.Theme.colors.muted)
 end
 
@@ -453,7 +453,7 @@ function Menu.Refresh()
     Menu.status:SetTextColor(unpackValues(color))
     Menu.combat:SetText(not paladin() and "Im Kampf: Klassenbuffs gesperrt. Schamanen benötigen passende Reagenzien."
         or ns.combatDirty and "Kampfbelegung: Änderung wird nach dem Kampf übernommen."
-        or "Im Kampf: feste Könige, sobald gelernt; keine automatische Buffprüfung.")
+        or "Im eigenen Kampf: Buffs zum PvP-Schutz gesperrt.")
     if Menu.current == "priorities" then refreshPriorities()
     elseif Menu.current == "stats" then refreshStats()
     elseif Menu.current == "diagnostics" then refreshDiagnostics() end

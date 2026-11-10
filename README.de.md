@@ -10,14 +10,14 @@ Wähle einen gelernten Klassenbuff für den befreundeten Spieler unter deiner
 Maus. Paladin, Magier, Priester, Druide, Hexenmeister und Schamane haben eigene
 Buffprofile. Alle Klassen können Grüße empfangen und automatisch danken.
 
-**0.10.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.2 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Oberfläche und Grüße sind überwiegend deutsch. Klassenprioritäten und das native
 Sanctum-Menü sind automatisiert und im nachgebildeten Layout geprüft. Die
 Ingame-Abnahme und der tatsächliche Grußempfang bei einem anderen Spieler stehen
 noch aus.
 
-## Klassenbuffs (0.10.0 Beta)
+## Klassenbuffs (0.10.2 Beta)
 
 | Deine Klasse | Auto in dieser Reihenfolge | Zusätzlich bewusst wählbar |
 | --- | --- | --- |
@@ -41,9 +41,9 @@ aber nicht selbst**. Fehlende Gegenstände können erst beim Zaubern gemeldet we
 Es werden nur tatsächlich gelernte Zauberbuchränge und aktuelle Reichweiten-/
 Nutzbarkeitsdaten verwendet. Vorsichtig gilt: Lernstufe des Rangs ≤ Zielstufe.
 Das ist eine Addon-Sicherheitsregel und **keine Aussage über WoWs Mindestzielstufe**;
-manuell können eventuell höhere Ränge möglich sein. Automatische Heilung und feste
-Könige im Kampf bleiben Paladin-Funktionen. Andere Klassen buffen nur außerhalb
-des eigenen Kampfes. Wiederbelebungen, Gruppenbuffs, Rufe, Totems, Aspekte,
+manuell können eventuell höhere Ränge möglich sein. Automatische Heilung bleibt
+eine Paladin-Funktion. Alle Addon-Zauber sind im eigenen Kampf gesperrt, damit
+kein geschützter Kampfpfad die PvP-Prüfung umgeht. Wiederbelebungen, Gruppenbuffs, Rufe, Totems, Aspekte,
 kurzzeitige Abklingzeitbuffs, Begleiter-, Waffen- und Eigenbuffs gehören nicht zu
 diesem Ablauf. Neue Klassenbuffs erzeugen keine Paladin-Zähler oder Exporte.
 
@@ -60,8 +60,9 @@ diesem Ablauf. Neue Klassenbuffs erzeugen keine Paladin-Zähler oder Exporte.
 - **Vorhandene Buffs berücksichtigen:** Die Auswahl verwendet lesbare
   Zielinformationen und erhält bestehende Segen. Sind wichtige Angaben unklar
   oder geschützt, hält sie mit einer verständlichen Begründung an.
-- **Taste im Kampf:** Sobald gelernt, liegt Segen der Könige im eigenen Kampf
-  fest auf derselben Mouseover-Taste. Dabei findet keine dynamische Auswahl statt.
+- **PvP-Schutz:** PvP-markierte Ziele und Jeder-gegen-jeden-Ziele werden gesperrt.
+  Fehlende oder nicht lesbare PvP-Angaben sperren ebenfalls. Im eigenen Kampf
+  zaubert das Addon nicht, weil die geschützte Route diese Prüfung nicht leisten kann.
 - **Rückmeldung erhalten:** Ein gesperrter Versuch wird kurz erklärt und auf
   Wunsch mit einem Ton gemeldet. Ein eigener Hinweiston erinnert an einen
   beobachteten natürlichen Siegelablauf.
@@ -98,7 +99,7 @@ Beim Öffnen von Feedback wird das Hauptmenü ausgeblendet. Schließen oder Esca
 führt zur bisherigen Seite zurück. Direkt geöffnetes Feedback (`/fmb feedback`)
 schließt wieder ohne Hauptmenü, wenn es vorher nicht geöffnet war.
 
-## Paladin: Mit einer Taste heilen und buffen (0.10.0)
+## Paladin: Mit einer Taste heilen und buffen (0.10.2)
 
 Behalte deine bisherige FMB-Taste. Stehe außerhalb deines eigenen Kampfes still
 und fahre mit der Maus über ein freundliches Ziel mit **strikt weniger als 50%
@@ -108,8 +109,8 @@ nutzbarer **Lichtblitz** hat Vorrang; andernfalls wird gelerntes, nutzbares
 den Zauber weiterhin verhindern, etwa bei blockierter Sichtlinie.
 
 Bei genau 50% oder mehr Leben sowie während deiner Bewegung bleibt die übliche
-Segenauswahl aktiv. Im eigenen Kampf liegt weiterhin der fest vorbereitete
-Segen der Könige auf der Taste. Heilungen senden keine Buff-Grüße und erhöhen
+Segenauswahl aktiv. Im eigenen Kampf ist die Addon-Taste gesperrt. Auch Heilungen
+benötigen ein nicht PvP-markiertes Ziel. Heilungen senden keine Buff-Grüße und erhöhen
 weder Buffstatistik noch Ranglistenzähler. Tasteneinrichtung, Segenvorgaben und
 verständliche Statushinweise bleiben verfügbar.
 
@@ -170,8 +171,8 @@ der Liste entfernst. So ersetzt wiederholtes Drücken nicht ständig deinen eige
 Segen. Die Liste wählt einen passenden Segen; sie ermöglicht keine drei gleichzeitigen
 Segen desselben Paladins. Für einen bewussten Wechsel bleibt der feste Modus verfügbar.
 
-Die Reihenfolge gilt ausschließlich bei **Auto außerhalb des Kampfes**. Im Kampf
-bleibt die Taste auf gelerntem Könige; feste Modi ignorieren die Klassenliste.
+Die Reihenfolge gilt ausschließlich bei **Auto außerhalb des Kampfes**. Im eigenen
+Kampf ist die Taste gesperrt; feste Modi ignorieren die Klassenliste.
 Einstellungen lösen keinen Zauber aus. Unklare Auren sperren weiterhin die Auswahl.
 `INVALID_PRIORITIES` meldet ungültige gespeicherte Prioritäten: Liste im Menü
 korrigieren oder mit `/fmb priorities reset` bewusst **alle** Klassen zurücksetzen.
@@ -210,7 +211,10 @@ deshalb, weil beim Einloggen kein Siegel aktiv ist.
 
 ## 📊 Lokale Statistik und freiwillige Rankingtests
 
-`/fmb stats` zeigt lokale, unbestätigte Zähler erfolgreicher FMB-Buffs. Version
+`/fmb stats` zeigt die gespeicherte Summe bestätigter FMB-Segen dieses Charakters
+über Reloads und Sitzungen hinweg. Versendete Grüße enthalten
+`[insgesamt: N Buffs verteilt]`. Klicks, Heilungen und andere Charaktere zählen
+nicht dazu. Version
 0.7.1 speichert die zwanzig unterstützten Zauberzähler als Binärdaten in Base64
 mit einer SHA-256-Prüfsumme. Gültige ältere Zähler werden automatisch übernommen.
 Beschädigte oder unlesbare Datensätze bleiben unverändert erhalten; die Statistik
@@ -268,8 +272,8 @@ Details und lokale Abfragebefehle stehen im [Diagnoseprotokoll](DIAGNOSTICS.md).
 
 **Kann ich jemanden buffen, der gerade kämpft?**  
 Ja, der Kampfstatus des Ziels allein verhindert es nicht. Die Auswahl braucht
-weiterhin verwendbare Zielinformationen. Dein eigener Kampf stellt die Taste
-auf den gelernten Segen der Könige um.
+weiterhin verwendbare Zielinformationen und ein nachweislich nicht markiertes
+Ziel. Im eigenen Kampf ist die Addon-Taste gesperrt.
 
 **Was hilft bei einer Fehlermeldung?**  
 Nutze `/fmb status`, `/fmb help` und vorübergehend `/fmb debug on`. Nenne im Fehlerbericht Addonversion, Clientbuild, Schritte zum
@@ -303,7 +307,7 @@ geöffnet. `/fmb status` nennt Version und Belegung; `/fmb debug on` aktiviert
 die vorhandenen lokalen Diagnosecodes, `/fmb debug off` schaltet sie aus.
 Keine Tastenwerte werden zusätzlich in Diagnosecodes protokolliert. Wenn keine
 Einführung erscheint, prüfe, ob das Addon im Charakterbildschirm aktiviert ist
-und ob `/fmb status` Version 0.10.0 nennt.
+und ob `/fmb status` Version 0.10.2 nennt.
 
 ### Verständliche Statushinweise (0.9.2)
 
@@ -330,3 +334,22 @@ pro Minute und insgesamt höchstens einmal alle fünf Sekunden bedankt. Unbekann
 oder geschützte Aura-/Spielerdaten werden ausgelassen; Ingame-Abnahme steht aus.
 Start: `/reload`, Status: `/fmb status`, sofort aus: `/fmb thanks off`.
 [Tests, Backup und Rücknahme](docs/auto-thanks-2026-11-07/REPORT.md).
+
+### Automatischer Dank für Buffs und Heilungen
+
+`/fmb thanks on|off` (standardmäßig AN), auch unter Begrüßungen, fordert ein
+namentliches natives `/danke` für lesbare freundliche Spieler-Buffs an. Bei
+wirksamer direkter oder regelmäßiger Heilung wird nur Spielern außerhalb der
+eigenen Gruppe bzw. des Schlachtzugs gedankt. Eigenheilung, Begleiter/NPCs,
+Schaden, Heilung anderer Ziele und vollständige Überheilung werden ignoriert.
+Tritt der Heiler während der zweisekündigen Bündelung der Gruppe bei, entfällt
+der reine Heilungs-Dank. Für Buffs bleibt der Dank auch innerhalb der Gruppe aktiv.
+
+Buffs und Heilungen teilen dieselbe Spam-Sperre: einmal je Spieler pro Minute,
+global höchstens einmal pro fünf Sekunden. Ziel, Angriff, Zauber und Tasten bleiben
+unberührt. Unlesbare oder gesperrte Kampfprotokoll-/Gruppendaten lösen keinen Dank
+aus. `/fmb status` und `/fmb debug on` zeigen feste Diagnosecodes
+`THANKS_HEAL_UNAVAILABLE`, `THANKS_HEAL_RESTRICTED` oder `THANKS_HEAL_UNKNOWN`;
+es werden keine Spielernamen oder nativen Fehlermeldungen protokolliert.
+Nach Installation `/reload` ausführen. Die tatsächliche Annahme im Spiel ist noch
+zu prüfen; ohne lesbares Kampfprotokoll bleibt der Heilungs-Dank inaktiv.

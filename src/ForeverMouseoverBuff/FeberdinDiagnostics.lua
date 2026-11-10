@@ -16,6 +16,14 @@ local frameHooked = false
 local fallbackHooked = false
 local captureHooked = false
 
+-- Restricted values cannot safely be inspected or compared. A failing guard is
+-- also unreadable: diagnostics must never create a second gameplay exception.
+local function readable(value)
+  if type(issecretvalue) ~= 'function' then return true end
+  local ok, restricted = pcall(issecretvalue, value)
+  return ok and not restricted
+end
+
 -- JSON needs no general serializer: all strings below come from fixed vocabulary
 -- or restricted source filenames. Never pass arbitrary event payloads to this API.
 local function save()
@@ -29,11 +37,13 @@ local function save()
   _G[variable] = state
 end
 local function cleanLocation(file, line)
+  if not readable(file) or not readable(line) then return '', 0 end
   if type(file) ~= 'string' or #file > 80 or not file:match('^[%w_%-]+%.lua$') then return '', 0 end
   if type(line) ~= 'number' or line < 0 or line > 1000000 or line ~= math.floor(line) then return '', 0 end
   return file, line
 end
 local function record(code, file, line)
+  if not readable(code) or type(code) ~= 'string' then return end
   if not codes[code] or (code == 'DEBUG_TICK' and not state.enabled) then return end
   file, line = cleanLocation(file, line)
   state.sequence = (state.sequence % 1000000000) + 1
@@ -45,17 +55,21 @@ end
 -- Extract only an error's initial source location belonging to this addon.
 -- Example: Interface/AddOns/<own>/Core.lua:42: private text -> Core.lua, 42.
 local function observe(message)
-  if type(message) ~= 'string' then return end
-  if type(issecretvalue) == 'function' and issecretvalue(message) then return end
+  if not readable(message) or type(message) ~= 'string' then return end
   local normalized = message:sub(1, 512):gsub('\\', '/')
   local owner, file, line = normalized:match('^Interface/AddOns/([%w_%-]+)/([%w_%-]+%.lua):(%d+):')
   if not owner then owner, file, line = normalized:match('^%[string "@?Interface/AddOns/([%w_%-]+)/([%w_%-]+%.lua)"%]:(%d+):') end
-  if owner == addon then record('LUA_ERROR', file, tonumber(line)) end
+  if owner == addon then
+    file, line = cleanLocation(file, tonumber(line))
+    if file ~= '' then record('LUA_ERROR', file, line) end
+  end
 end
 local function attach()
   if frameHooked or type(hooksecurefunc) ~= 'function' then return end
   if type(ScriptErrorsFrame) == 'table' and type(ScriptErrorsFrame.DisplayMessageInternal) == 'function' then
-    hooksecurefunc(ScriptErrorsFrame, 'DisplayMessageInternal', function(_, message, messageType) if messageType == 0 then observe(message) end end)
+    hooksecurefunc(ScriptErrorsFrame, 'DisplayMessageInternal', function(_, message, messageType)
+      if readable(messageType) and messageType == 0 then observe(message) end
+    end)
     hooked = true
     frameHooked = true
   elseif not fallbackHooked and type(CallErrorHandler) == 'function' then
@@ -68,6 +82,9 @@ end
 FeberdinDiagnostics = FeberdinDiagnostics or {}
 FeberdinDiagnostics[addon] = {
   Record = record,
+  -- Own callback error boundaries can observe before forwarding to Blizzard.
+  -- This leaves geterrorhandler/seterrorhandler and secure callbacks untouched.
+  ObserveError = observe,
   Status = function()
     local result = { enabled = state.enabled, hooked = hooked,
       hookMode = frameHooked and 'blizzard-frame' or fallbackHooked and 'call-error-handler' or 'unavailable', events = {} }

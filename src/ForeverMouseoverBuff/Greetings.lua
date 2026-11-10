@@ -95,7 +95,7 @@ function Greetings.Format(profile, variant)
     if link ~= nil and (not ns.SpellLink or not ns.SpellLink.Valid(link)) then
         return nil, "GREETING_INVALID_LINK"
     end
-    local details = count ~= nil and string.format(" [lokal: %.0f Buffs]", count) or ""
+    local details = count ~= nil and string.format(" [insgesamt: %.0f Buffs verteilt]", count) or ""
     if link then details = details .. " " .. link end
     -- Sender culture chooses the voice; recipient traits only choose the address.
     -- Keep these roles separate: a paladin addressing a druid is still a paladin.
@@ -146,7 +146,8 @@ function Greetings.ValidMessage(message, expectedSpellID)
         body = base
     end
     if body:find("|", 1, true) then return false end
-    local withoutCount, digits = body:match("^(.-) %[lokal: (%d+) Buffs%]$")
+    local withoutCount, digits = body:match("^(.-) %[insgesamt: (%d+) Buffs verteilt%]$")
+    if not digits then withoutCount, digits = body:match("^(.-) %[lokal: (%d+) Buffs%]$") end
     if digits then
         local value = tonumber(digits)
         if #digits > 10 or not value or value > 1000000000

@@ -247,7 +247,7 @@ test("healing_guidance_explains_same_key_threshold_stillness_and_combat_in_intro
     assert(intro:find("Lichtblitz", 1, true), "intro must name the preferred heal")
     assert(intro:find("Wenn Lichtblitz nicht nutzbar ist: Heiliges Licht.", 1, true),
         "intro must explain usable-spell fallback, including a learned but unusable Flash")
-    assert(intro:find("Könige", 1, true), "intro must retain the combat action")
+    assert(intro:find("PvP-Schutz gesperrt", 1, true), "intro must explain combat blocking for PvP safety")
     eq(state.casts, 0)
 end)
 test("healing_guidance_settings_explain_buff_and_heal_on_the_same_key", function()

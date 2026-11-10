@@ -1,6 +1,6 @@
 # Forever Mouseover Buff
 
-**0.10.0 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.2 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Fahre mit der Maus über einen freundlichen Spieler und drücke deine eingerichtete Taste, um einen passenden erlernten Buff zu wirken.
 

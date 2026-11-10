@@ -1,5 +1,5 @@
--- Purpose: thank a readable friendly player for newly received classic buffs.
--- Input: complete public player HELPFUL aura snapshots, clock, saved on/off switch.
+-- Purpose: thank readable friendly players for classic buffs and outside-group healing.
+-- Input: public player HELPFUL snapshots/combat-log heals, clock, saved on/off switch.
 -- Output: one named native THANK request; fixed diagnostic codes, no stored identities.
 -- Invariants: no target/attack/cast/key changes; unknown/restricted data fails closed.
 -- Debug: /fmb thanks on|off; /fmb status; LastCode contains no native exception text.
@@ -120,6 +120,80 @@ local function scan()
         end
     end
 end
+-- Both observations share one bounded queue and cooldown. A buff upgrades a
+-- pending heal so joining a group only cancels heal-only requests, never buffs.
+local function queue(guid, name, stamp, healingOnly)
+    local item = pending[guid]
+    if item then
+        if not healingOnly then item.healingOnly = false end
+        return
+    end
+    if cooldowns[guid] and stamp - cooldowns[guid] < CASTER_SECONDS then return end
+    local count = 0
+    for _ in pairs(pending) do count = count + 1 end
+    if count >= 16 then return end
+    pending[guid] = {name = name, due = stamp + BUNDLE_SECONDS,
+        expires = stamp + 20, healingOnly = healingOnly}
+end
+
+-- Resolve roster GUIDs rather than a healer's transient target/nameplate token.
+-- Unknown roster data fails closed. Rechecking at send time covers a group join
+-- during the bundle delay; no identity is written to disk or diagnostics.
+local function outsideGroup(guid)
+    local raid = invoke(IsInRaid)
+    if raid ~= true and raid ~= false then return false end
+    local count = invoke(raid and GetNumGroupMembers or GetNumSubgroupMembers)
+    if not finite(count) or count ~= math.floor(count) or count > (raid and 40 or 4) then return false end
+    for index = 1, count do
+        local member = invoke(UnitGUID, (raid and "raid" or "party") .. index)
+        if not text(member) or member == guid then return false end
+    end
+    return true
+end
+
+-- Native CLEU prefix has 11 values; SPELL_(PERIODIC_)HEAL then supplies
+-- spell ID/name/school, amount, overhealing. Example: 100 - 100 => no thanks.
+-- Read only required fields, checking secrecy before comparing/arithmetic.
+local function healEvent(getter)
+    local _, event, _, guid, name, flags, _, destination, _, _, _, _, _, _, amount, over =
+        getter()
+    return event, guid, name, flags, destination, amount, over
+end
+function Thanks.OnCombatLog()
+    if not ns.db or ns.db.autoThanks ~= true then Thanks.Reset(); return end
+    if not public(C_CombatLog) or (C_CombatLog ~= nil and not readable(C_CombatLog)) then
+        code("THANKS_HEAL_UNKNOWN"); return
+    end
+    -- Do not treat secret namespace fields as absent and bypass them through
+    -- a legacy fallback. The namespace table has already passed access checks.
+    local restriction, getter
+    if C_CombatLog ~= nil then
+        restriction, getter = rawget(C_CombatLog, "IsCombatLogRestricted"), rawget(C_CombatLog, "GetCurrentEventInfo")
+        if not public(restriction) or not public(getter) then code("THANKS_HEAL_UNKNOWN"); return end
+    end
+    if restriction ~= nil and invoke(restriction) ~= false then code("THANKS_HEAL_RESTRICTED"); return end
+    -- Prefer the generated native namespace; legacy is only for clients without
+    -- that getter. Never fall back after a native restriction or failed call.
+    if getter == nil and public(CombatLogGetCurrentEventInfo) then getter = CombatLogGetCurrentEventInfo end
+    if type(getter) ~= "function" then code("THANKS_HEAL_UNAVAILABLE"); return end
+    local ok, event, guid, name, flags, destination, amount, over = pcall(healEvent, getter)
+    if not ok or not public(event) then code("THANKS_HEAL_UNKNOWN"); return end
+    if event ~= "SPELL_HEAL" and event ~= "SPELL_PERIODIC_HEAL" then return end
+    if not public(destination) or not text(guid) or not text(name) or not finite(flags)
+        or flags ~= math.floor(flags) or flags >= 2^32 or not finite(amount) or not finite(over) then
+        code("THANKS_HEAL_UNKNOWN"); return
+    end
+    local selfGUID = invoke(UnitGUID, "player")
+    if not text(selfGUID) or destination ~= selfGUID or guid == selfGUID or amount <= over then return end
+    -- Classic combat-log flags: affiliation outsider=8, friendly=0x10,
+    -- controlled by player=0x100, type player=0x400. Arithmetic avoids a bit API
+    -- dependency; validate integers first. Pets/NPCs and party/raid fail here.
+    if flags % 16 ~= 8 or math.floor(flags / 16) % 16 ~= 1
+        or math.floor(flags / 256) % 4 ~= 1 or math.floor(flags / 1024) % 64 ~= 1 then return end
+    if not outsideGroup(guid) then return end
+    local stamp = clock()
+    if stamp then queue(guid, name, stamp, true) end
+end
 function Thanks.Reset()
     previous, pending = nil, {}
     cooldowns = cooldowns or {}
@@ -131,16 +205,9 @@ function Thanks.Check()
     local current = scan()
     if not current then Thanks.Reset(); code("THANKS_AURAS_UNKNOWN"); return end
     if previous then
-        local queued = 0
-        for _ in pairs(pending) do queued = queued + 1 end
         for key, buff in pairs(current) do
             local old = previous[key]
-            if (not old or old.expiry ~= buff.expiry) and not pending[buff.guid]
-                and (not cooldowns[buff.guid] or stamp - cooldowns[buff.guid] >= CASTER_SECONDS)
-                and queued < 16 then
-                pending[buff.guid] = {name = buff.name, due = stamp + BUNDLE_SECONDS, expires = stamp + 20}
-                queued = queued + 1
-            end
+            if not old or old.expiry ~= buff.expiry then queue(buff.guid, buff.name, stamp, false) end
         end
     end
     previous = current
@@ -156,7 +223,7 @@ function Thanks.Tick()
     for guid, last in pairs(cooldowns) do if stamp - last >= CASTER_SECONDS then cooldowns[guid] = nil end end
     local selected, request
     for guid, item in pairs(pending) do
-        if stamp > item.expires then pending[guid] = nil
+        if stamp > item.expires or (item.healingOnly and not outsideGroup(guid)) then pending[guid] = nil
         elseif stamp >= item.due and (not request or item.due < request.due
             or (item.due == request.due and guid < selected)) then selected, request = guid, item end
     end

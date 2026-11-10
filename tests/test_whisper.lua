@@ -689,8 +689,8 @@ function tests.pending_greeting_keeps_its_cast_count_snapshot_and_native_buff_li
     equal(f.ns.Stats.Total(), 2)
     replies[1](true); replies[2](true)
     equal(#f.messages, 2)
-    assert(f.messages[1].message:find("Paladin [lokal: 1 Buffs]",1,true))
-    assert(f.messages[2].message:find("Paladin [lokal: 2 Buffs]",1,true))
+    assert(f.messages[1].message:find("Paladin [insgesamt: 1 Buffs verteilt]",1,true))
+    assert(f.messages[2].message:find("Paladin [insgesamt: 2 Buffs verteilt]",1,true))
     assert(f.messages[1].message:find("|Hspell:20217|h",1,true))
 end
 

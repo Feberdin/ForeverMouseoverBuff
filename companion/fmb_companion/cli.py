@@ -52,6 +52,10 @@ def parser():
     )
     diagnostics.add_argument("--saved-variables", required=True)
     diagnostics.add_argument(
+        "--shared-saved-variables",
+        help="Optionale accountweite SavedVariables-Datei für gespeicherte Lua-Fehlerstellen.",
+    )
+    diagnostics.add_argument(
         "--json", action="store_true", help="Nur geprüfte Diagnosefelder als JSON ausgeben."
     )
     export = commands.add_parser(
@@ -130,7 +134,12 @@ def main(argv=None):
     try:
         args = parser().parse_args(argv)
         if args.command == "diagnostics":
-            report = parse_diagnostics(read_stable(args.saved_variables))
+            # Both explicit paths use the same stable, bounded, read-only access.
+            main_data = read_stable(args.saved_variables)
+            shared_data = (
+                read_stable(args.shared_saved_variables) if args.shared_saved_variables else None
+            )
+            report = parse_diagnostics(main_data, shared_data)
             if args.json:
                 print(json.dumps(report, ensure_ascii=False, separators=(",", ":")))
             else:
