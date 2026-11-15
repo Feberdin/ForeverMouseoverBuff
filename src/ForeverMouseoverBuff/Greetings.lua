@@ -23,6 +23,8 @@ local addresses = {
     BloodElf = {[2] = "edler Blutelf", [3] = "edle Blutelfe"},
 }
 
+-- Accept the custom-realm token without guessing race from a displayed name.
+addresses.Undead = addresses.Scourge
 
 -- Lua 5.1 has no utf8 library. Validate complete code points before formatting;
 -- this also rejects overlong encodings, surrogate code points and raw bad bytes.

@@ -130,6 +130,7 @@ TEMPLATE_FILES = (
     ".github/ISSUE_TEMPLATE/config.yml",
     "docs/feedback.md",
     "docs/release-polish-validation.md",
+    "docs/RELEASE-0.10.3-VALIDATION.md",
     "scripts/check-portable.sh",
     "curseforge/description-en.md",
     "curseforge/description-de.md",

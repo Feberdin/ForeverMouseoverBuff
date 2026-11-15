@@ -4,7 +4,7 @@
 -- Invariants: no hover/timer casts, combat casts, automatic key assignment or self fallback.
 -- Debug: /fmb diag; /fmb debug on; /fmb status. Structured local logs flush on reload/logout.
 local _, ns = ...
-ns.VERSION = "0.10.2"
+ns.VERSION = "0.10.3"
 -- Persist help revisions separately from addon releases: only missing-key users
 -- need the improved setup once, and dismissing it remains a valid choice.
 ns.INTRODUCTION_VERSION = 2
@@ -831,12 +831,48 @@ local function runLifecycle(callback)
     else error(message, 0) end
 end
 
+-- Forever declares CLEU restricted and provides no public row getter. Merely
+-- requesting that event can trigger Blizzard's blocked-addon dialog; pcall only
+-- catches Lua errors. Subscribe only on clients with an accessible public reader,
+-- without probing the reader or any Internal/Secure namespace. Buff aura thanks
+-- remain independent when the optional healing observation is unavailable.
+local function publicCombatLogAvailable()
+    local function public(value)
+        if type(issecretvalue) ~= "function" then return false end
+        local ok, secret = pcall(issecretvalue, value)
+        return ok and secret == false
+    end
+    if not public(C_CombatLog) then return false end
+    local getter
+    if C_CombatLog ~= nil then
+        if type(C_CombatLog) ~= "table" or type(canaccesstable) ~= "function" then return false end
+        local ok, access = pcall(canaccesstable, C_CombatLog)
+        if not ok or not public(access) or access ~= true then return false end
+        local restriction = rawget(C_CombatLog, "IsCombatLogRestricted")
+        getter = rawget(C_CombatLog, "GetCurrentEventInfo")
+        if not public(restriction) or not public(getter) then return false end
+        if restriction ~= nil then
+            if type(restriction) ~= "function" then return false end
+            local checked, restricted = pcall(restriction)
+            if not checked or not public(restricted) or restricted ~= false then return false end
+        end
+    end
+    if getter == nil and public(CombatLogGetCurrentEventInfo) then getter = CombatLogGetCurrentEventInfo end
+    return type(getter) == "function"
+end
+
 local frame = CreateFrame("Frame")
 for _, event in ipairs({"PLAYER_LOGIN", "CHAT_MSG_ADDON", "ADDON_LOADED", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
-    "COMBAT_LOG_EVENT_UNFILTERED", "PLAYER_ENTERING_WORLD", "UPDATE_MOUSEOVER_UNIT", "SPELLS_CHANGED", "PLAYER_LEVEL_UP", "UPDATE_BINDINGS", "UNIT_AURA",
+    "PLAYER_ENTERING_WORLD", "UPDATE_MOUSEOVER_UNIT", "SPELLS_CHANGED", "PLAYER_LEVEL_UP", "UPDATE_BINDINGS", "UNIT_AURA",
     "UNIT_SPELLCAST_SENT", "UNIT_SPELLCAST_SUCCEEDED", "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED"}) do
     local ok = pcall(frame.RegisterEvent, frame, event)
     if not ok then ns:Log("EVENT_UNAVAILABLE") end
+end
+if publicCombatLogAvailable() then
+    local ok = pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
+    if not ok then ns:Log("EVENT_UNAVAILABLE") end
+else
+    ns:Log("THANKS_HEAL_UNAVAILABLE")
 end
 frame:SetScript("OnEvent", function(_, event, unit, second, third, fourth)
     -- Match ns:OnEvent's inputs explicitly: Lua 5.1 cannot capture ... inside

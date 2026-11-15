@@ -10,14 +10,14 @@ Wähle einen gelernten Klassenbuff für den befreundeten Spieler unter deiner
 Maus. Paladin, Magier, Priester, Druide, Hexenmeister und Schamane haben eigene
 Buffprofile. Alle Klassen können Grüße empfangen und automatisch danken.
 
-**0.10.2 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.3 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Oberfläche und Grüße sind überwiegend deutsch. Klassenprioritäten und das native
 Sanctum-Menü sind automatisiert und im nachgebildeten Layout geprüft. Die
 Ingame-Abnahme und der tatsächliche Grußempfang bei einem anderen Spieler stehen
 noch aus.
 
-## Klassenbuffs (0.10.2 Beta)
+## Klassenbuffs (0.10.3 Beta)
 
 | Deine Klasse | Auto in dieser Reihenfolge | Zusätzlich bewusst wählbar |
 | --- | --- | --- |
@@ -39,13 +39,40 @@ Reagenzien. FMB prüft WoWs Zaubernutzbarkeit und Manaauskunft, **zählt Reagenz
 aber nicht selbst**. Fehlende Gegenstände können erst beim Zaubern gemeldet werden.
 
 Es werden nur tatsächlich gelernte Zauberbuchränge und aktuelle Reichweiten-/
-Nutzbarkeitsdaten verwendet. Vorsichtig gilt: Lernstufe des Rangs ≤ Zielstufe.
-Das ist eine Addon-Sicherheitsregel und **keine Aussage über WoWs Mindestzielstufe**;
-manuell können eventuell höhere Ränge möglich sein. Automatische Heilung bleibt
+Nutzbarkeitsdaten verwendet. Normale Paladin-Rang-IDs erkennen die Familie auch bei
+abweichenden oder fehlenden globalen Namen. Ein aktiver `SPELL`-Buchplatz ohne
+Offspec-Markierung bestätigt einen solchen Rang trotz widersprüchlichem öffentlichen
+`IsSpellKnown`-Ergebnis. Zukünftige, Flyout-, passive, Große und temporäre Segen
+werden dadurch nicht freigeschaltet; fehlende, geschützte oder fehlgeschlagene
+Known-Abfragen sperren weiterhin. Wird Macht als fehlend angezeigt: gelernten
+Zauber im Buch prüfen, dann `/reload` und `/fmb diag`.
+Normalerweise gilt: Lernstufe des Rangs ≤ Zielstufe.
+Liegt ein Paladin-Ziel unter allen gelernten Rängen, kann FMB den niedrigsten
+gelernten Machtrang anbieten und zeigt **„der Client prüft die Zielstufe“**.
+In Auto bekommen Manaklassen immer Macht als letzte Alternative, wenn kein
+stufenpassender bevorzugter Castersegen gelernt ist. Ein zu hoher erster Weisheits-
+oder Königerang hat dabei keinen Vorrang. Das gilt auch für nichtleere eigene
+Klassenprioritäten; eine leere Liste bleibt deaktiviert. Bereits vorhandene
+bevorzugte Segen bleiben erhalten, manuelles Weisheit/Könige bleibt exakt. Lernstufe ist
+keine bestätigte Mindestzielstufe; der Server kann den Versuch weiterhin ablehnen.
+Andere Klassen behalten ihre vorsichtige Rangregel. Es wird keine Serverformel geraten. Automatische Heilung bleibt
 eine Paladin-Funktion. Alle Addon-Zauber sind im eigenen Kampf gesperrt, damit
 kein geschützter Kampfpfad die PvP-Prüfung umgeht. Wiederbelebungen, Gruppenbuffs, Rufe, Totems, Aspekte,
 kurzzeitige Abklingzeitbuffs, Begleiter-, Waffen- und Eigenbuffs gehören nicht zu
 diesem Ablauf. Neue Klassenbuffs erzeugen keine Paladin-Zähler oder Exporte.
+
+Horde und Allianz verwenden dieselben Prüfungen für freundliche Ziele, auch bei
+Untoten-Paladinen auf dem Custom-Realm. Die Rasse des Absenders bestimmt kulturelle
+Grüße mit Verlassenen, Horde, Loa, Ahnen oder Quel'Thalas. `Scourge` und `Undead`
+gelten gleich; die Empfängerrasse bestimmt nur die Anrede. Die bisherigen
+Einwilligungs- und Nachrichtenschalter gelten weiterhin.
+Untoten-Paladine erhalten zwölf eigene Rollenspielwünsche über freien Willen,
+Standhaftigkeit, Lordaeron und den Schutz anderer. Der schmerzhafte Einsatz des
+Lichts orientiert sich an Cormack in Blizzards
+[Unbowed](https://worldofwarcraft.blizzard.com/en-us/media/short-story/unbowed).
+Das ist ein Lore-Bezug ohne Änderung der Realm-Zeitlinie. Die persönlichen
+Wünsche sind eigene Formulierungen und beschreiben nicht den Glauben aller Verlassenen.
+
 
 ## 🛡️ Paladin-Funktionen
 
@@ -307,7 +334,7 @@ geöffnet. `/fmb status` nennt Version und Belegung; `/fmb debug on` aktiviert
 die vorhandenen lokalen Diagnosecodes, `/fmb debug off` schaltet sie aus.
 Keine Tastenwerte werden zusätzlich in Diagnosecodes protokolliert. Wenn keine
 Einführung erscheint, prüfe, ob das Addon im Charakterbildschirm aktiviert ist
-und ob `/fmb status` Version 0.10.2 nennt.
+und ob `/fmb status` Version 0.10.3 nennt.
 
 ### Verständliche Statushinweise (0.9.2)
 

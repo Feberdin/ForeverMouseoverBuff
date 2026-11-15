@@ -19,7 +19,7 @@ end
 
 -- The fake preserves the Blizzard template's native OnClick marker. It counts
 -- attempted actions, not successful WoW casts; it also models the OOC hard gate.
-local function setup(saved, modules, initialCombat, bindingKey, unavailableEvent)
+local function setup(saved, modules, initialCombat, bindingKey, unavailableEvent, combatLogApi)
     local state = {frames = {}, events = {}, locked = initialCombat == true, nativeClicks = 0, actions = {}, reads = 0, armedWrites = 0,
         context = fixture(), logs = {}, notices = {}, sounds = {}, attributeWrites = 0,
         refreshBook = 0, templateMissing = false, kingsKnown = false, now = 100}
@@ -99,6 +99,8 @@ local function setup(saved, modules, initialCombat, bindingKey, unavailableEvent
     end
     -- Native macro parsing is a C++ boundary. This fixture accepts only our two
     -- fixed routing lines; the separate native suite loads Blizzard's handlers.
+    _G.C_CombatLog = combatLogApi
+    _G.CombatLogGetCurrentEventInfo = nil
     _G.C_Macro = {RunMacroText = function(text)
         if state.locked then
             if text:find("/cast [combat,@mouseover,help,nodead] Segen der Könige", 1, true) then
@@ -442,9 +444,10 @@ end)
 test("real_api_core_and_native_button_contract_select_and_skip_buff", function()
     local ns, state = setup()
     local auraPresent, known = false, true
+    local actualSlot, casterTarget = false, false
     _G.canaccesstable = function(value) return type(value) == "table" end
     _G.UnitAffectingCombat = function() return state.locked end
-    _G.UnitClass = function(unit) return "unused", unit == "player" and "PALADIN" or "WARRIOR" end
+    _G.UnitClass = function(unit) return "unused", unit == "player" and "PALADIN" or (casterTarget and "MAGE" or "WARRIOR") end
     _G.UnitExists = function() return true end
     _G.UnitIsPlayer = function() return true end
     _G.UnitCanAssist = function() return true end
@@ -454,7 +457,7 @@ test("real_api_core_and_native_button_contract_select_and_skip_buff", function()
     _G.UnitIsUnit = function() return false end
     _G.UnitIsConnected = function() return true end
     _G.UnitIsVisible = function() return true end
-    _G.UnitLevel = function() return 18 end
+    _G.UnitLevel = function() return casterTarget and 1 or 18 end
     _G.IsMounted = function() return false end
     _G.IsFlying = function() return false end
     _G.UnitInVehicle = function() return false end
@@ -470,11 +473,12 @@ test("real_api_core_and_native_button_contract_select_and_skip_buff", function()
     }
     _G.C_SpellBook = {
         GetNumSpellBookSkillLines = function() return 1 end,
-        GetSpellBookSkillLineInfo = function() return {itemIndexOffset = 0, numSpellBookItems = 2} end,
+        GetSpellBookSkillLineInfo = function() return {itemIndexOffset = 0, numSpellBookItems = actualSlot and 1 or 2} end,
         GetSpellBookItemInfo = function(slot)
-            return {itemType = 1, isPassive = false, isOffSpec = false, spellID = slot == 1 and 19740 or 19834}
+            return {itemType = (known or actualSlot) and 1 or 2, isPassive = false, isOffSpec = false,
+                spellID = slot == 1 and 19740 or 19834}
         end,
-        GetSpellBookItemName = function() return "Segen der Macht", "" end,
+        GetSpellBookItemName = function() return actualSlot and "Segen der Macht (Rang 1)" or "Segen der Macht", "" end,
         GetSpellBookItemLevelLearned = function(slot) return slot == 1 and 4 or 12 end,
         IsSpellKnown = function() return known end,
     }
@@ -493,6 +497,15 @@ test("real_api_core_and_native_button_contract_select_and_skip_buff", function()
     auraPresent, known = false, false
     ns:OnEvent("SPELLS_CHANGED")
     click(state); eq(#state.actions, 1); eq(ns.decision.code, "NO_KNOWN_SPELL")
+    -- Reported failure: SDM really is in the book, but label/known lookups
+    -- disagree. The low-level caster must still get the real rank-1 action.
+    actualSlot, casterTarget = true, true
+    ns:OnEvent("SPELLS_CHANGED")
+    click(state)
+    eq(ns.decision.code, "READY_FALLBACK")
+    eq(#state.actions, 2)
+    eq(state.actions[2].spellID, 19740)
+    eq(ns.decision.rankEligibility, "CLIENT_CHECK")
 end)
 
 -- Regressions for supportable operation: explain missing input and retain only
@@ -1273,7 +1286,8 @@ end)
 test("auto_thanks_combat_log_routes_without_refresh_or_protected_changes", function()
     local calls = 0
     local ns, state = setup(nil, {AutoThanks = {Reset = function() end,
-        Check = function() end, OnCombatLog = function() calls = calls + 1 end}})
+        Check = function() end, OnCombatLog = function() calls = calls + 1 end}}, false, nil, nil,
+        {GetCurrentEventInfo = function() error("Registration must not read combat rows") end})
     eq(state.events.COMBAT_LOG_EVENT_UNFILTERED == true, true, "healing observer event must be registered")
     local writes, actions = state.attributeWrites, #state.actions
     ns:OnEvent("COMBAT_LOG_EVENT_UNFILTERED")
@@ -1296,7 +1310,8 @@ end)
 test("auto_thanks_combat_log_registration_rejection_keeps_other_events", function()
     local checks = 0
     local ns, state = setup(nil, {AutoThanks = {Reset = function() end,
-        Check = function() checks = checks + 1 end}}, false, nil, "COMBAT_LOG_EVENT_UNFILTERED")
+        Check = function() checks = checks + 1 end}}, false, nil, "COMBAT_LOG_EVENT_UNFILTERED",
+        {GetCurrentEventInfo = function() end})
     eq(ns.initialized, true)
     eq(state.events.COMBAT_LOG_EVENT_UNFILTERED, nil)
     eq(state.events.UNIT_AURA, true)
@@ -1375,6 +1390,23 @@ test("mage_commands_accept_its_buffs_and_refuse_foreign_family", function()
     local ns,state=setup(); state.context.playerClass="MAGE"
     ns:Command("intellect"); eq(ns.db.mode,"intellect")
     ns:Command("might"); eq(ns.db.mode,"intellect","foreign mode must not replace Mage setting")
+end)
+
+-- Forever exposes no public row reader and declares CLEU restricted. A pcall
+-- around RegisterEvent cannot undo the client warning, so do not request it.
+test("restricted combat log without public reader is never registered", function()
+    local _, state = setup()
+    eq(state.events.COMBAT_LOG_EVENT_UNFILTERED, nil,
+        "No public reader means no restricted combat-log registration")
+end)
+
+test("restricted combat log guard prevents registration despite reader", function()
+    for _, guard in ipairs({function() return true end, function() error("restricted") end}) do
+        local _, state = setup(nil, nil, nil, nil, nil,
+            {GetCurrentEventInfo = function() end, IsCombatLogRestricted = guard})
+        eq(state.events.COMBAT_LOG_EVENT_UNFILTERED, nil)
+        eq(state.events.UNIT_AURA, true, "buff aura observation remains available")
+    end
 end)
 
 local count, failures = 0, 0

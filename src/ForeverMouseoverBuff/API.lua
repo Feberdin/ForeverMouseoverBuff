@@ -8,6 +8,16 @@ namespace.API = API
 local spellCache, nameCache, playerClassCache
 local MAX_LINES, MAX_SLOTS, MAX_CANDIDATES, MAX_AURAS = 100, 2000, 200, 255
 local familyIDs = { [19740] = "might", [19742] = "wisdom", [20217] = "kings" }
+-- Only ordinary single-recipient ranks may be selected from a verified active
+-- SPELL slot. Greater/temporary blessings are aura identities, never candidates.
+local ordinaryBlessingIDs = {}
+for family, ids in pairs({
+    might = {19740, 19834, 19835, 19836, 19837, 19838, 25291, 27140, 48931, 48932},
+    wisdom = {19742, 19850, 19852, 19853, 19854, 25290, 27142, 48935, 48936},
+    kings = {20217},
+}) do
+    for _, id in ipairs(ids) do ordinaryBlessingIDs[id] = family end
+end
 local healIDs = { [19750] = "flash", [635] = "holy_light" }
 local healFamilies = { flash = true, holy_light = true }
 
@@ -205,7 +215,7 @@ local function names()
             if name then
                 result.blessings[name] = blessingFamilies[id]
                 if familyIDs[id] then result.families[name] = familyIDs[id] end
-            elseif familyIDs[id] then issue("API_SPELL_NAMES_UNKNOWN"); return nil end
+            end
         end
         for id, family in pairs(healIDs) do
             local name = spellName(id)
@@ -286,11 +296,19 @@ local function buildSpellbook()
                 if not integer(spellID, 1, 1000000000) then return nil end
                 local nameOK, name = call(api.GetSpellBookItemName, slot, bank)
                 if not nameOK or not text(name, 200) then return nil end
-                local family = labels.families[name]
+                -- A normal known rank has a stable identity even when the book
+                -- label differs from global localized metadata (19740 => might).
+                -- Same-name future ranks still need the separate known lookup.
+                local ordinary = labels.paladin and ordinaryBlessingIDs[spellID]
+                local family = ordinary or labels.families[name]
+                if labels.paladin and blessingFamilies[spellID] and not ordinary then family = nil end
                 if family then
                     local known = boolean(api.IsSpellKnown, spellID, bank)
                     if known == nil then return nil end
-                    if known then
+                    -- SPELL + active/non-offspec + ordinary rank is direct book
+                    -- evidence. A public false from IsSpellKnown cannot erase it;
+                    -- nil/secret/failure still aborts, and metadata alone never learns.
+                    if known or ordinary then
                         local levelOK, level = call(api.GetSpellBookItemLevelLearned, slot, bank)
                         if not levelOK or not integer(level, 1, 1000) then return nil end
                         local old = seenIDs[spellID]

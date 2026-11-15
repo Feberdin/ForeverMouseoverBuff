@@ -13,6 +13,16 @@ The GitHub source link is saved in the project. Ranking stays local.
 
 The following notes document the inputs and repeatable steps for later updates.
 
+## Authorized update: 0.10.3 Beta
+
+On **2026-11-15**, the owner authorized publishing this update to the existing
+CurseForge project **1741880**. Prepare `ForeverMouseoverBuff-0.10.3.zip` for
+Forever 1.60.1 as **Beta**. No new project, service or data flow is introduced.
+The sanitized [validation record](../docs/RELEASE-0.10.3-VALIDATION.md) records
+technical evidence and remaining real-client checks. This entry records
+preparation and authorization, not an upload or moderation result. Fill current
+file identifiers and URLs only after verification.
+
 ## Authorized update: 0.9.0 Beta
 
 On **2026-10-31**, the owner explicitly requested completion for WoW Forever and

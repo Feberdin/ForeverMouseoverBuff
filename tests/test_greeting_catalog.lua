@@ -108,7 +108,7 @@ function tests.each_class_has_a_distinct_voice_without_assuming_specialization()
     end
 end
 
-function tests.racial_accents_change_exactly_two_variants_and_keep_class_short_form()
+function tests.racial_accents_keep_class_short_form_and_documented_variant_counts()
     for _, class in ipairs(classes) do
         local base, short = Catalog.Select(class)
         for _, race in ipairs(races) do
@@ -116,11 +116,12 @@ function tests.racial_accents_change_exactly_two_variants_and_keep_class_short_f
             local changed = 0
             for index = 1, 12 do
                 if templates[index] ~= base[index] then
-                    assert(index == 6 or index == 12, "only the two documented accent slots vary")
+                    assert(index == 6 or index == 12 or (class == "PALADIN" and race == "Scourge"),
+                        "only documented cultural slots vary")
                     changed = changed + 1
                 end
             end
-            equal(changed, 2, "supported sender race must add two cultural accents")
+            equal(changed, class == "PALADIN" and race == "Scourge" and 12 or 2, "supported sender race cultural accents")
             equal(raceShort, short, "long-name fallback keeps the sender class, not race decoration")
         end
     end
@@ -195,6 +196,30 @@ function tests.results_are_detached_repeatable_and_do_not_read_user_metatables()
         equal(short, nextShort)
         assert(first ~= second, "each selection owns its detached table")
     end
+end
+
+-- Horde culture remains separate from class: even an Undead Paladin receives
+-- Light-themed wishes with Forsaken identity, never an Alliance loyalty slogan.
+function tests.horde_races_have_specific_cultural_wishes_and_undead_alias()
+    local expected = {Orc = "Horde", Scourge = "Verlassenen", Undead = "Verlassenen",
+        Tauren = "Ahnen", Troll = "Loa", BloodElf = "Quel'Thalas"}
+    for race, theme in pairs(expected) do
+        local templates = Catalog.Select("PALADIN", race)
+        assert(templates[6]:find("Licht", 1, true), "Paladin voice must remain")
+        assert((templates[6] .. templates[12]):find(theme, 1, true), "missing Horde culture: " .. race)
+    end
+    local scourge, undead = Catalog.Select("PALADIN", "Scourge"), Catalog.Select("PALADIN", "Undead")
+    for index = 1, 12 do equal(undead[index], scourge[index], "Undead token alias") end
+end
+
+function tests.undead_paladin_has_several_forsaken_greetings()
+    local templates = Catalog.Select("PALADIN", "Scourge")
+    local themed = 0
+    for _, text in ipairs(templates) do
+        if text:find("Verlassenen", 1, true) or text:find("Grab", 1, true)
+            or text:find("Lordaeron", 1, true) or text:find("Geißel", 1, true) then themed = themed + 1 end
+    end
+    assert(themed >= 3, "Undead Paladin needs several distinctive Forsaken wishes")
 end
 
 local selected = arg and arg[1]

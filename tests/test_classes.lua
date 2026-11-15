@@ -59,3 +59,17 @@ local captured=ns.AttemptTrace.Capture(facts,
 expect(captured.family,'intellect','new family diagnostic token')
 expect(captured.mode,'intellect','new mode diagnostic token')
 print('PASS: six direct-buff classes, three explained classes, rank/mana/range/aura/utility safety and diagnostic tokens')
+
+-- Client-checked rank fallback must survive the diagnostic persistence boundary.
+local low = context('PALADIN', 'might')
+low.mode = 'might'
+low.target.level, low.spells[1].learnedLevel = 1, 4
+local decision = ns.Core.Decide(low)
+local trace = ns.AttemptTrace.Capture(low, decision)
+expect(trace.rankEligibility, 'CLIENT_CHECK', 'low-level rank explanation retained')
+ns.AttemptTrace.Initialize({})
+ns.AttemptTrace.Begin(trace, decision.spellID)
+expect(ns.AttemptTrace.Snapshot()[1].rankEligibility, 'CLIENT_CHECK', 'rank explanation persisted')
+assert(ns.AttemptTrace.Report():find('Client prüft die Zielstufe', 1, true), 'diagnostic explanation must name client check')
+assert(ns.AttemptTrace.Report():find('Lernlevel ≤ Ziellevel', 1, true), 'rank count describes training levels only')
+print('PASS: low-level rank fallback remains explicit in anonymous attempt diagnostics')

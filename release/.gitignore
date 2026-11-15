@@ -19,3 +19,6 @@ SavedVariables/
 participant.json
 ranking-upload.json
 .ci-tools/
+
+# Local investigation archive: copied source/live backups and diagnostic logs.
+docs/auto-thanks-2026-11-07/

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.10.3 Beta — Learned Might detection and Horde greetings
+
+- Recognize ordinary Paladin ranks by spell ID even when localized names differ
+  or optional global names are missing. A verified active normal spellbook slot
+  remains learned evidence when the additional public known lookup disagrees;
+  restricted, missing or failed reads still fail closed.
+- Give mana classes learned Might as the final Auto alternative when no
+  level-compatible preferred caster blessing is available. Below all learned
+  ranks, offer the lowest learned Might rank for the client to validate.
+- Add Horde cultural greeting variants, twelve original Forsaken Paladin wishes,
+  and equivalent Scourge/Undead race tokens. Friendly-target checks apply equally
+  to custom Horde Paladins; no extra greeting messages are sent.
+- Clarify local rank diagnostics without claiming that training level proves
+  recipient eligibility.
+- Skip optional combat-log subscription when no public unrestricted reader is
+  available, retaining aura-based buff thanks without probing private APIs.
+
+All addon actions still require deliberate input outside combat. Local automated
+checks do not confirm real-client casting, recipient delivery or publication.
+
 ## 0.10.2 Beta — Consistent installation and reliable local diagnostics
 
 - Guard the optional healing-thanks callback so an older buff-only observer cannot crash the event handler.

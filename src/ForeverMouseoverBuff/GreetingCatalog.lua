@@ -8,7 +8,8 @@ ns.GreetingCatalog = Catalog
 
 -- The sender's class determines the voice. These are original friendly wishes,
 -- not official quotes or claims about specialization, talents or actual power.
--- The two cultural slots are separate so Paladin's twelve base texts stay exact.
+-- Cultural slots stay separate so the class-only base texts remain exact.
+-- Undead Paladins receive twelve original wishes about free will and endurance.
 local classes = {
     PALADIN = {
         short = "Licht und Segen, %s!", gift = "Licht im Gepäck", guide = "einem hellen Segen",
@@ -174,12 +175,16 @@ local races = {
     NightElf = {gift = "die Stille des Mondwaldes", path = "unter dem Mond zwischen alten Bäumen"},
     Gnome = {gift = "ein guter Einfall zur rechten Zeit", path = "auf erfinderischen Wegen zu neuen Zielen"},
     Draenei = {gift = "Hoffnung auf ein neues Morgen", path = "auf der Suche nach einer guten Heimstatt"},
-    Orc = {gift = "den Mut der Ahnen", path = "auf den Spuren der Ahnen"},
-    Scourge = {gift = "Mut für einen neuen Anfang", path = "auf Eurem eigenen Weg in die Zukunft"},
-    Tauren = {gift = "die Geduld tiefer Wurzeln", path = "über die weite Erde"},
-    Troll = {gift = "das Geleit freundlicher Geister", path = "im Takt der Trommeln"},
-    BloodElf = {gift = "die Ruhe alter Gärten", path = "durch die Gärten der Heimat"},
+    Orc = {gift = "die Stärke der Horde", path = "mit Ehre auf den Spuren der Ahnen"},
+    Scourge = {gift = "den unbeugsamen Willen der Verlassenen", path = "auf freien Wegen fern der Geißel"},
+    Tauren = {gift = "die Weisheit der Ahnen", path = "mit tiefen Wurzeln über die weite Erde von Mulgore"},
+    Troll = {gift = "das Geleit der Loa und Geister", path = "im Takt der Dunkelspeer-Trommeln"},
+    BloodElf = {gift = "den Stolz von Quel'Thalas", path = "durch die goldenen Gärten von Silbermond"},
 }
+
+-- Some custom realms expose Undead instead of the native Scourge race token.
+-- Both refer to the same culture; race never restricts which class can buff.
+races.Undead = races.Scourge
 
 -- Unknown sender classes get a genuinely neutral voice. Missing metadata must
 -- never silently turn a Druid or an unfamiliar future class into a Paladin.
@@ -214,6 +219,24 @@ function Catalog.Select(senderClass, senderRace)
     if style and race then
         result[6] = "Für Euch, %s: " .. style.gift .. " und " .. race.gift .. "!"
         result[12] = "Mit " .. style.guide .. " " .. race.path .. ", %s!"
+    end
+    -- The custom realm permits Undead Paladins. These original, personal wishes
+    -- draw on Forsaken free will, Lordaeron and the painful use of the Light.
+    -- They are roleplay lines, not canon quotations or claims about every Forsaken.
+    -- Lore sources and the classic-era boundary are documented in both READMEs.
+    if senderClass == "PALADIN" and (senderRace == "Scourge" or senderRace == "Undead") then
+        result[1] = "Lordaeron fiel. Unser Wille nicht. Nehmt meinen Segen, %s!"
+        result[2] = "Das Licht brennt in mir. Möge es Euch schützen, %s!"
+        result[3] = "Einst zwang mich die Geißel in ihren Dienst. Euch helfe ich aus freiem Willen, %s!"
+        result[4] = "Mein Herz schlägt nicht mehr. Mein Eid gilt noch. Seid behütet, %s!"
+        result[5] = "Unter Tirisfals Nebeln bleibt wenig Wärme. Diesen Funken teile ich mit Euch, %s!"
+        result[6] = "Das Licht kostet mich Schmerz. Euch soll es Kraft schenken, %s!"
+        result[7] = "Sie nennen uns Ungeheuer. Mögen unsere Taten ihnen widersprechen, %s!"
+        result[8] = "Aus Lordaerons Ruinen trage ich einen alten Schwur: die Wehrlosen schützen, %s!"
+        result[9] = "Für diesen Segen verlange ich keinen Gehorsam. Geht Euren eigenen Weg, %s!"
+        result[10] = "Dem Grab bin ich entkommen. Für Euch finde ich auch noch einen Segen, %s!"
+        result[11] = "Mein Fleisch ist vergangen. Mein Mitgefühl nicht. Seid behütet, %s!"
+        result[12] = "Wir sind die Verlassenen. Doch heute soll niemand ohne Beistand weiterziehen, %s!"
     end
     return result, source.short
 end

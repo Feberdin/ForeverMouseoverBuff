@@ -90,7 +90,7 @@ local function fixture()
             equal(bank, 0); count("slot")
             local entry = f.entries[index]
             return entry and { spellID = entry.id, actionID = entry.id,
-                itemType = 1, isPassive = entry.passive or false, isOffSpec = entry.offspec or false }
+                itemType = entry.kind or 1, isPassive = entry.passive or false, isOffSpec = entry.offspec or false }
         end,
         GetSpellBookItemName = function(index, bank)
             equal(bank, 0); local entry = f.entries[index]
@@ -139,6 +139,59 @@ local function fixture()
     function f:read(mode) return self.api.ReadContext(mode or "auto") end
     function f:decision(mode) return self.core.Decide(self:read(mode)) end
     return f
+end
+
+-- Exercise the real spellbook-to-policy boundary for a Horde-capable Paladin.
+-- Race/faction is deliberately unnecessary: public friendly status decides.
+function tests.level_one_friend_receives_lowest_learned_paladin_rank()
+    local f = fixture()
+    f.level = 1
+    local result = f:decision()
+    equal(result.ready, true)
+    equal(result.spellID, 19740)
+    equal(result.rankEligibility, "CLIENT_CHECK")
+    f.range[19740] = false
+    equal(f:decision().code, "OUT_OF_RANGE")
+end
+
+-- Follow the real localized spellbook path: an under-level caster gets Might,
+-- not the speculative first Wisdom rank. No faction/race assumptions are needed.
+function tests.low_level_caster_uses_might_until_wisdom_is_level_compatible()
+    local f = fixture()
+    f.targetClass = "MAGE"
+    for _, level in ipairs({1, 5}) do
+        f.level = level
+        local result = f:decision()
+        equal(result.family, "might")
+        equal(result.spellID, 19740)
+        equal(result.fallbackFrom, "wisdom")
+        equal(result.fallbackReason, "TARGET_LEVEL_TOO_LOW")
+    end
+    f.level = 14
+    equal(f:decision().spellID, 19742)
+end
+
+-- A real, active SPELL slot is stronger learning evidence than a contradictory
+-- public IsSpellKnown(false). Labels may differ from global spell metadata.
+function tests.ordinary_might_slot_survives_name_and_known_lookup_disagreement()
+    for _, variant in ipairs({"label", "known", "missing_metadata", "combined"}) do
+        local f = fixture()
+        f.targetClass, f.level = "MAGE", 1
+        f.entries = {{id = 19740, familyID = 19740, level = 4}}
+        f.lines[1].numSpellBookItems = 1
+        f.env.C_SpellBook.GetSpellBookItemName = function() return "Segen der Macht (Rang 1)", "" end
+        if variant ~= "label" then f.known[19740] = false end
+        if variant == "missing_metadata" or variant == "combined" then
+            f.names[19740], f.names[19742], f.names[20217] = nil, nil, nil
+        end
+        local result = f:decision()
+        equal(result.ready, true, variant)
+        equal(result.spellID, 19740, variant)
+        equal(result.family, "might")
+        equal(result.rankEligibility, "CLIENT_CHECK")
+        f.range[19740] = false
+        equal(f:decision().code, "OUT_OF_RANGE", "slot evidence cannot bypass range")
+    end
 end
 
 function tests.learned_low_ranks_are_captured_and_highest_eligible_rank_is_ready()
@@ -275,10 +328,44 @@ end
 
 function tests.metadata_existence_never_implies_a_spell_is_learned()
     local f = fixture()
-    for _, entry in ipairs(f.entries) do f.known[entry.id] = false end
+    -- Future spell slots advertise metadata but are not learned SPELL slots.
+    for _, entry in ipairs(f.entries) do f.known[entry.id], entry.kind = false, 2 end
     equal(f:decision().code, "NO_KNOWN_SPELL")
     equal(f.calls.range, nil, "range only queried for learned candidates")
     equal(f.calls.usable, nil)
+    f.entries, f.lines[1].numSpellBookItems = {}, 0
+    f.api.RefreshSpellbook()
+    equal(f:decision().code, "NO_KNOWN_SPELL", "global metadata cannot populate an empty book")
+end
+
+function tests.rank_identity_never_promotes_future_flyout_passive_or_offspec_slots()
+    for _, variant in ipairs({"future", "flyout", "passive", "offspec", "greater", "temporary"}) do
+        local f = fixture()
+        local entry = {id = 19740, familyID = 19740, level = 4}
+        f.entries, f.lines[1].numSpellBookItems = {entry}, 1
+        if variant == "future" then entry.kind = 2
+        elseif variant == "flyout" then entry.kind = 3
+        elseif variant == "passive" then entry.passive = true
+        elseif variant == "offspec" then entry.offspec = true
+        elseif variant == "greater" then entry.id = 25782
+        else entry.id = 1022 end
+        -- Even a misleading normal label and known=true cannot authorize it.
+        equal(f:decision().code, "NO_KNOWN_SPELL", variant)
+        equal(f.calls.range, nil, variant)
+        equal(f.calls.usable, nil, variant)
+    end
+end
+
+function tests.ordinary_rank_identity_covers_other_ranks_without_bypassing_native_state()
+    for _, row in ipairs({{19834, "might"}, {19850, "wisdom"}, {20217, "kings"}}) do
+        local f = fixture()
+        f.entries, f.lines[1].numSpellBookItems = {{id = row[1], familyID = 19740, level = 4}}, 1
+        f.known[row[1]] = false
+        f.env.C_SpellBook.GetSpellBookItemName = function() return "Abweichender öffentlicher Buchname", "" end
+        equal(f:decision(row[2]).spellID, row[1])
+        f.usable[row[1]] = false
+        equal(f:decision(row[2]).code, "NOT_USABLE")
+    end
 end
 
 function tests.passive_offspec_and_unrelated_spells_are_not_candidates()
@@ -286,6 +373,7 @@ function tests.passive_offspec_and_unrelated_spells_are_not_candidates()
     f.entries[2].passive = true
     f.entries[3].offspec = true
     f.entries[4].familyID = 900001
+    f.entries[4].id = 900001
     f.names[900001] = "Unrelated spell"
     local data = f:read()
     equal(#data.spells, 2)

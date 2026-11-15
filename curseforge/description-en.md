@@ -1,11 +1,13 @@
 # Forever Mouseover Buff
 
-**0.10.2 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.3 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Hover a friendly player and press your assigned key to cast an appropriate learned buff.
 
 - Direct buffs for Paladin, Priest, Druid, Mage, Warlock and Shaman.
 - Buff selection and priorities follow your class and learned spells.
+- Reliable ordinary Paladin rank detection; Auto uses learned Might for casters when no suitable preferred blessing is available.
+- Horde cultural greetings, including twelve original Forsaken Paladin wishes.
 - Situational utility spells require deliberate selection.
 - Paladin greetings and optional automatic thanks for received buffs on every class.
 - Recipients of every class can decline automatic greetings.

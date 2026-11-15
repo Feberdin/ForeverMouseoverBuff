@@ -340,6 +340,21 @@ class ReleaseTests(unittest.TestCase):
 
 
 class ReleaseWorkflowTests(unittest.TestCase):
+    def test_exported_portable_check_covers_current_diagnostics_suite(self):
+        project = Path(__file__).resolve().parents[1]
+        self.assertEqual(
+            (project / "release/scripts/check-portable.sh").read_bytes(),
+            (project / "scripts/check-portable.sh").read_bytes(),
+            "Export the same complete portable checks that passed locally.",
+        )
+
+    def test_current_validation_report_is_in_reviewed_source_export(self):
+        self.assertEqual(
+            release.source_mapping().get("release/docs/RELEASE-0.10.3-VALIDATION.md"),
+            "docs/RELEASE-0.10.3-VALIDATION.md",
+            "Ship the sanitized current validation report, never local backups/logs.",
+        )
+
     def test_ci_package_command_uses_current_manifest_version(self):
         # Validate both the checked-in workflow and its exported source template.
         # A fixed older --version makes an otherwise valid release fail in CI.

@@ -1,6 +1,6 @@
 # Forever Mouseover Buff
 
-**0.10.2 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.3 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 Fahre mit der Maus über einen freundlichen Spieler und drücke deine eingerichtete Taste, um einen passenden erlernten Buff zu wirken.
 
@@ -10,6 +10,8 @@ Fahre mit der Maus über einen freundlichen Spieler und drücke deine eingericht
 - Persönliche Grüße und eine optionale automatische Danke-Geste für empfangene Buffs.
 - Empfänger können automatische Grüße ablehnen. Diese Einstellung steht allen Klassen offen.
 - Klassen ohne geeigneten direkten Spielerbuff erhalten eine Erklärung.
+
+Normale Paladinränge werden auch bei abweichenden Zaubernamen erkannt. Auto nutzt gelerntes Macht als letzte Alternative für Caster ohne passenden bevorzugten Segen. Hordengrüße enthalten zwölf eigene Wünsche für Verlassenen-Paladine.
 
 ## Start
 

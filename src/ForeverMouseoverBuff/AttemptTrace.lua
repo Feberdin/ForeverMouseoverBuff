@@ -59,16 +59,17 @@ local function persist()
     if readable(database) then pcall(rawset, database, 'diagnosticAttempts', Trace.Snapshot()) end
 end
 
--- This is evidence of the CURRENT selection rule, not an assertion of the
--- client's minimum recipient level. Example: learned14 + target11 => eligible0.
--- Keep those facts separate so a wrong eligibility rule remains diagnosable.
+-- Count training levels, not server eligibility: learned14 + target11 => zero
+-- ranks below the target's level, but a lowest-known Paladin rank can be offered.
+-- Record its fixed CLIENT_CHECK marker separately from this historical count.
 function Trace.Capture(context, decision)
     local target = field(context, 'target')
     local entry = {class = token(field(target, 'class'), classes), level = integer(field(target, 'level'), 1000),
         mode = token(field(context, 'mode'), modes), spellID = integer(field(decision, 'spellID'), 1000000000),
         family = token(field(decision, 'family'), families), code = code(field(decision, 'code')),
         fallbackFrom = token(field(decision, 'fallbackFrom'), families),
-        fallbackReason = code(field(decision, 'fallbackReason'))}
+        fallbackReason = code(field(decision, 'fallbackReason')),
+        rankEligibility = token(field(decision, 'rankEligibility'), {CLIENT_CHECK = true})}
     local spells = field(context, 'spells')
     if readable(spells) then
         for _, family in ipairs({'wisdom', 'might', 'kings'}) do
@@ -130,6 +131,7 @@ function Trace.Begin(entry, spellID)
         class = field(entry, 'class'), level = field(entry, 'level'), mode = field(entry, 'mode'),
         spellID = spellID, family = field(entry, 'family'), code = field(entry, 'code'),
         fallbackFrom = field(entry, 'fallbackFrom'), fallbackReason = field(entry, 'fallbackReason'),
+        rankEligibility = field(entry, 'rankEligibility'),
         wisdom = field(entry, 'wisdom'), might = field(entry, 'might'), kings = field(entry, 'kings')})
     if not fresh then return nil end
     history[#history + 1] = fresh
@@ -158,8 +160,11 @@ function Trace.Report()
     for _, family in ipairs({'wisdom', 'might', 'kings'}) do
         local rank = entry[family]
         if rank then lines[#lines + 1] = family .. ': bekannte Ränge=' .. rank.known
-            .. ' | niedrigstes Lernlevel=' .. show(rank.minimumLevel) .. ' | nach aktueller Levelregel zulässig=' .. rank.eligible end
+            .. ' | niedrigstes Lernlevel=' .. show(rank.minimumLevel) .. ' | Lernlevel ≤ Ziellevel=' .. rank.eligible end
     end
-    lines[#lines + 1] = 'Lernlevel ist keine bestätigte Mindeststufe des Empfängers; die Levelregel wird hier nur protokolliert.'
+    if entry.rankEligibility == 'CLIENT_CHECK' then
+        lines[#lines + 1] = 'Niedrigster gelernter Rang angeboten; der Client prüft die Zielstufe.'
+    end
+    lines[#lines + 1] = 'Lernlevel ist keine bestätigte Mindeststufe des Empfängers; die Lernlevel-Zählung bestätigt keine Zauberzulässigkeit.'
     return table.concat(lines, '\n')
 end

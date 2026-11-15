@@ -272,11 +272,18 @@ end
 
 -- Example: learned levels 4/12/22 and target level 18 select level 12.
 -- Range or mana failure of that chosen rank blocks the action, without downranking.
-local function selectRank(spells, family, targetLevel)
-    local selected, familyKnown = nil, false
+-- A caster's learning level is not a proven minimum recipient level. For a
+-- Paladin below every learned rank, offer the lowest learned spell and let the
+-- native client/server decide eligibility. Never guess a custom-server formula.
+local function selectRank(spells, family, targetLevel, allowLowest)
+    local selected, lowest, familyKnown = nil, nil, false
     for _, spell in ipairs(spells) do
         if spell.family == family and spell.known then
             familyKnown = true
+            if not lowest or spell.learnedLevel < lowest.learnedLevel
+                or (spell.learnedLevel == lowest.learnedLevel and spell.spellID < lowest.spellID) then
+                lowest = spell
+            end
             if spell.learnedLevel <= targetLevel then
                 if not selected or spell.learnedLevel > selected.learnedLevel
                     or (spell.learnedLevel == selected.learnedLevel and spell.spellID > selected.spellID) then
@@ -285,7 +292,7 @@ local function selectRank(spells, family, targetLevel)
             end
         end
     end
-    return selected, familyKnown
+    return selected or (allowLowest and lowest or nil), familyKnown
 end
 
 -- Healing needs only a safe recipient, public low health and proven stillness.
@@ -315,7 +322,13 @@ end
 -- or range. Those transient failures stop selection, even in automatic mode.
 local function familyCandidate(context, state, family)
     if state.present[family] then return nil, "HAS_BLESSING" end
-    local selected, familyKnown = selectRank(context.spells, family, context.target.level)
+    -- Auto mana recipients need a genuinely level-compatible Wisdom/Kings rank
+    -- before those families win. If neither fits, Might is the explicit fallback.
+    -- Manual choices and the existing warrior/rogue policy stay exact.
+    local casterAuto = context.playerClass == "PALADIN" and context.mode == "auto"
+        and context.target.class ~= "WARRIOR" and context.target.class ~= "ROGUE"
+    local allowLowest = context.playerClass == "PALADIN" and (not casterAuto or family == "might")
+    local selected, familyKnown = selectRank(context.spells, family, context.target.level, allowLowest)
     if not familyKnown then return nil, "NO_KNOWN_SPELL" end
     if not selected then return nil, "TARGET_LEVEL_TOO_LOW" end
     if not selected.inRange then return nil, "OUT_OF_RANGE" end
@@ -377,15 +390,31 @@ function Core.Decide(context)
         end
     end
 
+    -- A nonempty caster profile always keeps Might as its last resort when no
+    -- suitable caster blessing is available. Empty profiles remain explicit opt-outs.
+    -- An already present preferred blessing needs no emergency melee blessing.
+    if context.playerClass == "PALADIN" and context.mode == "auto"
+        and target.class ~= "WARRIOR" and target.class ~= "ROGUE" then
+        local hasMight, hasPreferredBlessing = false, false
+        for _, family in ipairs(priorities) do
+            if family == "might" then hasMight = true end
+            if state.present[family] then hasPreferredBlessing = true end
+        end
+        if not hasMight and not hasPreferredBlessing then priorities[#priorities + 1] = "might" end
+    end
+
     local firstReason
     for index, family in ipairs(priorities) do
         local selected, candidateReason = familyCandidate(context, state, family)
         if selected then
             local fallback = index > 1
+            local clientCheck = selected.learnedLevel > context.target.level
             return {
                 ready = true, code = fallback and "READY_FALLBACK" or "READY",
                 text = selected.spellName .. (fallback and " als Alternative bereit – per Tastendruck buffen."
-                    or " bereit – per Tastendruck buffen."),
+                    or " bereit – per Tastendruck buffen.")
+                    .. (clientCheck and " Niedrigster gelernter Rang; der Client prüft die Zielstufe." or ""),
+                rankEligibility = clientCheck and "CLIENT_CHECK" or nil,
                 spellID = selected.spellID, spellName = selected.spellName, family = family,
                 fallbackFrom = fallback and primary or nil,
                 fallbackReason = fallback and firstReason or nil,

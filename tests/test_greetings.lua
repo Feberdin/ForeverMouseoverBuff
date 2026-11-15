@@ -246,6 +246,15 @@ function tests.sender_race_changes_voice_without_replacing_recipient_race_addres
     assert(changed >= 2, "at least two variants should reflect the sender's known race")
 end
 
+function tests.undead_recipient_alias_uses_the_same_address_as_scourge()
+    local input = profile()
+    input.raceToken, input.sex = "Scourge", 2
+    local expected = Greetings.Format(input, 1)
+    input.raceToken = "Undead"
+    equal(Greetings.Format(input, 1), expected)
+    assert(expected:find("edler Untoter", 1, true))
+end
+
 local selected = {}
 for name in pairs(tests) do if not arg[1] or arg[1] == name then selected[#selected + 1] = name end end
 assert(#selected > 0, "unknown test filter")

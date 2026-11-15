@@ -216,11 +216,12 @@ function tests.exact_target_level_accepts_the_rank()
     equal(Core.Decide(input).spellID, 102)
 end
 
-function tests.too_young_target_does_not_use_a_minus_ten_exception()
+function tests.only_known_rank_is_offered_with_explicit_client_eligibility_check()
     local input = context()
     input.spells = { spell(401, "might", 22) }
     input.target.level = 18
-    blocked(input, "TARGET_LEVEL_TOO_LOW")
+    equal(Core.Decide(input).spellID, 401)
+    equal(Core.Decide(input).rankEligibility, "CLIENT_CHECK")
 end
 
 function tests.unknown_higher_rank_does_not_hide_a_known_lower_rank()
@@ -408,13 +409,14 @@ function tests.fallback_selects_highest_eligible_rank_without_downranking_for_ra
     blocked(input, "NOT_USABLE")
 end
 
-function tests.primary_with_no_level_eligible_rank_can_use_eligible_fallback()
+function tests.primary_lowest_known_rank_keeps_requested_family()
     local input = context()
     input.spells = { spell(103, "might", 22), spell(301, "kings", 10) }
     local result = Core.Decide(input)
     equal(result.ready, true)
-    equal(result.family, "kings")
-    equal(result.fallbackReason, "TARGET_LEVEL_TOO_LOW")
+    equal(result.family, "might")
+    equal(result.spellID, 103)
+    equal(result.rankEligibility, "CLIENT_CHECK")
 end
 
 function tests.manual_mode_never_substitutes_a_different_family()
@@ -732,6 +734,80 @@ function tests.healing_malformed_spell_data_keeps_blessing()
     local input = healingContext(); equal(Core.Decide(input).action, "heal")
     input.heals[2].usable = "true"; equal(Core.Decide(input).spellID, 103)
     input.heals = {[2] = spell(19750, "flash", 20)}; equal(Core.Decide(input).spellID, 103)
+end
+
+-- A training level describes the caster, not a proven server recipient limit.
+-- A level-one friend should at least be offered the lowest learned rank.
+function tests.low_level_target_gets_lowest_known_rank_without_invented_level_limit()
+    local input = context()
+    input.target.level, input.mode = 1, "might"
+    local result = Core.Decide(input)
+    equal(result.ready, true, "lowest learned rank should be offered")
+    equal(result.spellID, 101)
+    equal(result.rankEligibility, "CLIENT_CHECK")
+    assert(result.text:find("Client", 1, true), "explain final eligibility check")
+    input.spells[1].known = false
+    equal(Core.Decide(input).spellID, 102, "only actually known ranks qualify")
+    input.spells[2].usable = false
+    blocked(input, "NOT_USABLE")
+    input.spells[2].usable, input.spells[2].inRange = true, false
+    blocked(input, "OUT_OF_RANGE")
+    input.spells[2].inRange, input.target.level = true, nil
+    blocked(input, "TARGET_LEVEL_UNKNOWN")
+end
+
+-- In Auto, a caster without an eligible mana blessing still gets Might.
+-- Lower learned Wisdom/Kings must not outrank this explicit fallback policy.
+function tests.low_level_caster_without_suitable_caster_blessing_gets_might()
+    for _, class in ipairs({"MAGE", "PRIEST", "WARLOCK", "HUNTER", "PALADIN", "SHAMAN", "DRUID"}) do
+        for _, level in ipairs({1, 5}) do
+            local input = context()
+            input.target.class, input.target.level = class, level
+            input.spells = {spell(19740, "might", 4), spell(19742, "wisdom", 14), spell(20217, "kings", 20)}
+            local result = Core.Decide(input)
+            equal(result.ready, true, class)
+            equal(result.spellID, 19740, class .. " without suitable caster blessing must get Might")
+            equal(result.code, "READY_FALLBACK")
+            equal(result.rankEligibility, level == 1 and "CLIENT_CHECK" or nil)
+        end
+    end
+end
+
+function tests.caster_might_fallback_preserves_manual_choices_and_safety()
+    local input = context()
+    input.target.class, input.target.level = "MAGE", 5
+    input.spells = {spell(19740, "might", 4), spell(19742, "wisdom", 14)}
+    input.mode = "wisdom"
+    equal(Core.Decide(input).spellID, 19742, "manual stays exact")
+    input.mode, input.target.level = "auto", 14
+    equal(Core.Decide(input).spellID, 19742, "eligible Wisdom stays preferred")
+    input.spells[2].usable = false
+    blocked(input, "NOT_USABLE")
+    input.spells[2].usable, input.spells[2].inRange = true, false
+    blocked(input, "OUT_OF_RANGE")
+    input.spells[2].inRange, input.target.level = true, 5
+    input.spells[1].usable = false
+    blocked(input, "NOT_USABLE")
+    input.spells[1].usable, input.spells[1].inRange = true, false
+    blocked(input, "OUT_OF_RANGE")
+    input.spells[1].inRange, input.playerCombat = true, true
+    blocked(input, "PLAYER_IN_COMBAT")
+    input.playerCombat, input.spells[1].known = false, false
+    equal(Core.Decide(input).ready, false, "never offer unknown Might or speculative Wisdom in Auto")
+end
+
+function tests.caster_might_fallback_respects_disabled_class_and_existing_blessing()
+    local input = context()
+    input.target.class, input.target.level = "MAGE", 5
+    input.classPriorities = {MAGE = {"wisdom"}}
+    equal(Core.Decide(input).family, "might", "nonempty caster profile keeps emergency Might")
+    input.classPriorities = {MAGE = {}}
+    blocked(input, "CLASS_DISABLED")
+    input.classPriorities = nil
+    input = withBlessings(input, {blessing("wisdom", false)})
+    blocked(input, "HAS_BLESSING")
+    input = withBlessings(input, {blessing("kings", true, 20217)})
+    blocked(input, "OWN_BLESSING_PRESERVED")
 end
 
 local names = {}

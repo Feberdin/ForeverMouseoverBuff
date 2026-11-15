@@ -18,8 +18,8 @@ LUA
 done
 xmllint --nonet --noout src/ForeverMouseoverBuff/Bindings.xml
 cmp src/ForeverMouseoverBuff/ForeverMouseoverBuff.toc src/ForeverMouseoverBuff/ForeverMouseoverBuff_Camelot.toc
-for suite in core classes api counter_codec stats spell_link ranking_export greeting_catalog greetings recipient chat_display whisper seal_reminder auto_thanks diagnostics feedback theme keybinding menu app; do
+for suite in core classes api counter_codec stats spell_link ranking_export greeting_catalog greetings recipient chat_display whisper seal_reminder auto_thanks diagnostics feberdin_diagnostics feedback theme keybinding menu app; do
     printf 'INFO: portable tests/test_%s.lua\n' "$suite"
     "$lua_bin" "tests/test_$suite.lua"
 done
-printf '%s\n' 'PASS: twenty-one portable Lua suites. Native WoW/WIM/chat contracts and in-game acceptance are separate.'
+printf '%s\n' 'PASS: twenty-two portable Lua suites. Native WoW/WIM/chat contracts and in-game acceptance are separate.'

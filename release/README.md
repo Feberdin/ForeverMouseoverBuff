@@ -10,13 +10,13 @@ Choose a learned class buff for the friendly player under your mouse. Paladins,
 Mages, Priests, Druids, Warlocks and Shamans have direct buff profiles. Every
 class can receive greetings and use optional automatic thanks.
 
-**0.10.2 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.10.3 Beta · WoW Forever 1.60.1 · Interface 16001**
 
 The interface and greetings are primarily German. Class priorities and the native
 Sanctum menu have automated behavior and offline layout coverage. Live gameplay
 and receipt of greetings by another player still need in-game acceptance.
 
-## Class buffs (0.10.2 Beta)
+## Class buffs (0.10.3 Beta)
 
 | Caster | Auto, in priority order | Explicit additional choices |
 | --- | --- | --- |
@@ -37,13 +37,37 @@ reagents. FMB checks the client's spell usability and mana result; **it does not
 independently count reagents**. WoW may reject a cast for missing items.
 
 Only actual learned spellbook slots/ranks are used, with fresh range/usability
-checks. Rank eligibility conservatively requires learned level ≤ recipient level;
-this is an addon safety rule, **not a claim about WoW's minimum buff level**.
-Rank choice may therefore be more restrictive than manual casting. Automatic
+checks. Ordinary Paladin rank IDs identify their family even when global localized
+names differ or are missing. An active, non-offspec `SPELL` book slot for such a
+rank remains learning evidence if the public `IsSpellKnown` result disagrees.
+Future/flyout/passive slots and greater/temporary blessings never qualify this way;
+missing, restricted or failed known-state reads still block selection. If Might is
+shown as missing, check that it is learned in the book, then `/reload` and `/fmb diag`.
+Rank selection normally uses learned level ≤ recipient level. For a
+Paladin whose recipient is below every learned rank, FMB can offer the lowest
+learned Might rank and displays that the **client checks target eligibility**.
+In Auto, mana classes receive Might when no level-compatible preferred caster
+blessing is learned; an incompatible first Wisdom/Kings rank never takes precedence
+here. A nonempty custom caster profile keeps this final Might fallback. An empty
+profile stays disabled, existing preferred blessings are retained, and explicit
+manual Wisdom/Kings choices remain exact. Learning level is
+not a proven minimum recipient level; the server may still reject this cast.
+Other classes retain their conservative rank rule. No server level formula is assumed. Automatic
 healing remains a Paladin feature. All addon casts are blocked during the
 caster's combat so no protected combat route can bypass the PvP check. No resurrection, group/reagent buffs, party
 shouts, totems, aspects, temporary cooldown buffs, pet/weapon or self buffs are
 cast by this profile. New class buffs do not generate Paladin scores or exports.
+
+Horde and Alliance use the same friendly-target safety checks, including custom
+Undead Paladins. Caster race supplies cultural greetings: Forsaken, Horde, Loa,
+ancestral and Quel'Thalas themes. `Scourge` and `Undead` are equivalent tokens;
+recipient race only changes the address. No extra chat messages are sent by this change.
+Undead Paladins have twelve original roleplay wishes about free will, enduring
+pain, Lordaeron and protecting others. The painful use of the Light is inspired
+by Cormack in Blizzard's [Unbowed](https://worldofwarcraft.blizzard.com/en-us/media/short-story/unbowed).
+This is a lore reference, not a change to the realm's timeline; these personal
+wishes are original prose and do not describe every Forsaken's beliefs.
+
 
 ## 🛡️ Paladin features
 
@@ -315,7 +339,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.10.2 --output dist/review-0.10.2
+python3 scripts/prepare-release.py --version 0.10.3 --output dist/review-0.10.3
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party
@@ -343,7 +367,7 @@ directly. An introduction deferred at login opens after combat ends. `/fmb statu
 shows the installed version and binding. `/fmb debug on` enables the existing
 local diagnostic codes; `/fmb debug off` disables them. No new diagnostic code
 records key values. If the introduction does not appear, check that the addon is
-enabled for this character and `/fmb status` reports version 0.10.2.
+enabled for this character and `/fmb status` reports version 0.10.3.
 
 ### Actionable status guidance (0.9.2)
 
@@ -375,4 +399,13 @@ healing thanks remain inactive; `THANKS_HEAL_UNAVAILABLE` / `THANKS_HEAL_UNKNOWN
 are fixed diagnostic codes shown by `/fmb status` or `/fmb debug on` (no player
 names or native errors are logged). In-game acceptance
 is pending. Use `/reload`, inspect `/fmb status`, disable with `/fmb thanks off`.
-[Checks, backup and rollback](docs/auto-thanks-2026-11-07/REPORT.md).
+[Current validation and remaining client checks](docs/RELEASE-0.10.3-VALIDATION.md).
+
+The optional healing observer now checks for a public combat-log reader before
+registering `COMBAT_LOG_EVENT_UNFILTERED`. Forever declares this event restricted
+and provides no public row reader; wrapping its registration in `pcall` does not
+prevent Blizzard's blocked-addon dialog. The addon skips that subscription, records
+`THANKS_HEAL_UNAVAILABLE`, and keeps aura-based buff thanks available. It never
+accesses `C_CombatLogInternal` or `C_CombatLogSecure`. After updating, use `/reload`
+and check normal buffing plus `/fmb diag`; a remaining blocked-addon dialog needs
+the exact triggering action/function to diagnose separately.
