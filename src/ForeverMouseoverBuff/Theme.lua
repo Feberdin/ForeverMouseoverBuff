@@ -3,6 +3,7 @@
 -- Invariants: no protected templates, key bindings, saved settings or network access.
 -- Debug: /fmb; tests/test_theme.lua checks geometry and actions outside the game.
 local _, ns = ...
+local function L(text) return ns.Localization and ns.Localization.Text(text) or text end
 local Theme = {}
 ns.Theme = Theme
 Theme.colors = {
@@ -30,7 +31,10 @@ function Theme.Text(parent, value, x, y, width, height, size, color)
     label:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -y)
     label:SetSize(width, height); label:SetFont("Fonts\\ARIALN.TTF", size or 14, "")
     label:SetJustifyH("LEFT"); label:SetJustifyV("TOP"); label:SetWordWrap(true)
-    label:SetTextColor(unpack(color or c.text)); label:SetText(value)
+    label:SetTextColor(unpack(color or c.text)); label:SetText(L(value))
+    if ns.Localization and value ~= "" then
+        ns.Localization.Bind(function(translated) label:SetText(translated) end, value)
+    end
     return label
 end
 function Theme.Icon(parent, path, x, y, width, height)
@@ -56,7 +60,10 @@ function Theme.Button(parent, value, x, y, width, height, action)
         paint(self.border, self.selected and c.gold or c.edge)
         self.label:SetTextColor(unpack(self.selected and c.gold or c.text))
     end
-    button:SetText(value); button:SetSelected(false)
+    button:SetText(L(value)); button:SetSelected(false)
+    if ns.Localization then
+        ns.Localization.Bind(function(translated) button:SetText(translated) end, value)
+    end
     button:SetScript("OnEnter", function(self) if self:IsEnabled() then paint(self.border, c.gold) end end)
     button:SetScript("OnLeave", function(self) self:SetSelected(self.selected) end)
     button:SetScript("OnDisable", function(self) self.label:SetTextColor(unpack(c.muted)) end)
@@ -65,6 +72,8 @@ function Theme.Button(parent, value, x, y, width, height, action)
     return button
 end
 function Theme.Toggle(parent, value, description, x, y, width, action)
+    -- Retain the catalog key even when the caller already translated its label.
+    if ns.Localization then value = ns.Localization.Key(value) end
     local button = CreateFrame("Button", nil, parent)
     button:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -y); button:SetSize(width, 64)
     Theme.Rect(button, 0, 0, width, 64, c.row)
@@ -75,13 +84,16 @@ function Theme.Toggle(parent, value, description, x, y, width, action)
     button.badge:SetJustifyH("CENTER"); button.badge:SetJustifyV("MIDDLE")
     function button:SetValue(enabled)
         self.value = enabled == true
-        self.text = value .. ": " .. (self.value and "an" or "aus")
+        self.text = L(value) .. ": " .. (self.value and L("an") or L("aus"))
         paint(self.indicator, self.value and c.mint or c.edge)
-        self.badge:SetText(self.value and "AN" or "AUS")
+        self.badge:SetText(self.value and L("AN") or L("AUS"))
         self.badge:SetTextColor(unpack(self.value and c.bg or c.muted))
     end
     function button:GetText() return self.text end
     button:SetValue(false); button:SetScript("OnClick", action)
+    if ns.Localization then
+        ns.Localization.Bind(function() button:SetValue(button.value) end, value)
+    end
     return button
 end
 

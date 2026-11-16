@@ -19,7 +19,7 @@ end
 
 -- The fake preserves the Blizzard template's native OnClick marker. It counts
 -- attempted actions, not successful WoW casts; it also models the OOC hard gate.
-local function setup(saved, modules, initialCombat, bindingKey, unavailableEvent, combatLogApi)
+local function setup(saved, modules, initialCombat, bindingKey, unavailableEvent, combatLogApi, locale)
     local state = {frames = {}, events = {}, locked = initialCombat == true, nativeClicks = 0, actions = {}, reads = 0, armedWrites = 0,
         context = fixture(), logs = {}, notices = {}, sounds = {}, attributeWrites = 0,
         refreshBook = 0, templateMissing = false, kingsKnown = false, now = 100}
@@ -155,6 +155,8 @@ local function setup(saved, modules, initialCombat, bindingKey, unavailableEvent
             return nil, "COMBAT_SPELL_NOT_LEARNED"
         end,
     }}
+    _G.GetLocale = function() return locale or "deDE" end
+    assert(loadfile("src/ForeverMouseoverBuff/Localization.lua"))("ForeverMouseoverBuff", ns)
     for name, module in pairs(modules or {}) do ns[name] = module end
     assert(loadfile("src/ForeverMouseoverBuff/Core.lua"))("ForeverMouseoverBuff", ns)
     local diagnosticPath = "src/ForeverMouseoverBuff/Diagnostics.lua"
@@ -874,6 +876,7 @@ test("whisper_camelot_full_names_pass_through_complete_app_event_flow", function
     eq(state.messages[1].message, '[Forever Mouseover Buff] "Das Licht sei mit Euch, Example Recipient!" - Paladin Tester')
     eq(state.messages[1].target, "Example Recipient")
 end)
+
 test("seal_reminder_runs_on_player_aura_and_tick_without_casting_or_whispering", function()
     local ns, state = setup()
     local checks = 0
@@ -1048,6 +1051,7 @@ test("structured_diagnostics_command_reports_short_history_and_disk_freshness", 
     assert(output:find("/reload", 1, true), "file freshness must be explained")
     eq(#state.actions, 0); eq(#state.sounds, 0)
 end)
+
 
 test("structured_diagnostics_rejects_unknown_uppercase_identity_as_a_log_code", function()
     local ns = setup()
@@ -1407,6 +1411,42 @@ test("restricted combat log guard prevents registration despite reader", functio
         eq(state.events.COMBAT_LOG_EVENT_UNFILTERED, nil)
         eq(state.events.UNIT_AURA, true, "buff aura observation remains available")
     end
+end)
+
+test("language_client_default_saved_override_and_live_menu_switch", function()
+    local ns, state = setup(nil, nil, nil, nil, nil, nil, "enUS")
+    eq(ns.db.language, "auto"); eq(ns.Localization.Locale(), "enUS")
+    eq(ns.Core.ClassOptions()[1].name, "Druid")
+    ns.Menu.Show(); ns.Menu.Select("help")
+    eq(ns.Menu.navigation.help:GetText(), "Help & Feedback")
+    eq(ns.Menu.controls.sealSound:GetText(), "Seal expiry sound: on")
+    eq(ns.Menu.controls.debug:GetText(), "Debug log: off")
+    eq(ns.uploadHelpButton:GetText(), "Upload guide")
+    ns:Command("feedback")
+    eq(ns.feedbackKindButtons.bug:GetText(), "Report a bug")
+    ns.Menu.languageButtons.deDE.scripts.OnClick()
+    eq(ns.db.language, "deDE"); eq(ns.Menu.navigation.help:GetText(), "Hilfe & Feedback")
+    eq(ns.Core.ClassOptions()[1].name, "Druide")
+    eq(ns.Menu.controls.sound:GetText(), "Hinweiston beim Buffen: an")
+    eq(ns.Menu.controls.sound.badge:GetText(), "AN")
+    eq(ns.feedbackKindButtons.bug:GetText(), "Fehler melden")
+    eq(ns.feedbackTechnicalButton:GetText(), "Technische Angaben teilen: aus")
+    eq(ns.feedbackTechnicalButton.badge:GetText(), "AUS")
+    ns:Command("language enUS")
+    eq(ns.db.language, "enUS"); eq(ns.Menu.navigation.help:GetText(), "Help & Feedback")
+    ns:Command("language invalid")
+    eq(ns.db.language, "enUS", "invalid preference must preserve English")
+    ns:Command("sound off"); ns:Command("seal off")
+    state.context.playerClass = "DRUID"
+    ns:Help()
+    local output = table.concat(state.logs, "\n")
+    assert(output:find("Alert sound off", 1, true), "English sound acknowledgement required")
+    assert(output:find("Seal expiry sound off", 1, true), "English seal acknowledgement required")
+    assert(output:find("Class buffs:", 1, true), "English class help required")
+    local restored = setup(ns.db, nil, nil, nil, nil, nil, "deDE")
+    eq(restored.Localization.Locale(), "enUS", "saved explicit choice overrides client")
+    restored:Command("language auto")
+    eq(restored.Localization.Locale(), "deDE")
 end)
 
 local count, failures = 0, 0

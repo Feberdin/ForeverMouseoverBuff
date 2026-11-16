@@ -3,6 +3,7 @@
 -- Invariants: no names, chat, stack, locals or raw errors are retained; 100 records maximum.
 -- Debug: /fcodiag status (or /fdiag<addon> status); disk updates on reload/logout only.
 local addon, namespace = ...
+local function L(text) return namespace.Localization and namespace.Localization.Text(text) or text end
 local aliases = { FeberdinCharacterOverlay = 'fco', FeberdinQuestMarker = 'fqm',
   HardcoreRankGuard = 'hrg', RXPSafeTarget = 'rxp', ForeverGearAdvisor = 'fga',
   ForeverRankGuard = 'frg', ForeverMouseoverBuff = 'fmb', FeberdinFamilie = 'ff', ImYOURhealer = 'iyh',
@@ -102,9 +103,9 @@ SlashCmdList[slashKey] = function(command)
   elseif command == 'off' then state.enabled = false; save()
   elseif command == 'clear' then state.events = {}; save() end
   if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
-    DEFAULT_CHAT_FRAME:AddMessage(addon .. ' Diagnose: debug=' .. tostring(state.enabled) ..
-      ', hook=' .. (frameHooked and 'blizzard-frame' or fallbackHooked and 'partial-call-error-handler' or 'unavailable') .. ', Eintraege=' .. #state.events ..
-      '. Befehle: on / off / status / clear. Datei wird erst bei /reload oder Logout aktualisiert.')
+    DEFAULT_CHAT_FRAME:AddMessage(addon .. L(' Diagnose: debug=') .. tostring(state.enabled) ..
+      ', hook=' .. (frameHooked and 'blizzard-frame' or fallbackHooked and 'partial-call-error-handler' or 'unavailable') .. L(', Eintraege=') .. #state.events ..
+      L('. Befehle: on / off / status / clear. Datei wird erst bei /reload oder Logout aktualisiert.'))
   end
 end
 local frame = CreateFrame('Frame')

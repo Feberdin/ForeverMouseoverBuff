@@ -4,6 +4,7 @@
 -- Invariants: no network, persistence, names, messages, counters or raw log export.
 -- Debug: /fmb feedback; lua tests/test_feedback.lua. Guards fail closed.
 local _, ns = ...
+local function L(text) return ns.Localization and ns.Localization.Text(text) or text end
 local IssueFeedback = {}
 ns.IssueFeedback = IssueFeedback
 local BASE_URL = "https://github.com/Feberdin/ForeverMouseoverBuff/issues/new"
@@ -59,7 +60,7 @@ local function environment(snapshot)
         end
     end
     local mode = rawget(snapshot, "mode")
-    if public(mode) and type(mode) == "string" and modes[mode] then addField(client, "Modus: ", mode) end
+    if public(mode) and type(mode) == "string" and modes[mode] then addField(client, L("Modus: "), mode) end
     if #versions > 0 then lines[#lines + 1] = table.concat(versions, " | ") end
     if #client > 0 then lines[#lines + 1] = table.concat(client, " | ") end
     for index = 1, #flags, 3 do
@@ -69,7 +70,7 @@ local function environment(snapshot)
         end
         lines[#lines + 1] = table.concat(group, ", ")
     end
-    return #lines > 0 and table.concat(lines, "\n") or "Keine freigegebenen technischen Angaben verfügbar."
+    return #lines > 0 and table.concat(lines, "\n") or L("Keine freigegebenen technischen Angaben verfügbar.")
 end
 
 -- Reuse the diagnostic module's literal code catalogue, never an uppercase-name
@@ -91,8 +92,8 @@ local function diagnostics(snapshot)
             end
         end
     end
-    if #result == 0 then return "Keine freigegebenen Diagnosecodes vorhanden." end
-    return "Diagnosecodes (neueste zuerst):\n" .. table.concat(result, ", ")
+    if #result == 0 then return L("Keine freigegebenen Diagnosecodes vorhanden.") end
+    return L("Diagnosecodes (neueste zuerst):\n") .. table.concat(result, ", ")
 end
 
 -- Encode every non-ASCII-unreserved byte independently, including UTF-8. This
@@ -111,7 +112,7 @@ function IssueFeedback.Build(kind, snapshot, includeTechnical)
         return nil, "ISSUE_OPTIONS_INVALID"
     end
     local report = {kind = kind, url = BASE_URL .. "?template=" .. templates[kind],
-        preview = "Keine technischen Angaben angehängt. Der Link öffnet nur die gewählte GitHub-Vorlage."}
+        preview = L("Keine technischen Angaben angehängt. Der Link öffnet nur die gewählte GitHub-Vorlage.")}
     if includeTechnical == true then
         if not readable(snapshot) then return nil, "ISSUE_SNAPSHOT_UNAVAILABLE" end
         report.environment, report.diagnostics = environment(snapshot), diagnostics(snapshot)

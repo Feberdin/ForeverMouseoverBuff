@@ -1,5 +1,13 @@
 # Forever Mouseover Buff
 
+Oberfläche, Chat, Hilfe und Grüße sind vollständig auf Deutsch und Englisch verfügbar.
+Unter **Hilfe & Feedback → Sprache** kannst du **Auto (WoW)**, **Deutsch** oder
+**English** wählen. Alternativ: `/fmb language auto`, `/fmb language deDE` oder
+`/fmb language enUS`; `/fmb language` zeigt die gespeicherte und wirksame Sprache.
+Auto verwendet bei deutschem WoW Deutsch, bei anderen Clientsprachen Englisch.
+Die Wahl gilt pro Charakter und aktualisiert offene Einstellungen sofort.
+Zaubernamen und Zauberlinks stammen weiterhin aus dem WoW-Client.
+
 ![Forever Mouseover Buff mit goldenem Mauszeiger und originalem Feberdin-Ritterlogo](release/assets/launch-hero-0.9.0.png)
 
 **[English](README.md)** · [Änderungen](CHANGELOG.md) · [Mitmachen](CONTRIBUTING.md) · [Feberdin-Design](BRANDING.md)
@@ -10,14 +18,14 @@ Wähle einen gelernten Klassenbuff für den befreundeten Spieler unter deiner
 Maus. Paladin, Magier, Priester, Druide, Hexenmeister und Schamane haben eigene
 Buffprofile. Alle Klassen können Grüße empfangen und automatisch danken.
 
-**0.10.3 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.11.0 Beta · WoW Forever 1.60.1 · Interface 16001**
 
-Oberfläche und Grüße sind überwiegend deutsch. Klassenprioritäten und das native
+Oberfläche und Grüße sind auf Deutsch und Englisch verfügbar. Klassenprioritäten und das native
 Sanctum-Menü sind automatisiert und im nachgebildeten Layout geprüft. Die
 Ingame-Abnahme und der tatsächliche Grußempfang bei einem anderen Spieler stehen
 noch aus.
 
-## Klassenbuffs (0.10.3 Beta)
+## Klassenbuffs (0.11.0 Beta)
 
 | Deine Klasse | Auto in dieser Reihenfolge | Zusätzlich bewusst wählbar |
 | --- | --- | --- |
@@ -334,7 +342,7 @@ geöffnet. `/fmb status` nennt Version und Belegung; `/fmb debug on` aktiviert
 die vorhandenen lokalen Diagnosecodes, `/fmb debug off` schaltet sie aus.
 Keine Tastenwerte werden zusätzlich in Diagnosecodes protokolliert. Wenn keine
 Einführung erscheint, prüfe, ob das Addon im Charakterbildschirm aktiviert ist
-und ob `/fmb status` Version 0.10.3 nennt.
+und ob `/fmb status` Version 0.11.0 nennt.
 
 ### Verständliche Statushinweise (0.9.2)
 

@@ -4,6 +4,7 @@
 -- Invariant: Never casts spells or replaces our permanent blessing in Auto mode.
 -- Debug: Run tests/test_core.lua; each blocked decision has a stable reason code.
 local _, namespace = ...
+local function L(text) return namespace.Localization and namespace.Localization.Text(text) or text end
 local Core = {}
 namespace.Core = Core
 
@@ -52,7 +53,7 @@ function Core.BuffProfile(classToken)
     for index, family in ipairs(source.auto) do result.auto[index] = family end
     for index, entry in ipairs(source.families) do
         result.families[index] = {}
-        for key, value in ipairs(entry) do result.families[index][key] = value end
+        for key, value in ipairs(entry) do result.families[index][key] = key == 3 and L(value) or value end
     end
     return result
 end
@@ -111,7 +112,7 @@ local messages = {
 }
 
 local function blocked(code, family)
-    return { ready = false, code = code, text = messages[code], family = family }
+    return { ready = false, code = code, text = L(messages[code]), family = family }
 end
 
 local function positiveInteger(value, maximum)
@@ -175,7 +176,7 @@ end
 function Core.ClassOptions()
     local result = {}
     for index, option in ipairs(classOptions) do
-        result[index] = { token = option.token, name = option.name }
+        result[index] = { token = option.token, name = L(option.name) }
     end
     return result
 end
@@ -313,7 +314,7 @@ local function healingDecision(context)
         if spell and spell.usable and spell.inRange then
             return { ready = true, code = "READY_HEAL", action = "heal", healFamily = family,
                 spellID = spell.spellID, spellName = spell.spellName,
-                text = spell.spellName .. " bereit: Heilung unter 50 % im Stehen – Taste drücken und loslassen." }
+                text = spell.spellName .. L(" bereit: Heilung unter 50 % im Stehen – Taste drücken und loslassen.") }
         end
     end
 end
@@ -411,9 +412,9 @@ function Core.Decide(context)
             local clientCheck = selected.learnedLevel > context.target.level
             return {
                 ready = true, code = fallback and "READY_FALLBACK" or "READY",
-                text = selected.spellName .. (fallback and " als Alternative bereit – per Tastendruck buffen."
-                    or " bereit – per Tastendruck buffen.")
-                    .. (clientCheck and " Niedrigster gelernter Rang; der Client prüft die Zielstufe." or ""),
+                text = selected.spellName .. (fallback and L(" als Alternative bereit – per Tastendruck buffen.")
+                    or L(" bereit – per Tastendruck buffen."))
+                    .. (clientCheck and L(" Niedrigster gelernter Rang; der Client prüft die Zielstufe.") or ""),
                 rankEligibility = clientCheck and "CLIENT_CHECK" or nil,
                 spellID = selected.spellID, spellName = selected.spellName, family = family,
                 fallbackFrom = fallback and primary or nil,

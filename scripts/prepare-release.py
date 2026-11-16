@@ -22,6 +22,7 @@ from pathlib import Path
 
 LOG = logging.getLogger("fmb.release")
 ADDON_NAMES = (
+    "Localization.lua",
     "FeberdinDiagnostics.lua",
     "Core.lua",
     "API.lua",
@@ -52,6 +53,7 @@ ADDON_NAMES = (
     "Media/FeberdinKnight.tga",
 )
 PORTABLE_TESTS = (
+    "test_localization.lua",
     "test_core.lua",
     "test_classes.lua",
     "test_api.lua",
@@ -131,6 +133,7 @@ TEMPLATE_FILES = (
     "docs/feedback.md",
     "docs/release-polish-validation.md",
     "docs/RELEASE-0.10.3-VALIDATION.md",
+    "docs/RELEASE-0.11.0-VALIDATION.md",
     "scripts/check-portable.sh",
     "curseforge/description-en.md",
     "curseforge/description-de.md",

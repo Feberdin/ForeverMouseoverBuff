@@ -4,6 +4,7 @@
 -- Invariants: observer only; fixed fields/tokens, no names/GUIDs/text, fail closed on secret data.
 -- Debug: lua tests/test_classes.lua. Reload flushes SavedVariables; chat works immediately.
 local _, ns = ...
+local function L(text) return ns.Localization and ns.Localization.Text(text) or text end
 local Trace = {}
 ns.AttemptTrace = Trace
 local history, database, sequence = {}, nil, 0
@@ -151,20 +152,20 @@ end
 -- may concern another optional API; the per-attempt reason identifies selection.
 function Trace.Report()
     local entry = history[#history]
-    if not entry then return 'Versuchsdetails: noch kein Tastendruck erfasst (Diagnose lokal aktiv).' end
+    if not entry then return L('Versuchsdetails: noch kein Tastendruck erfasst (Diagnose lokal aktiv).') end
     local function show(value) return value == nil and '?' or tostring(value) end
-    local lines = {'Letzter Versuch #' .. entry.sequence .. ': ' .. show(entry.result)
-        .. ' | Klasse=' .. show(entry.class) .. ' | Ziel-Level=' .. show(entry.level) .. ' | Modus=' .. show(entry.mode),
-        'Auswahl: ' .. show(entry.family) .. ' | Zauber-ID=' .. show(entry.spellID) .. ' | ' .. show(entry.code),
-        'Alternative von=' .. show(entry.fallbackFrom) .. ' | Grund=' .. show(entry.fallbackReason)}
+    local lines = {L('Letzter Versuch #') .. entry.sequence .. ': ' .. show(entry.result)
+        .. L(' | Klasse=') .. show(entry.class) .. L(' | Ziel-Level=') .. show(entry.level) .. L(' | Modus=') .. show(entry.mode),
+        L('Auswahl: ') .. show(entry.family) .. L(' | Zauber-ID=') .. show(entry.spellID) .. ' | ' .. show(entry.code),
+        L('Alternative von=') .. show(entry.fallbackFrom) .. L(' | Grund=') .. show(entry.fallbackReason)}
     for _, family in ipairs({'wisdom', 'might', 'kings'}) do
         local rank = entry[family]
-        if rank then lines[#lines + 1] = family .. ': bekannte Ränge=' .. rank.known
-            .. ' | niedrigstes Lernlevel=' .. show(rank.minimumLevel) .. ' | Lernlevel ≤ Ziellevel=' .. rank.eligible end
+        if rank then lines[#lines + 1] = family .. L(': bekannte Ränge=') .. rank.known
+            .. L(' | niedrigstes Lernlevel=') .. show(rank.minimumLevel) .. L(' | Lernlevel ≤ Ziellevel=') .. rank.eligible end
     end
     if entry.rankEligibility == 'CLIENT_CHECK' then
-        lines[#lines + 1] = 'Niedrigster gelernter Rang angeboten; der Client prüft die Zielstufe.'
+        lines[#lines + 1] = L('Niedrigster gelernter Rang angeboten; der Client prüft die Zielstufe.')
     end
-    lines[#lines + 1] = 'Lernlevel ist keine bestätigte Mindeststufe des Empfängers; die Lernlevel-Zählung bestätigt keine Zauberzulässigkeit.'
+    lines[#lines + 1] = L('Lernlevel ist keine bestätigte Mindeststufe des Empfängers; die Lernlevel-Zählung bestätigt keine Zauberzulässigkeit.')
     return table.concat(lines, '\n')
 end

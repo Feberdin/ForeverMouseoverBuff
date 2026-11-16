@@ -4,12 +4,13 @@
 ## Notes-deDE: Klassenabhängige Mouseover-Buffs, bewusste Tasteneingabe, persönliche Grüße und optionale Danke-Geste. /fmb help
 ## Notes: Class-aware mouseover buffs, deliberate key presses, personal greetings and optional thanks. /fmb help
 ## Author: Feberdin
-## Version: 0.10.3
+## Version: 0.11.0
 ## SavedVariablesPerCharacter: ForeverMouseoverBuffDB, ForeverMouseoverBuffRankingExport
 ## Category-deDE: Zauber
 ## Category-enUS: Spells
 ## IconTexture: Interface\Icons\Spell_Holy_FistOfJustice
 # Purpose: selection, API boundary, greeting catalog, recipient preferences, chat display, confirmed whispers, lifecycle/UI. Debug: /fmb status.
+Localization.lua
 FeberdinDiagnostics.lua
 Core.lua
 API.lua

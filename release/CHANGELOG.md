@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0 Beta — English and German / Deutsch und Englisch
+
+- Add complete English and German settings, chat, help, diagnostics and personal greetings.
+- Default to the WoW client language (German for deDE, English otherwise). Choose Auto, Deutsch or English under Help & Feedback, or use `/fmb language auto | deDE | enUS`. Preferences persist per character and open settings update immediately.
+- Recognize English and German greeting counters across clients; native spell names, links, API identifiers and safety checks remain client-owned.
+- Oberfläche, Chat, Hilfe, Diagnose und persönliche Grüße vollständig auf Deutsch und Englisch. Automatische Client-Sprachwahl oder gespeicherte Auswahl unter Hilfe & Feedback beziehungsweise `/fmb language auto | deDE | enUS`.
+
+
 ## 0.10.3 Beta — Learned Might detection and Horde greetings
 
 - Recognize ordinary Paladin ranks by spell ID even when localized names differ

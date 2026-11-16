@@ -4,6 +4,7 @@
 -- Invariants: no HTTP, clipboard access, automatic submission or saved draft data.
 -- Debug: /fmb feedback; missing modules show a recovery message, never raw errors.
 local _, ns = ...
+local function L(text) return ns.Localization and ns.Localization.Text(text) or text end
 local unpack = unpack or table.unpack
 local kinds = {bug = "Fehler melden", wish = "Wunsch äußern", feature = "Feature vorschlagen"}
 local descriptions = {
@@ -29,12 +30,12 @@ function ns:UpdateFeedbackReport()
     for kind, item in pairs(self.feedbackKindButtons) do
         item:SetSelected(kind == self.feedbackKind)
     end
-    self.feedbackDescription:SetText(descriptions[self.feedbackKind])
+    self.feedbackDescription:SetText(L(descriptions[self.feedbackKind]))
     self.feedbackURLValue = report and report.url or ""
     self.feedbackURL:SetText(self.feedbackURLValue)
     self.feedbackURL:ClearFocus()
     self.feedbackPreview:SetText(report and report.preview
-        or "Meldelink nicht verfügbar. Bitte das vollständige Addonpaket neu installieren und /reload ausführen. Hilfe: github.com/Feberdin/ForeverMouseoverBuff")
+        or L("Meldelink nicht verfügbar. Bitte das vollständige Addonpaket neu installieren und /reload ausführen. Hilfe: github.com/Feberdin/ForeverMouseoverBuff"))
     if report then self.feedbackSelectButton:Enable() else self.feedbackSelectButton:Disable() end
 end
 
@@ -73,24 +74,24 @@ function ns:ShowFeedbackPanel(kind)
         self.feedbackPanel = panel
         Theme.Icon(panel, Theme.Path("ProjectIcon"), 24, 20, 54, 54)
         Theme.Icon(panel, Theme.Path("FeberdinKnight"), 649, 19, 54, 54)
-        Theme.Text(panel, "Feedback & Hilfe", 94, 23, 510, 28, 23, colors.gold)
-        Theme.Text(panel, "Deine Idee macht das Addon besser.", 95, 56, 510, 24, 14, colors.muted)
+        Theme.Text(panel, L("Feedback & Hilfe"), 94, 23, 510, 28, 23, colors.gold)
+        Theme.Text(panel, L("Deine Idee macht das Addon besser."), 95, 56, 510, 24, 14, colors.muted)
         self.feedbackKindButtons = {}
         for index, choice in ipairs({"bug", "wish", "feature"}) do
             local selected = choice
-            self.feedbackKindButtons[choice] = Theme.Button(panel, kinds[choice], 24 + (index - 1) * 242, 100, 228, 38,
+            self.feedbackKindButtons[choice] = Theme.Button(panel, L(kinds[choice]), 24 + (index - 1) * 242, 100, 228, 38,
                 function() ns.feedbackKind = selected; ns:UpdateFeedbackReport() end)
         end
         self.feedbackDescription = Theme.Text(panel, "", 24, 155, 710, 36, 14, colors.text)
-        self.feedbackTechnicalButton = Theme.Toggle(panel, "Technische Angaben teilen",
-            "Freiwillig: Version, Schalter und bekannte Diagnosecodes.", 24, 198, 712, function()
+        self.feedbackTechnicalButton = Theme.Toggle(panel, L("Technische Angaben teilen"),
+            L("Freiwillig: Version, Schalter und bekannte Diagnosecodes."), 24, 198, 712, function()
                 ns.feedbackIncludeTechnical = not ns.feedbackIncludeTechnical
                 ns:UpdateFeedbackReport()
             end)
         Theme.Rect(panel, 24, 277, 712, 206, colors.panel)
-        Theme.Text(panel, "DEINE VORSCHAU", 40, 291, 678, 20, 12, colors.gold)
+        Theme.Text(panel, L("DEINE VORSCHAU"), 40, 291, 678, 20, 12, colors.gold)
         self.feedbackPreview = Theme.Text(panel, "", 40, 321, 678, 154, 13, colors.text)
-        Theme.Text(panel, "Keine Namen, Whisper oder Zähler. Beim Öffnen erhält GitHub die ausgewählten Angaben. Erst dein Absenden veröffentlicht das Issue. GitHub-Konto erforderlich.",
+        Theme.Text(panel, L("Keine Namen, Whisper oder Zähler. Beim Öffnen erhält GitHub die ausgewählten Angaben. Erst dein Absenden veröffentlicht das Issue. GitHub-Konto erforderlich."),
             24, 498, 712, 46, 13, colors.muted)
         -- Plain EditBox avoids inherited Blizzard artwork. The original copy-only
         -- behavior remains: selection is deliberate and Escape releases focus.
@@ -109,10 +110,10 @@ function ns:ShowFeedbackPanel(kind)
             if userInput then self:SetText(ns.feedbackURLValue or "") end
         end)
         panel:SetScript("OnHide", feedbackHidden)
-        self.feedbackSelectButton = Theme.Button(panel, "Link markieren", 24, 604, 164, 34, function()
+        self.feedbackSelectButton = Theme.Button(panel, L("Link markieren"), 24, 604, 164, 34, function()
             ns.feedbackURL:SetFocus(); ns.feedbackURL:HighlightText()
         end)
-        Theme.Text(panel, "Cmd/Strg+C  →  Im Browser öffnen  →  Prüfen & senden", 207, 614, 529, 25, 13, colors.muted)
+        Theme.Text(panel, L("Cmd/Strg+C  →  Im Browser öffnen  →  Prüfen & senden"), 207, 614, 529, 25, 13, colors.muted)
     end
     self.feedbackKind, self.feedbackIncludeTechnical = kind, false
     self:UpdateFeedbackReport()

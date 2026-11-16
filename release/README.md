@@ -10,13 +10,22 @@ Choose a learned class buff for the friendly player under your mouse. Paladins,
 Mages, Priests, Druids, Warlocks and Shamans have direct buff profiles. Every
 class can receive greetings and use optional automatic thanks.
 
-**0.10.3 Beta · WoW Forever 1.60.1 · Interface 16001**
+**0.11.0 Beta · WoW Forever 1.60.1 · Interface 16001**
 
-The interface and greetings are primarily German. Class priorities and the native
+The interface, chat messages, help and greetings support English and German.
+**Help & Feedback → Language** selects **Auto (WoW)**, **Deutsch** or **English**.
+The equivalent commands are `/fmb language auto`, `/fmb language deDE` and
+`/fmb language enUS`; `/fmb language` shows your saved and effective language.
+Auto uses German on a German client and English on all other clients. The choice
+is saved per character and updates open settings immediately. Native spell names
+and spell links always follow the WoW client.
+[Localization validation and remaining client checks](docs/RELEASE-0.11.0-VALIDATION.md).
+
+Class priorities and the native
 Sanctum menu have automated behavior and offline layout coverage. Live gameplay
 and receipt of greetings by another player still need in-game acceptance.
 
-## Class buffs (0.10.3 Beta)
+## Class buffs (0.11.0 Beta)
 
 | Caster | Auto, in priority order | Explicit additional choices |
 | --- | --- | --- |
@@ -339,7 +348,7 @@ LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_ranking_end_to_end.
 LUA_BIN=lua5.1 python3 -m unittest discover -s tests -p test_diagnostics_end_to_end.py -v
 node --test service/tests/test_upload_core.cjs service/tests/test_upload_ui.cjs
 mkdir -p dist
-python3 scripts/prepare-release.py --version 0.10.3 --output dist/review-0.10.3
+python3 scripts/prepare-release.py --version 0.11.0 --output dist/review-0.11.0
 ```
 
 The public CI runs the portable tests. Proprietary native WoW UI and third-party
@@ -367,7 +376,7 @@ directly. An introduction deferred at login opens after combat ends. `/fmb statu
 shows the installed version and binding. `/fmb debug on` enables the existing
 local diagnostic codes; `/fmb debug off` disables them. No new diagnostic code
 records key values. If the introduction does not appear, check that the addon is
-enabled for this character and `/fmb status` reports version 0.10.3.
+enabled for this character and `/fmb status` reports version 0.11.0.
 
 ### Actionable status guidance (0.9.2)
 

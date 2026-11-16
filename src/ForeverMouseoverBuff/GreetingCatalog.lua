@@ -3,6 +3,7 @@
 -- Invariants: no identities, persistence, randomness or shared mutable results.
 -- Debug: lua tests/test_greeting_catalog.lua from the project directory.
 local _, ns = ...
+local function L(text) return ns.Localization and ns.Localization.Text(text) or text end
 local Catalog = {COUNT = 12}
 ns.GreetingCatalog = Catalog
 
@@ -215,10 +216,10 @@ function Catalog.Select(senderClass, senderRace)
     local style = type(senderClass) == "string" and classes[senderClass] or nil
     local race = type(senderRace) == "string" and races[senderRace] or nil
     local source, result = style or neutral, {}
-    for index = 1, Catalog.COUNT do result[index] = source.templates[index] end
+    for index = 1, Catalog.COUNT do result[index] = L(source.templates[index]) end
     if style and race then
-        result[6] = "Für Euch, %s: " .. style.gift .. " und " .. race.gift .. "!"
-        result[12] = "Mit " .. style.guide .. " " .. race.path .. ", %s!"
+        result[6] = L("Für Euch, %s: ") .. L(style.gift) .. L(" und ") .. L(race.gift) .. "!"
+        result[12] = L("Mit ") .. L(style.guide) .. " " .. L(race.path) .. ", %s!"
     end
     -- The custom realm permits Undead Paladins. These original, personal wishes
     -- draw on Forsaken free will, Lordaeron and the painful use of the Light.
@@ -238,5 +239,6 @@ function Catalog.Select(senderClass, senderRace)
         result[11] = "Mein Fleisch ist vergangen. Mein Mitgefühl nicht. Seid behütet, %s!"
         result[12] = "Wir sind die Verlassenen. Doch heute soll niemand ohne Beistand weiterziehen, %s!"
     end
-    return result, source.short
+    for index = 1, Catalog.COUNT do result[index] = L(result[index]) end
+    return result, L(source.short)
 end

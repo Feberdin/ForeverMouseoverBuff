@@ -4,6 +4,7 @@
 -- Invariants: no randomness, sending, name logging, mutation or persisted identities.
 -- Debug: lua tests/test_greetings.lua; integration owns the public-value guards.
 local _, ns = ...
+local function L(text) return ns.Localization and ns.Localization.Text(text) or text end
 local Greetings = {COUNT = 12, PREFIX = "[Forever Mouseover Buff] ",
     COLOR_PREFIX = "|cffffd36b[Forever Mouseover Buff]|r "}
 ns.Greetings = Greetings
@@ -74,7 +75,7 @@ local function address(profile, receiver)
     end
     local forms = addresses[race]
     if not forms then return receiver end
-    return forms[sex] .. " " .. receiver
+    return L(forms[sex]) .. " " .. receiver
 end
 
 -- Formatting is deterministic and side-effect free. The caller selects a variant
@@ -97,7 +98,7 @@ function Greetings.Format(profile, variant)
     if link ~= nil and (not ns.SpellLink or not ns.SpellLink.Valid(link)) then
         return nil, "GREETING_INVALID_LINK"
     end
-    local details = count ~= nil and string.format(" [insgesamt: %.0f Buffs verteilt]", count) or ""
+    local details = count ~= nil and string.format(L(" [insgesamt: %.0f Buffs verteilt]"), count) or ""
     if link then details = details .. " " .. link end
     -- Sender culture chooses the voice; recipient traits only choose the address.
     -- Keep these roles separate: a paladin addressing a druid is still a paladin.
@@ -149,6 +150,7 @@ function Greetings.ValidMessage(message, expectedSpellID)
     end
     if body:find("|", 1, true) then return false end
     local withoutCount, digits = body:match("^(.-) %[insgesamt: (%d+) Buffs verteilt%]$")
+    if not digits then withoutCount, digits = body:match("^(.-) %[total: (%d+) Buffs given%]$") end
     if not digits then withoutCount, digits = body:match("^(.-) %[lokal: (%d+) Buffs%]$") end
     if digits then
         local value = tonumber(digits)
